@@ -46,7 +46,7 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: " << window_size_ << ")" << endl
 	     << "Size of the context to compute covariance on." << endl << endl;
 
-	cout << "--sentence_per_line "
+	cout << "--sentence_per_line " << endl
 	     << "Have a sentence per line in the text corpus?" << endl << endl;
 
 	cout << "--cca_dim "

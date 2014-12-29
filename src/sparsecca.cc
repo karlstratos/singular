@@ -43,12 +43,13 @@ void SparseCCASolver::PerformCCA(const string &covariance_xy_file,
     string line;
     vector<string> tokens;
     unordered_map<size_t, double> variance_x;
+    size_t index_x = 0;
     while (file.good()) {
-	getline(file, line);  // <feature_x> <variance>
+	getline(file, line);  // <variance in the i-th dimension>
 	if (line == "") { continue; }
 	string_manipulator.split(line, " ", &tokens);
-	ASSERT(tokens.size() == 2, "Bad format: " << line);
-	variance_x[stoi(tokens[0])] = stod(tokens[1]);
+	ASSERT(tokens.size() == 1, "Bad format: " << line);
+	variance_x[index_x++] = stod(tokens[0]);
     }
 
     // Load the variance for view Y.
@@ -56,12 +57,13 @@ void SparseCCASolver::PerformCCA(const string &covariance_xy_file,
     file.open(variance_y_file, ios::in);
     ASSERT(file.is_open(), "Cannot open file: " << variance_y_file);
     unordered_map<size_t, double> variance_y;
+    size_t index_y = 0;
     while (file.good()) {
-	getline(file, line);  // <feature_y> <variance>
+	getline(file, line);  // <variance in the i-th dimension>
 	if (line == "") { continue; }
 	string_manipulator.split(line, " ", &tokens);
-	ASSERT(tokens.size() == 2, "Bad format: " << line);
-	variance_y[stoi(tokens[0])] = stod(tokens[1]);
+	ASSERT(tokens.size() == 1, "Bad format: " << line);
+	variance_y[index_y++] = stod(tokens[0]);
     }
 
     // Load the cross-covariance matrix.

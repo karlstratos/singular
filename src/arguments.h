@@ -56,7 +56,7 @@ private:
     bool sentence_per_line_ = false;
 
     // Dimension of the CCA subspace.
-    size_t cca_dim_;
+    size_t cca_dim_ = 1000;
 
     // Smoothing term for calculating the correlation matrix.
     double smoothing_term_ = -1;  // Let the model decide.

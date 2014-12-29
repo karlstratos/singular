@@ -349,20 +349,24 @@ TEST_F(CanonWordSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
     }
 
     ifstream word_file(canonword_.CountWordPath(), ios::in);
+    Word word = 0;
     while (word_file.good()) {
 	getline(word_file, line_);
 	string_manipulator_.split(line_, " ", &tokens_);
-	string word_string = canonword_.word_num2str(stoi(tokens_[0]));
-	size_t count = stoi(tokens_[1]);
+	if (tokens_.size() == 0) { continue; }
+	string word_string = canonword_.word_num2str(word++);
+	size_t count = stoi(tokens_[0]);
 	EXPECT_EQ(true_count_word[word_string], count);
     }
 
     ifstream context_file(canonword_.CountContextPath(), ios::in);
+    Context context = 0;
     while (context_file.good()) {
 	getline(context_file, line_);
 	string_manipulator_.split(line_, " ", &tokens_);
-	string context_string = canonword_.context_num2str(stoi(tokens_[0]));
-	size_t count = stoi(tokens_[1]);
+	if (tokens_.size() == 0) { continue; }
+	string context_string = canonword_.context_num2str(context++);
+	size_t count = stoi(tokens_[0]);
 	EXPECT_EQ(true_count_context[context_string], count);
     }
 }
@@ -473,20 +477,24 @@ TEST_F(CanonWordSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
     }
 
     ifstream word_file(canonword_.CountWordPath(), ios::in);
+    Word word = 0;
     while (word_file.good()) {
 	getline(word_file, line_);
 	string_manipulator_.split(line_, " ", &tokens_);
-	string word_string = canonword_.word_num2str(stoi(tokens_[0]));
-	size_t count = stoi(tokens_[1]);
+	if (tokens_.size() == 0) { continue; }
+	string word_string = canonword_.word_num2str(word++);
+	size_t count = stoi(tokens_[0]);
 	EXPECT_EQ(true_count_word[word_string], count);
     }
 
     ifstream context_file(canonword_.CountContextPath(), ios::in);
+    Context context = 0;
     while (context_file.good()) {
 	getline(context_file, line_);
 	string_manipulator_.split(line_, " ", &tokens_);
-	string context_string = canonword_.context_num2str(stoi(tokens_[0]));
-	size_t count = stoi(tokens_[1]);
+	if (tokens_.size() == 0) { continue; }
+	string context_string = canonword_.context_num2str(context++);
+	size_t count = stoi(tokens_[0]);
 	EXPECT_EQ(true_count_context[context_string], count);
     }
 }
@@ -542,20 +550,24 @@ TEST_F(CanonWordSimpleExample,
     }
 
     ifstream word_file(canonword_.CountWordPath(), ios::in);
+    Word word = 0;
     while (word_file.good()) {
 	getline(word_file, line_);
 	string_manipulator_.split(line_, " ", &tokens_);
-	string word_string = canonword_.word_num2str(stoi(tokens_[0]));
-	size_t count = stoi(tokens_[1]);
+	if (tokens_.size() == 0) { continue; }
+	string word_string = canonword_.word_num2str(word);
+	size_t count = stoi(tokens_[0]);
 	EXPECT_EQ(true_count_word[word_string], count);
     }
 
     ifstream context_file(canonword_.CountContextPath(), ios::in);
+    Context context = 0;
     while (context_file.good()) {
 	getline(context_file, line_);
 	string_manipulator_.split(line_, " ", &tokens_);
-	string context_string = canonword_.context_num2str(stoi(tokens_[0]));
-	size_t count = stoi(tokens_[1]);
+	if (tokens_.size() == 0) { continue; }
+	string context_string = canonword_.context_num2str(context++);
+	size_t count = stoi(tokens_[0]);
 	EXPECT_EQ(true_count_context[context_string], count);
     }
 }

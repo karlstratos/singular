@@ -21,8 +21,9 @@ void CanonWord::InduceLexicalRepresentations(const string &corpus_file) {
     StringManipulator string_manipulator;
     time_t begin_time_total = time(NULL);  // Total time.
 
-    // Compute word counts from the corpus with appropriate preprocessing.
     log_ << "Corpus: " << corpus_file << endl << flush;
+
+    // Compute word counts from the corpus with appropriate preprocessing.
     time_t begin_time_count = time(NULL);  // Counting time.
     CountWords(corpus_file);
     DetermineRareWords();
@@ -30,13 +31,14 @@ void CanonWord::InduceLexicalRepresentations(const string &corpus_file) {
     double time_count = difftime(time(NULL), begin_time_count);
 
     // Perform CCA on the computed counts.
+    time_t begin_time_cca = time(NULL);  // CCA time.
     log_ << endl << "[Performing CCA on the computed counts]" << endl;
     log_ << "   CCA dimension: " << cca_dim_ << endl;
     log_ << "   Smoothing term: " << smoothing_term_ << endl << flush;
-    time_t begin_time_cca = time(NULL);  // CCA time.
     SparseCCASolver sparsecca_solver(cca_dim_, smoothing_term_);
     sparsecca_solver.PerformCCA(CountWordContextPath(),
 				CountWordPath(), CountContextPath());
+    double time_cca = difftime(time(NULL), begin_time_cca);
 
     // Collect and normalize the singular vectors for word representations.
     wordvectors_.clear();
@@ -48,7 +50,6 @@ void CanonWord::InduceLexicalRepresentations(const string &corpus_file) {
 	wordvectors_[word_string].normalize();  // Normalize length.
     }
     singular_values_ = *sparsecca_solver.cca_correlations();
-    double time_cca = difftime(time(NULL), begin_time_cca);
     log_ << "   Condition number: " << singular_values_[0] /
 	singular_values_[cca_dim_ - 1] << endl;
 
@@ -81,7 +82,7 @@ void CanonWord::InduceLexicalRepresentations(const string &corpus_file) {
     double time_total = difftime(time(NULL), begin_time_total);
     log_ << "Time spent in counting: "
 	 << string_manipulator.print_time(time_count) << endl;
-    log_ << "Time spent in CCA and normalizing: "
+    log_ << "Time spent in CCA: "
 	 << string_manipulator.print_time(time_cca) << endl;
     log_ << "Total time: " << string_manipulator.print_time(time_total)
 	 << endl;
@@ -383,16 +384,12 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 				       CountWordContextPath());
 
     ofstream count_word_file(CountWordPath(), ios::out);
-    for (const auto &word_pair: count_word) {
-	ASSERT(word_num2str_[word_pair.first] != kBufferString_,
-	       "Buffer string cannot occur as a word: something is wrong.");
-	count_word_file << word_pair.first << " " << word_pair.second
-			<< endl;
+    for (Word word = 0; word < count_word.size(); ++word) {
+	count_word_file << count_word[word] << endl;
     }
 
     ofstream count_context_file(CountContextPath(), ios::out);
-    for (const auto &context_pair: count_context) {
-	count_context_file << context_pair.first << " " << context_pair.second
-			   << endl;
+    for (Context context = 0; context < count_context.size(); ++context) {
+	count_context_file << count_context[context] << endl;
     }
 }
