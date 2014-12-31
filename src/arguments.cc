@@ -19,7 +19,11 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	} else if (arg == "--cca_dim") {
 	    cca_dim_ = stoi(argv[++i]);
 	} else if (arg == "--smoothing_term") {
-	    smoothing_term_ = stod(argv[++i]);
+	    smoothing_term_ = stoi(argv[++i]);
+	} else if (arg == "--from_scratch") {
+	    from_scratch_ = true;
+	} else if (arg == "-h" || arg == "--help"){
+	    display_options_and_quit = true;
 	} else {
 	    cerr << "Invalid argument \"" << arg << "\": run the command with "
 		 << "-h or --help to see possible arguments." << endl;
@@ -57,6 +61,9 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: " << smoothing_term_ << ")" << endl
 	     << "Smoothing term for calculating the correlation matrix "
 	     << "(-1 lets the model decide)."  << endl << endl;
+
+	cout << "--from_scratch " << endl
+	     << "Recompute counts from scratch (no caching)?" << endl << endl;
 
 	exit(0);
     }

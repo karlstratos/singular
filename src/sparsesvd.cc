@@ -100,6 +100,9 @@ void SparseSVDSolver::LoadSparseMatrix(
 void SparseSVDSolver::SolveSparseSVD(size_t rank) {
     ASSERT(rank > 0, "SVD rank is given as <= 0: " << rank);
     ASSERT(HasMatrix(), "No matrix for SVD computation.");
+    ASSERT(rank <= min(sparse_matrix_->rows, sparse_matrix_->cols), "SVD rank "
+	   "is given as > min(num_rows, num_cols): " << rank << " > min("
+	   << sparse_matrix_->rows << ", " << sparse_matrix_->cols << ")");
 
     // Free the current SVD result in case it's filled.
     FreeSVDResult();

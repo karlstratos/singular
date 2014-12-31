@@ -35,9 +35,12 @@ public:
     // Returns the dimension of the CCA subspace.
     size_t cca_dim() { return cca_dim_; }
 
-    // Returns the smoothing term for calculating the correlation matrix
-    // (-1 lets the model decide).
-    double smoothing_term() { return smoothing_term_; }
+    // Returns the smoothing term for calculating the correlation matrix (-1
+    // lets the model decide).
+    int smoothing_term() { return smoothing_term_; }
+
+    // Returns the flag for recomputing all counts from scratch.
+    bool from_scratch() { return from_scratch_; }
 
 private:
     // Path to a text corpus.
@@ -59,7 +62,10 @@ private:
     size_t cca_dim_ = 1000;
 
     // Smoothing term for calculating the correlation matrix.
-    double smoothing_term_ = -1;  // Let the model decide.
+    int smoothing_term_ = -1;  // Let the model decide.
+
+    // Recompute counts from scratch (no caching)?
+    bool from_scratch_ = false;
 };
 
 #endif  // ARGUMENTS_H_

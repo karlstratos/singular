@@ -20,6 +20,12 @@ public:
     string print_time(double num_seconds);
 };
 
+class FileManipulator {
+public:
+    // Checks for the existence of a file.
+    bool exists(const string &file_path);
+};
+
 // Assert macro that allows adding a message to an assertion upon failure. It
 // implictly performs string conversion: ASSERT(x > 0, "Negative x: " << x);
 #ifndef NDEBUG

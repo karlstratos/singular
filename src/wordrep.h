@@ -17,13 +17,27 @@ typedef size_t Context;
 
 class CanonWord {
 public:
-    // Induces lexical representations from the given corpus file.
-    void InduceLexicalRepresentations(const string &corpus_file);
+    // Initializes CanonWord with no output directory.
+    CanonWord() { }
 
-    // Sets the path to the output directory.
-    void set_output_directory(const string &output_directory) {
-	output_directory_ = output_directory;
+    // Initializes CanonWord with an output directory.
+    CanonWord(const string &output_directory) {
+	SetOutputDirectory(output_directory);
     }
+
+    ~CanonWord() { }
+
+    // Sets the output directory.
+    void SetOutputDirectory(const string &output_directory);
+
+    // Removes the content in the output directory.
+    void ResetOutputDirectory();
+
+    // Computes word counts from the corpus with appropriate preprocessing.
+    void ExtractStatistics(const string &corpus_file);
+
+    // Induces lexical representations from word counts in the output directory.
+    void InduceLexicalRepresentations();
 
     // Sets the rare word cutoff value (-1 lets the model decide).
     void set_rare_cutoff(int rare_cutoff) { rare_cutoff_ = rare_cutoff; }
@@ -40,8 +54,9 @@ public:
     // Sets the dimension of the CCA subspace.
     void set_cca_dim(size_t cca_dim) { cca_dim_ = cca_dim; }
 
-    // Sets the smoothing term for calculating the correlation matrix.
-    void set_smoothing_term(double smoothing_term) {
+    // Sets the smoothing term for calculating the correlation matrix (-1 lets
+    // the model decide).
+    void set_smoothing_term(int smoothing_term) {
 	smoothing_term_ = smoothing_term;
     }
 
@@ -61,14 +76,23 @@ public:
 
     // Returns the path to the word-context count file.
     string CountWordContextPath() {
-	return output_directory_ + "/count_word_context";
+	return output_directory_ + "/count_word_context_cutoff" +
+	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
+	    "_sentperline" + to_string(sentence_per_line_);
     }
 
     // Returns the path to the word count file.
-    string CountWordPath() { return output_directory_ + "/count_word"; }
+    string CountWordPath() {
+	return output_directory_ + "/count_word_cutoff" +
+	    to_string(rare_cutoff_);
+    }
 
     // Returns the path to the context count file.
-    string CountContextPath() { return output_directory_ + "/count_context"; }
+    string CountContextPath() {
+	return output_directory_ + "/count_context_cutoff" +
+	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
+	    "_sentperline" + to_string(sentence_per_line_);
+    }
 
     // Returns the integer ID corresponding to a word string.
     Word word_str2num(const string &word_string);
@@ -99,26 +123,58 @@ private:
     // corpus file.
     void ComputeCovariance(const string &corpus_file);
 
+    // Returns the path to the corpus information file.
+    string CorpusInfoPath() { return output_directory_ + "/corpus_info"; }
+
     // Returns the path to the log file.
     string LogPath() { return output_directory_ + "/log"; }
 
+    // Returns the path to the sorted word types file.
+    string SortedWordTypesPath() {
+	return output_directory_ + "/sorted_word_types";
+    }
+
     // Returns the path to the rare word file.
-    string RarePath() { return output_directory_ + "/rare_words"; }
+    string RarePath() {
+	return output_directory_ + "/rare_words_cutoff" +
+	    to_string(rare_cutoff_);
+    }
 
     // Returns the path to the str2num mapping for words.
-    string WordStr2NumPath() { return output_directory_ + "/word_str2num"; }
+    string WordStr2NumPath() {
+	return output_directory_ + "/word_str2num_cutoff" +
+	    to_string(rare_cutoff_);
+    }
 
     // Returns the path to the str2num mapping for context.
     string ContextStr2NumPath() {
-	return output_directory_ + "/context_str2num";
+	return output_directory_ + "/context_str2num_cutoff" +
+	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
+	    "_sentperline" + to_string(sentence_per_line_);
     }
 
     // Returns the path to the word vectors.
-    string WordVectorsPath() { return output_directory_ + "/wordvectors"; }
+    string WordVectorsPath() {
+	return output_directory_ + "/wordvectors_cutoff" +
+	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
+	    "_sentperline" + to_string(sentence_per_line_) + "_dim" +
+	    to_string(cca_dim_) + "_smooth" + to_string(smoothing_term_);
+    }
 
     // Returns the path to the singular values.
     string SingularValuesPath() {
-	return output_directory_ + "/singular_values";
+	return output_directory_ + "/singular_values_cutoff" +
+	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
+	    "_sentperline" + to_string(sentence_per_line_) + "_dim" +
+	    to_string(cca_dim_) + "_smooth" + to_string(smoothing_term_);
+    }
+
+    // Returns the path to the PCA variance values.
+    string PCAVariancePath() {
+	return output_directory_ + "/pca_variance_cutoff" +
+	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
+	    "_sentperline" + to_string(sentence_per_line_) + "_dim" +
+	    to_string(cca_dim_) + "_smooth" + to_string(smoothing_term_);
     }
 
     // Count of each word string type appearing in a corpus.
@@ -167,7 +223,7 @@ private:
 
     // Smoothing term for calculating the correlation matrix. If it's negative,
     // we let the model decide based on the smallest word count.
-    double smoothing_term_ = -1.0;
+    int smoothing_term_ = -1.0;
 
     // Computed word vectors.
     unordered_map<string, Eigen::VectorXd> wordvectors_;

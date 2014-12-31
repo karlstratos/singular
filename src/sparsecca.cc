@@ -27,6 +27,7 @@ void SparseCCASolver::PerformCCA(
     svd_solver.LoadSparseMatrix(*covariance_xy);
     if (cca_dim_ == 0) { cca_dim_ = min(variance_x.size(), variance_y.size()); }
     svd_solver.SolveSparseSVD(cca_dim_);
+    rank_ = svd_solver.rank();
 
     // Extract CCA parameters from the SVD result.
     ExtractScaledSingularVectors(svd_solver, variance_x, variance_y);
@@ -94,6 +95,7 @@ void SparseCCASolver::PerformCCA(const string &covariance_xy_file,
     // Perform an SVD on the scaled cross-covariance matrix.
     if (cca_dim_ == 0) { cca_dim_ = min(matrix->rows, matrix->cols); }
     svd_solver.SolveSparseSVD(cca_dim_);
+    rank_ = svd_solver.rank();
 
     // Extract CCA parameters from the SVD result.
     ExtractScaledSingularVectors(svd_solver, variance_x, variance_y);

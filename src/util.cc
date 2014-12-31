@@ -3,6 +3,7 @@
 #include "util.h"
 
 #include <math.h>
+#include <sys/stat.h>
 
 void StringManipulator::split(const string &line, const string &delimiter,
 			      vector<string> *tokens) {
@@ -34,4 +35,9 @@ string StringManipulator::print_time(double num_seconds) {
     string time_string = to_string(num_hours) + "h" + to_string(num_minutes)
 	+ "m" + to_string(num_seconds_minus_hm) + "s";
     return time_string;
+}
+
+bool FileManipulator::exists(const string &file_path) {
+    struct stat buffer;
+    return (stat(file_path.c_str(), &buffer) == 0);
 }

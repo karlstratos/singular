@@ -72,6 +72,10 @@ public:
     // Returns the dimension of the CCA subspace.
     size_t cca_dim() { return cca_dim_; }
 
+    // Returns the actually computed rank. This is equal to the CCA dimension
+    // unless the correlation matrix has a smaller rank.
+    size_t rank() { return rank_; }
+
     // Returns the smoothing term for calculating the correlation matrix.
     size_t smoothing_term() { return smoothing_term_; }
 
@@ -94,8 +98,12 @@ private:
     // Dimension of the CCA subspace.
     size_t cca_dim_;
 
+    // The actually computed rank. This is equal to the CCA dimension unless
+    // the correlation matrix has a smaller rank.
+    size_t rank_ = 0;
+
     // Smoothing term for calculating the correlation matrix.
-    double smoothing_term_;  // TODO: Set this automatically somehow.
+    double smoothing_term_;
 
     // CCA tranformation for the first view X: (dimension) x |X|.
     Eigen::MatrixXd cca_transformation_x_;
