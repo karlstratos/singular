@@ -77,15 +77,15 @@ gtest_main.a: gtest-all.o gtest_main.o
 # function.
 
 # Test files in the source directory.
-singular_test: singular_test.o sparsecca.o sparsesvd.o util.o gtest_main.a \
-               wordrep.o libsvd.a
+singular_test: singular_test.o sparsecca.o sparsesvd.o cluster.o util.o \
+	       gtest_main.a wordrep.o libsvd.a
 	       $(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
 singular_test.o: sparsecca.o sparsesvd.o
 	         $(CXX) -I $(EIGEN) $(CPPFLAGS) $(CXXFLAGS) -c \
 	         $(TEST_DIR)/singular_test.cc
 
-wordrep.o: sparsecca.o
+wordrep.o: sparsecca.o cluster.o
 	   $(CXX) -I $(EIGEN) $(CXXFLAGS) -c $(USER_DIR)/src/wordrep.cc
 
 sparsecca.o: sparsesvd.o
@@ -93,6 +93,9 @@ sparsecca.o: sparsesvd.o
 
 sparsesvd.o: util.o libsvd.a
 	     $(CXX) $(CXXFLAGS) -c $(USER_DIR)/src/sparsesvd.cc
+
+cluster.o: util.o
+	$(CXX) -I $(EIGEN) $(CXXFLAGS) -c $(USER_DIR)/src/cluster.cc
 
 util.o:
 	$(CXX) $(CXXFLAGS) -c $(USER_DIR)/src/util.cc

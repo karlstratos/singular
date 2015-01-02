@@ -5,6 +5,7 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -26,15 +27,25 @@ public:
     bool exists(const string &file_path);
 };
 
+class Sampler {
+public:
+    // [*Warning* Unchecked for correctness.]
+    // Samples the specified number of indices from a given range [0, range_cap)
+    // without replacement.
+    void sample_indices_without_replacement(size_t range_cap,
+					    size_t num_samples,
+					    vector<size_t> *samples);
+};
+
 // Assert macro that allows adding a message to an assertion upon failure. It
 // implictly performs string conversion: ASSERT(x > 0, "Negative x: " << x);
 #ifndef NDEBUG
 #   define ASSERT(condition, message) \
     do { \
         if (! (condition)) { \
-            std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
-                      << " line " << __LINE__ << ": " << message << std::endl; \
-            std::exit(EXIT_FAILURE); \
+            cerr << "Assertion `" #condition "` failed in " << __FILE__ \
+                      << " line " << __LINE__ << ": " << message << endl; \
+            exit(EXIT_FAILURE); \
         } \
     } while (false)
 #else

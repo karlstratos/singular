@@ -7,6 +7,7 @@
 #include <map>
 
 #include "sparsecca.h"
+#include "cluster.h"
 
 void CanonWord::SetOutputDirectory(const string &output_directory) {
     ASSERT(!output_directory.empty(), "Empty output directory.");
@@ -38,141 +39,33 @@ void CanonWord::ExtractStatistics(const string &corpus_file) {
 }
 
 void CanonWord::InduceLexicalRepresentations() {
-    ASSERT(rare_cutoff_ >= 0, "Shouldn't have negative cutoff at this point");
-    FileManipulator file_manipulator;
-    ASSERT(file_manipulator.exists(CountWordContextPath()), "File not found, "
-	   "read from the corpus: " << CountWordContextPath());
-    ASSERT(file_manipulator.exists(CountWordPath()), "File not found, "
-	   "read from the corpus: " << CountWordPath());
-    ASSERT(file_manipulator.exists(CountContextPath()), "File not found, "
-	   "read from the corpus: " << CountContextPath());
-    ASSERT(file_manipulator.exists(WordStr2NumPath()), "File not found, "
-	   "read from the corpus: " << WordStr2NumPath());
-    ASSERT(file_manipulator.exists(SortedWordTypesPath()), "File not found, "
-	   "read from the corpus: " << SortedWordTypesPath());
-
-    // Perform CCA on the computed counts.
-    time_t begin_time_cca = time(NULL);  // CCA time.
-    log_ << "[Performing CCA on the computed counts]" << endl;
-    log_ << "   CCA dimension: " << cca_dim_ << endl;
-
-    if (smoothing_term_ < 0) {
-	// If smoothing term is negative, set it based on the cutoff value
-	// (i.e., the smallest count) we used.
-	smoothing_term_ = rare_cutoff_;
-	log_ << "   Smoothing term: " << smoothing_term_ << " (automatically "
-	     << "set)" << endl << flush;
-    } else {
-	log_ << "   Smoothing term: " << smoothing_term_ << endl << flush;
-    }
-
-    SparseCCASolver sparsecca_solver(cca_dim_, smoothing_term_);
-    sparsecca_solver.PerformCCA(CountWordContextPath(),
-				CountWordPath(), CountContextPath());
-    double time_cca = difftime(time(NULL), begin_time_cca);
-    if (sparsecca_solver.rank() < cca_dim_) {
-	log_ << "   (*WARNING*) The correlation matrix has rank "
-	     << sparsecca_solver.rank() << " < " << cca_dim_ << "!" << endl;
-    }
-    StringManipulator string_manipulator;
-    singular_values_ = *sparsecca_solver.cca_correlations();
-    log_ << "   Condition number: "
-	 << singular_values_[0] / singular_values_[cca_dim_ - 1] << endl;
-    log_ << "   Time taken: " << string_manipulator.print_time(time_cca)
-	 << endl;
-
-    string line;
-    vector<string> tokens;
+    ASSERT(rare_cutoff_ >= 0, "Please specify a value for rare word cutoff.");
     if (word_num2str_.size() == 0 || word_str2num_.size() == 0) {
-	// Read the word-integer dictionary if we don't have it.
-	word_str2num_.clear();
-	ifstream word_str2num_file(WordStr2NumPath(), ios::in);
-	while (word_str2num_file.good()) {
-	    getline(word_str2num_file, line);
-	    if (line == "") { continue; }
-	    string_manipulator.split(line, " ", &tokens);
-	    word_num2str_[stoi(tokens[1])] = tokens[0];
-	    word_str2num_[tokens[0]] = stoi(tokens[1]);
-	}
+	// Load the (cutoff-ed) word-integer dictionary if we don't have it.
+	LoadWordIntegerDictionary();
     }
     if (wordcount_.size() == 0) {
-	// Read the word counts if we don't have them.
-	ifstream sorted_word_types_file(SortedWordTypesPath(), ios::in);
-	while (sorted_word_types_file.good()) {
-	    getline(sorted_word_types_file, line);
-	    if (line == "") { continue; }
-	    string_manipulator.split(line, " ", &tokens);
-	    string word_string = tokens[0];
-	    size_t word_count = stoi(tokens[1]);
-	    if (word_str2num_.find(word_string) != word_str2num_.end()) {
-		wordcount_[word_string] = word_count;
-	    } else {
-		wordcount_[kRareString_] += word_count;
-	    }
-	}
+	// Load the (cutoff-ed) word counts if we don't have them.
+	LoadWordCounts();
     }
-    // Sort word types in decreasing frequency.
+    // Prepare a list of (cutoff-ed) word types sorted in decreasing frequency.
     vector<pair<string, size_t> > sorted_wordcount(wordcount_.begin(),
 						   wordcount_.end());
     sort(sorted_wordcount.begin(), sorted_wordcount.end(),
 	 sort_pairs_second<string, size_t, greater<size_t> >());
 
-    // Collect and normalize the singular vectors for word representations.
-    log_ << endl << "[Collecting word vectors from singular vectors]" << endl;
-    log_ << "   Normalizing each word vector..." << endl << flush;
-    Eigen::MatrixXd *word_matrix = sparsecca_solver.cca_transformation_x();
-    for (size_t i = 0; i < word_matrix->cols(); ++i) {  // column = word
-	word_matrix->col(i).normalize();  // Normalize each column.
+    // Perform CCA on the computed counts.
+    Eigen::MatrixXd word_matrix = PerformCCAOnComputedCounts();
+    for (size_t i = 0; i < word_matrix.cols(); ++i) {
+	word_matrix.col(i).normalize();  // Normalize each column (word).
     }
 
-    // Put the vectors in the PCA basis.
-    log_ << "   Putting word vectors in the PCA basis..." << endl << flush;
-    for (size_t i = 0; i < word_matrix->rows(); ++i) {  // Centering.
-	double row_mean = word_matrix->row(i).mean();
-	for (size_t j = 0; j < word_matrix->cols(); ++j) {
-	    (*word_matrix)(i, j) -= row_mean;
-	}
-    }
-    Eigen::JacobiSVD<Eigen::MatrixXd> eigen_svd(*word_matrix,
-						Eigen::ComputeThinV);
-    Eigen::VectorXd pca_singular_values = eigen_svd.singularValues();
-    Eigen::VectorXd variance = pca_singular_values;
-    ofstream pca_variance_file(PCAVariancePath(), ios::out);
-    for (size_t i = 0; i < variance.size(); ++i) {
-	variance(i) *= variance(i);
-	variance(i) /= word_matrix->cols() - 1;
-	pca_variance_file << variance(i) << endl;
-    }
+    // Put word vectors in the PCA basis.
+    ChangeOfBasisToPCACoordinates(&word_matrix);
+    WriteWordVectors(sorted_wordcount);
 
-    Eigen::MatrixXd word_matrix_pca = eigen_svd.matrixV();
-    word_matrix_pca.transposeInPlace();
-    for (size_t i = 0; i < word_matrix_pca.rows(); ++i) {
-	word_matrix_pca.row(i) *= pca_singular_values(i);
-    }
-
-    wordvectors_.clear();
-    for (Word word = 0; word < word_num2str_.size(); ++word) {
-	string word_string = word_num2str_[word];
-	wordvectors_[word_string] = word_matrix_pca.col(word);
-    }
-
-    // Write word vectors.
-    ofstream wordvectors_file(WordVectorsPath(), ios::out);
-    for (size_t i = 0; i < wordcount_.size(); ++i) {
-	string word_string = sorted_wordcount[i].first;
-	size_t word_frequency = sorted_wordcount[i].second;
-	wordvectors_file << word_frequency << " " << word_string;
-	for (size_t j = 0; j < wordvectors_[word_string].size(); ++ j) {
-	    wordvectors_file << " " << wordvectors_[word_string](j);
-	}
-	wordvectors_file << endl;
-    }
-
-    // Write singular values.
-    ofstream singular_values_file(SingularValuesPath(), ios::out);
-    for (size_t i = 0; i < singular_values_.size(); ++i) {
-	singular_values_file << singular_values_[i] << endl;
-    }
+    // Do K-means clustering over word vectors.
+    PerformKMeans(cca_dim_, sorted_wordcount);
 }
 
 Word CanonWord::word_str2num(const string &word_string) {
@@ -399,15 +292,15 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
     unordered_map<Word, unordered_map<Word, double> > count_word_context;
     unordered_map<Word, double> count_word;  // i-th: count of word i
     unordered_map<Word, double> count_context;  // j-th: count of context j
-    size_t num_nonzeros = 0;  // Number of nonzero values in count_word_context.
 
-    log_ << endl << "[Counting...";
+    log_ << endl << "[Counting ";
     if (sentence_per_line_) {
-	log_ << " (1 line = 1 sentence)";
+	log_ << "(1 line = 1 sentence)";
     } else {
-	log_ << " (entire text = 1 sentence)";
+	log_ << "(entire text = 1 sentence)";
     }
     log_ << "]" << endl << flush;
+    time_t begin_time_counting = time(NULL);  // Counting time.
     ifstream file(corpus_file, ios::in);
     ASSERT(file.is_open(), "Cannot open file: " << corpus_file);
     string line;
@@ -431,9 +324,6 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 			window[context_index];
 		    Context context = AddContextIfUnknown(context_string);
 		    ++count_context[context];
-		    if (count_word_context[context][word] == 0) {
-			++num_nonzeros;  // New nonzero value.
-		    }
 		    ++count_word_context[context][word];
 		}
 		window.pop_front();
@@ -452,9 +342,6 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 			window[context_index];
 		    Context context = AddContextIfUnknown(context_string);
 		    ++count_context[context];
-		    if (count_word_context[context][word] == 0) {
-			++num_nonzeros;  // New nonzero value.
-		    }
 		    ++count_word_context[context][word];
 		}
 		window.pop_front();
@@ -478,17 +365,14 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 		    window[context_index];
 		Context context = AddContextIfUnknown(context_string);
 		++count_context[context];
-		if (count_word_context[context][word] == 0) {
-		    ++num_nonzeros;  // New nonzero value.
-		}
 		++count_word_context[context][word];
 	    }
 	    window.pop_front();
 	}
     }
-    log_ << "   " << count_word.size() << " by " << count_context.size()
+    double time_counting = difftime(time(NULL), begin_time_counting);
+    log_ << "   Time taken: " << string_manipulator.print_time(time_counting)
 	 << endl;
-    log_ << "   " << num_nonzeros << " nonzeros" << endl << endl <<  flush;
 
     // Write the context-integer mapping.
     ofstream context_str2num_file(ContextStr2NumPath(), ios::out);
@@ -510,5 +394,222 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
     ofstream count_context_file(CountContextPath(), ios::out);
     for (Context context = 0; context < count_context.size(); ++context) {
 	count_context_file << count_context[context] << endl;
+    }
+}
+
+string CanonWord::Signature(size_t version) {
+    ASSERT(version <= 2, "Unrecognized signature version: " << version);
+
+    string signature = "cutoff" + to_string(rare_cutoff_);
+    if (version >= 1) {
+	signature += "_window" + to_string(window_size_);
+	if (sentence_per_line_) {
+	    signature += "_sentperline";
+	}
+    }
+    if (version >= 2) {
+	signature += "_dim" + to_string(cca_dim_);
+	signature += "_smooth" + to_string(smoothing_term_);
+    }
+    return signature;
+}
+
+void CanonWord::LoadWordIntegerDictionary() {
+    FileManipulator file_manipulator;
+    ASSERT(file_manipulator.exists(WordStr2NumPath()), "File not found, "
+	   "read from the corpus: " << WordStr2NumPath());
+
+    word_str2num_.clear();
+    word_num2str_.clear();
+    string line;
+    vector<string> tokens;
+    StringManipulator string_manipulator;
+    ifstream word_str2num_file(WordStr2NumPath(), ios::in);
+    while (word_str2num_file.good()) {
+	getline(word_str2num_file, line);
+	if (line == "") { continue; }
+	string_manipulator.split(line, " ", &tokens);
+	word_num2str_[stoi(tokens[1])] = tokens[0];
+	word_str2num_[tokens[0]] = stoi(tokens[1]);
+    }
+}
+
+void CanonWord::LoadWordCounts() {
+    FileManipulator file_manipulator;
+    ASSERT(file_manipulator.exists(SortedWordTypesPath()), "File not found, "
+	   "read from the corpus: " << SortedWordTypesPath());
+    ASSERT(word_str2num_.size() > 0, "Word-integer dictionary not loaded.");
+
+    ifstream sorted_word_types_file(SortedWordTypesPath(), ios::in);
+    string line;
+    vector<string> tokens;
+    StringManipulator string_manipulator;
+    while (sorted_word_types_file.good()) {
+	getline(sorted_word_types_file, line);
+	if (line == "") { continue; }
+	string_manipulator.split(line, " ", &tokens);
+	string word_string = tokens[0];
+	size_t word_count = stoi(tokens[1]);
+	if (word_str2num_.find(word_string) != word_str2num_.end()) {
+	    wordcount_[word_string] = word_count;
+	} else {
+	    wordcount_[kRareString_] += word_count;
+	}
+    }
+}
+
+void CanonWord::WriteWordVectors(
+    const vector<pair<string, size_t> > &sorted_wordcount) {
+    ASSERT(wordvectors_.size() > 0, "No word vectors to write!");
+
+    ofstream wordvectors_file(WordVectorsPath(), ios::out);
+    for (size_t i = 0; i < sorted_wordcount.size(); ++i) {
+	string word_string = sorted_wordcount.at(i).first;
+	size_t word_frequency = sorted_wordcount.at(i).second;
+	wordvectors_file << word_frequency << " " << word_string;
+	for (size_t j = 0; j < wordvectors_[word_string].size(); ++ j) {
+	    wordvectors_file << " " << wordvectors_[word_string](j);
+	}
+	wordvectors_file << endl;
+    }
+}
+
+Eigen::MatrixXd CanonWord::PerformCCAOnComputedCounts() {
+    FileManipulator file_manipulator;
+    ASSERT(file_manipulator.exists(CountWordContextPath()), "File not found, "
+	   "read from the corpus: " << CountWordContextPath());
+    ASSERT(file_manipulator.exists(CountWordPath()), "File not found, "
+	   "read from the corpus: " << CountWordPath());
+    ASSERT(file_manipulator.exists(CountContextPath()), "File not found, "
+	   "read from the corpus: " << CountContextPath());
+
+    time_t begin_time_cca = time(NULL);  // CCA time.
+    log_ << endl << "[Performing CCA on the computed counts]" << endl;
+    string line;
+    vector<string> tokens;
+    StringManipulator string_manipulator;
+    ifstream count_word_context_file(CountWordContextPath(), ios::in);
+    getline(count_word_context_file, line);
+    string_manipulator.split(line, " ", &tokens);
+    log_ << "   Correlation matrix: " << tokens[0] << " x " << tokens[1]
+	 << " (" << tokens[2] << " nonzeros)" << endl;
+    log_ << "   CCA dimension: " << cca_dim_ << endl;
+
+    if (smoothing_term_ < 0) {
+	// If smoothing term is negative, set it based on the cutoff value
+	// (i.e., the smallest count) we used.
+	smoothing_term_ = rare_cutoff_;
+	log_ << "   Smoothing term: " << smoothing_term_ << " (automatically "
+	     << "set)" << endl << flush;
+    } else {
+	log_ << "   Smoothing term: " << smoothing_term_ << endl << flush;
+    }
+
+    SparseCCASolver sparsecca_solver(cca_dim_, smoothing_term_);
+    sparsecca_solver.PerformCCA(CountWordContextPath(),
+				CountWordPath(), CountContextPath());
+    double time_cca = difftime(time(NULL), begin_time_cca);
+    if (sparsecca_solver.rank() < cca_dim_) {
+	log_ << "   (*WARNING*) The correlation matrix has rank "
+	     << sparsecca_solver.rank() << " < " << cca_dim_ << "!" << endl;
+    }
+
+    singular_values_ = *sparsecca_solver.cca_correlations();
+    log_ << "   Condition number: "
+	 << singular_values_[0] / singular_values_[cca_dim_ - 1] << endl;
+    log_ << "   Time taken: " << string_manipulator.print_time(time_cca)
+	 << endl;
+
+    // Write singular values.
+    ofstream singular_values_file(SingularValuesPath(), ios::out);
+    for (size_t i = 0; i < singular_values_.size(); ++i) {
+	singular_values_file << singular_values_[i] << endl;
+    }
+    return *sparsecca_solver.cca_transformation_x();
+}
+
+void CanonWord::ChangeOfBasisToPCACoordinates(Eigen::MatrixXd *word_matrix) {
+    time_t begin_time_pca = time(NULL);  // PCA time.
+    log_ << endl << "[Change of basis to the PCA coordinates]" << endl << flush;
+    for (size_t i = 0; i < word_matrix->rows(); ++i) {
+	// Center each dimension (row) to have mean zero.
+	double row_mean = word_matrix->row(i).mean();
+	for (size_t j = 0; j < word_matrix->cols(); ++j) {
+	    (*word_matrix)(i, j) -= row_mean;
+	}
+    }
+
+    // Do SVD on the centered word matrix and compute right singular vectors.
+    Eigen::JacobiSVD<Eigen::MatrixXd> eigen_svd(*word_matrix,
+						Eigen::ComputeThinV);
+    Eigen::VectorXd singular_values = eigen_svd.singularValues();
+
+    // Compute variance in each dimension.
+    ofstream pca_variance_file(PCAVariancePath(), ios::out);
+    for (size_t i = 0; i < singular_values.size(); ++i) {
+	double ith_variance =
+	    pow(singular_values(i), 2) / (word_matrix->cols() - 1);
+	pca_variance_file << ith_variance << endl;
+    }
+
+    // Compute word vectors in the PCA basis: right singular vectors times
+    // scaled by singular values.
+    Eigen::MatrixXd word_matrix_pca = eigen_svd.matrixV();
+    word_matrix_pca.transposeInPlace();
+    for (size_t i = 0; i < word_matrix_pca.rows(); ++i) {
+	word_matrix_pca.row(i) *= singular_values(i);
+    }
+    double time_pca = difftime(time(NULL), begin_time_pca);
+    StringManipulator string_manipulator;
+    log_ << "   Time taken: " << string_manipulator.print_time(time_pca)
+	 << endl;
+
+    // Set word vectors as the columns of word_matrix_pca.
+    wordvectors_.clear();
+    for (Word word = 0; word < word_num2str_.size(); ++word) {
+	string word_string = word_num2str_[word];
+	wordvectors_[word_string] = word_matrix_pca.col(word);
+    }
+}
+
+void CanonWord::PerformKMeans(
+    size_t K, const vector<pair<string, size_t> > &sorted_wordcount) {
+    ASSERT(wordvectors_.size() > 0, "No word vectors to do K-means on!");
+
+    // Prepare a list of word vectors sorted in decreasing frequency.
+    vector<Eigen::VectorXd> sorted_vectors(sorted_wordcount.size());
+    for (size_t i = 0; i < sorted_wordcount.size(); ++i) {
+	string word_string = sorted_wordcount.at(i).first;
+	sorted_vectors[i] = wordvectors_[word_string];
+    }
+
+    // Do K-means clustering over word vectors sorted in decreasing frequency
+    // where K is the CCA dimension.
+    time_t begin_time_kmeans = time(NULL);  // K-means time.
+    log_ << endl << "[" << K << "-means clustering with frequent words "
+	 << "as initial centroids]" << endl;
+    vector<size_t> cluster_mapping;
+    KMeansSolver kmeans_solver;
+    kmeans_solver.Cluster(sorted_vectors, K, &cluster_mapping);
+    double time_kmeans = difftime(time(NULL), begin_time_kmeans);
+    StringManipulator string_manipulator;
+    log_ << "   Time taken: " << string_manipulator.print_time(time_kmeans)
+	 << endl;
+
+    // Write the clusters.
+    unordered_map<size_t, vector<Word> > cluster2word;
+    for (Word word = 0; word < sorted_wordcount.size(); ++word) {
+	size_t assigned_cluster_num = cluster_mapping[word];
+	cluster2word[assigned_cluster_num].push_back(word);
+    }
+    ofstream kmeans_file(KMeansPath(), ios::out);
+    for (const auto &cluster_pair : cluster2word) {
+	size_t cluster_num = cluster_pair.first;
+	for (Word word : cluster_pair.second) {
+	    string word_string = sorted_wordcount[word].first;
+	    size_t word_frequency = sorted_wordcount[word].second;
+	    kmeans_file << cluster_num << " " << word_string << " "
+			<< word_frequency << endl;
+	}
     }
 }

@@ -3,6 +3,7 @@
 #include "util.h"
 
 #include <math.h>
+#include <random>
 #include <sys/stat.h>
 
 void StringManipulator::split(const string &line, const string &delimiter,
@@ -40,4 +41,25 @@ string StringManipulator::print_time(double num_seconds) {
 bool FileManipulator::exists(const string &file_path) {
     struct stat buffer;
     return (stat(file_path.c_str(), &buffer) == 0);
+}
+
+// [*Warning* Unchecked for correctness.]
+void Sampler::sample_indices_without_replacement(size_t range_cap,
+						 size_t num_samples,
+						 vector<size_t> *samples) {
+    size_t num_addressed = 0;  // Number of indices addressed so far.
+    size_t num_selected = 0;  // Number of indices actually selected so far.
+    (*samples).resize(num_samples);
+
+    while (num_selected < num_samples) {
+	random_device device;
+	default_random_engine engine(device());
+	uniform_real_distribution<double> unif(0.0, 1.0);
+	double u = unif(engine);  // u from (0, 1) uniformly at random.
+
+        if ( (range_cap - num_addressed) * u < num_samples - num_selected ) {
+            (*samples)[num_selected++] = num_addressed;
+        }
+	++num_addressed;
+    }
 }

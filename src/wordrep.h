@@ -76,22 +76,17 @@ public:
 
     // Returns the path to the word-context count file.
     string CountWordContextPath() {
-	return output_directory_ + "/count_word_context_cutoff" +
-	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
-	    "_sentperline" + to_string(sentence_per_line_);
+	return output_directory_ + "/count_word_context_" + Signature(1);
     }
 
     // Returns the path to the word count file.
     string CountWordPath() {
-	return output_directory_ + "/count_word_cutoff" +
-	    to_string(rare_cutoff_);
+	return output_directory_ + "/count_word_" + Signature(0);
     }
 
     // Returns the path to the context count file.
     string CountContextPath() {
-	return output_directory_ + "/count_context_cutoff" +
-	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
-	    "_sentperline" + to_string(sentence_per_line_);
+	return output_directory_ + "/count_context_" + Signature(1);
     }
 
     // Returns the integer ID corresponding to a word string.
@@ -136,46 +131,68 @@ private:
 
     // Returns the path to the rare word file.
     string RarePath() {
-	return output_directory_ + "/rare_words_cutoff" +
-	    to_string(rare_cutoff_);
+	return output_directory_ + "/rare_words_" + Signature(0);
     }
 
     // Returns the path to the str2num mapping for words.
     string WordStr2NumPath() {
-	return output_directory_ + "/word_str2num_cutoff" +
-	    to_string(rare_cutoff_);
+	return output_directory_ + "/word_str2num_" + Signature(0);
     }
 
     // Returns the path to the str2num mapping for context.
     string ContextStr2NumPath() {
-	return output_directory_ + "/context_str2num_cutoff" +
-	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
-	    "_sentperline" + to_string(sentence_per_line_);
+	return output_directory_ + "/context_str2num_" + Signature(1);
     }
 
     // Returns the path to the word vectors.
     string WordVectorsPath() {
-	return output_directory_ + "/wordvectors_cutoff" +
-	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
-	    "_sentperline" + to_string(sentence_per_line_) + "_dim" +
-	    to_string(cca_dim_) + "_smooth" + to_string(smoothing_term_);
+	return output_directory_ + "/wordvectors_" + Signature(2);
     }
 
     // Returns the path to the singular values.
     string SingularValuesPath() {
-	return output_directory_ + "/singular_values_cutoff" +
-	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
-	    "_sentperline" + to_string(sentence_per_line_) + "_dim" +
-	    to_string(cca_dim_) + "_smooth" + to_string(smoothing_term_);
+	return output_directory_ + "/singular_values_" + Signature(2);
     }
 
     // Returns the path to the PCA variance values.
     string PCAVariancePath() {
-	return output_directory_ + "/pca_variance_cutoff" +
-	    to_string(rare_cutoff_) + "_window" + to_string(window_size_) +
-	    "_sentperline" + to_string(sentence_per_line_) + "_dim" +
-	    to_string(cca_dim_) + "_smooth" + to_string(smoothing_term_);
+	return output_directory_ + "/pca_variance_" + Signature(2);
     }
+
+    // Returns the path to the K-means assignment.
+    string KMeansPath() {
+	return output_directory_ + "/kmeans_" + Signature(2);
+    }
+
+    // Returns a string signature of tunable parameters.
+    //    version=0: rare_cutoff_
+    //    version=1: rare_cutoff_, window_size_, sentence_per_line_
+    //    version=2: rare_cutoff_, window_size_, sentence_per_line_, cca_dim_,
+    //               smoothing_term_
+    string Signature(size_t version);
+
+    // Loads the word-integer dictionary from a cached file.
+    void LoadWordIntegerDictionary();
+
+    // Loads the word counts from a cached file.
+    void LoadWordCounts();
+
+    // Write word vectors sorted in decreasing frequency.
+    void WriteWordVectors(
+	const vector<pair<string, size_t> > &sorted_wordcount);
+
+    // Performs CCA on cached count files and returns the projection for the
+    // first view.
+    Eigen::MatrixXd PerformCCAOnComputedCounts();
+
+    // Performs PCA on word vectors to put them in the PCA basis. Assumes that
+    // each column of the matrix is a word vector.
+    void ChangeOfBasisToPCACoordinates(Eigen::MatrixXd *word_matrix);
+
+    // Do K-means clustering over word vectors. It initializes the K centroids
+    // as the K most frequent word types.
+    void PerformKMeans(size_t K,
+		       const vector<pair<string, size_t> > &sorted_wordcount);
 
     // Count of each word string type appearing in a corpus.
     unordered_map<string, size_t> wordcount_;
