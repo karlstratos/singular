@@ -165,6 +165,8 @@ void CanonWord::DetermineRareWords() {
     vector<pair<string, size_t> > sorted_wordcount;
     ifstream sorted_word_types_file(SortedWordTypesPath(), ios::in);
     wordcount_.clear();
+    word_str2num_.clear();
+    word_num2str_.clear();
     num_words_ = 0;
     while (sorted_word_types_file.good()) {
 	getline(sorted_word_types_file, line);
@@ -173,6 +175,7 @@ void CanonWord::DetermineRareWords() {
 	string word_string = tokens[0];
 	size_t word_count = stoi(tokens[1]);
 	sorted_wordcount.push_back(make_pair(word_string, word_count));
+	AddWordIfUnknown(word_string);
 	wordcount_[word_string] += word_count;
 	num_words_ += word_count;
     }
@@ -213,7 +216,6 @@ void CanonWord::DetermineRareWords() {
 		currently_considered_words.clear();
 		double rare_mass =
 		    ((double) accumulated_count * 100) / num_words_;
-		//cout << rare_cutoff_ << endl << rare_mass << endl;
 		if (rare_mass > 2.0) {
 		    // If the rare word mass is more than 5% of the unigram
 		    // mass, stop thresholding.
