@@ -54,18 +54,16 @@ void CanonWord::InduceLexicalRepresentations() {
     sort(sorted_wordcount.begin(), sorted_wordcount.end(),
 	 sort_pairs_second<string, size_t, greater<size_t> >());
 
-    // Perform CCA on the computed counts.
-    Eigen::MatrixXd word_matrix = PerformCCAOnComputedCounts();
-    for (size_t i = 0; i < word_matrix.cols(); ++i) {
-	word_matrix.col(i).normalize();  // Normalize each column (word).
+    // Induce vector representations of word types based on cached count files.
+    InduceWordVectors(sorted_wordcount);
+
+    if (num_clusters_ < 0) {
+	// Set the default number of clusters to be the CCA dimension.
+	num_clusters_ = cca_dim_;
     }
 
-    // Put word vectors in the PCA basis.
-    ChangeOfBasisToPCACoordinates(&word_matrix);
-    WriteWordVectors(sorted_wordcount);
-
     // Do K-means clustering over word vectors.
-    PerformKMeans(cca_dim_, sorted_wordcount);
+    PerformKMeans(num_clusters_, sorted_wordcount);
 }
 
 Word CanonWord::word_str2num(const string &word_string) {
@@ -399,8 +397,56 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
     }
 }
 
+void CanonWord::InduceWordVectors(
+    const vector<pair<string, size_t> > &sorted_wordcount) {
+    FileManipulator file_manipulator;
+    if (!file_manipulator.exists(WordVectorsPath())) {
+	// If word vectors are not already computed, perform CCA on word counts.
+	Eigen::MatrixXd word_matrix = PerformCCAOnComputedCounts();
+	for (size_t i = 0; i < word_matrix.cols(); ++i) {
+	    word_matrix.col(i).normalize();  // Normalize each column (word).
+	}
+
+	// Put word vectors in the PCA basis.
+	ChangeOfBasisToPCACoordinates(&word_matrix);
+
+	// Write word vectors sorted in decreasing frequency.
+	ofstream wordvectors_file(WordVectorsPath(), ios::out);
+	for (size_t i = 0; i < sorted_wordcount.size(); ++i) {
+	    string word_string = sorted_wordcount.at(i).first;
+	    size_t word_count = sorted_wordcount.at(i).second;
+	    wordvectors_file << word_count << " " << word_string;
+	    ASSERT(wordvectors_.find(word_string) != wordvectors_.end(),
+		   "No vector computed for the word: " << word_string);
+	    for (size_t j = 0; j < wordvectors_[word_string].size(); ++ j) {
+		wordvectors_file << " " << wordvectors_[word_string](j);
+	    }
+	    wordvectors_file << endl;
+	}
+    } else {
+	// Otherwise, load the computed word vectors.
+	wordvectors_.clear();
+	string line;
+	vector<string> tokens;
+	StringManipulator string_manipulator;
+	ifstream wordvectors_file(WordVectorsPath(), ios::in);
+	while (wordvectors_file.good()) {
+	    getline(wordvectors_file, line);
+	    if (line == "") { continue; }
+
+	    // line = [count] [word_string] [value_{1}] ... [value_{cca_dim_}]
+	    string_manipulator.split(line, " ", &tokens);
+	    Eigen::VectorXd vector(cca_dim_);
+	    for (size_t i = 0; i < cca_dim_; ++i) {
+		vector(i) = stod(tokens[i + 2]);
+	    }
+	    wordvectors_[tokens[1]] = vector;
+	}
+    }
+}
+
 string CanonWord::Signature(size_t version) {
-    ASSERT(version <= 2, "Unrecognized signature version: " << version);
+    ASSERT(version <= 3, "Unrecognized signature version: " << version);
 
     string signature = "cutoff" + to_string(rare_cutoff_);
     if (version >= 1) {
@@ -412,6 +458,9 @@ string CanonWord::Signature(size_t version) {
     if (version >= 2) {
 	signature += "_dim" + to_string(cca_dim_);
 	signature += "_smooth" + to_string(smoothing_term_);
+    }
+    if (version >= 3) {
+	signature += "_cluster" + to_string(num_clusters_);
     }
     return signature;
 }
@@ -457,22 +506,6 @@ void CanonWord::LoadWordCounts() {
 	} else {
 	    wordcount_[kRareString_] += word_count;
 	}
-    }
-}
-
-void CanonWord::WriteWordVectors(
-    const vector<pair<string, size_t> > &sorted_wordcount) {
-    ASSERT(wordvectors_.size() > 0, "No word vectors to write!");
-
-    ofstream wordvectors_file(WordVectorsPath(), ios::out);
-    for (size_t i = 0; i < sorted_wordcount.size(); ++i) {
-	string word_string = sorted_wordcount.at(i).first;
-	size_t word_frequency = sorted_wordcount.at(i).second;
-	wordvectors_file << word_frequency << " " << word_string;
-	for (size_t j = 0; j < wordvectors_[word_string].size(); ++ j) {
-	    wordvectors_file << " " << wordvectors_[word_string](j);
-	}
-	wordvectors_file << endl;
     }
 }
 

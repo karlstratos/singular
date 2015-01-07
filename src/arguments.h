@@ -42,6 +42,9 @@ public:
     // Returns the flag for recomputing all counts from scratch.
     bool from_scratch() { return from_scratch_; }
 
+    // Returns the number of clusters.
+    int num_clusters() { return num_clusters_; }
+
 private:
     // Path to a text corpus.
     string corpus_path_;
@@ -66,6 +69,9 @@ private:
 
     // Recompute counts from scratch (no caching)?
     bool from_scratch_ = false;
+
+    // Number of clusters. If negative (default), it's set as the CCA dimension.
+    int num_clusters_ = -1;
 };
 
 #endif  // ARGUMENTS_H_

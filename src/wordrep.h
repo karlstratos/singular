@@ -60,6 +60,9 @@ public:
 	smoothing_term_ = smoothing_term;
     }
 
+    // Sets the number of clusters.
+    void set_num_clusters(int num_clusters) { num_clusters_ = num_clusters; }
+
     // Returns the computed word vectors
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
@@ -118,6 +121,10 @@ private:
     // corpus file.
     void ComputeCovariance(const string &corpus_file);
 
+    // Induces vector representations of word types based on cached count files.
+    void InduceWordVectors(
+	const vector<pair<string, size_t> > &sorted_wordcount);
+
     // Returns the path to the corpus information file.
     string CorpusInfoPath() { return output_directory_ + "/corpus_info"; }
 
@@ -161,7 +168,7 @@ private:
 
     // Returns the path to the K-means assignment.
     string KMeansPath() {
-	return output_directory_ + "/kmeans_" + Signature(2);
+	return output_directory_ + "/kmeans_" + Signature(3);
     }
 
     // Returns a string signature of tunable parameters.
@@ -169,6 +176,8 @@ private:
     //    version=1: rare_cutoff_, window_size_, sentence_per_line_
     //    version=2: rare_cutoff_, window_size_, sentence_per_line_, cca_dim_,
     //               smoothing_term_
+    //    version=3: rare_cutoff_, window_size_, sentence_per_line_, cca_dim_,
+    //               smoothing_term_, num_clusters_
     string Signature(size_t version);
 
     // Loads the word-integer dictionary from a cached file.
@@ -176,10 +185,6 @@ private:
 
     // Loads the word counts from a cached file.
     void LoadWordCounts();
-
-    // Write word vectors sorted in decreasing frequency.
-    void WriteWordVectors(
-	const vector<pair<string, size_t> > &sorted_wordcount);
 
     // Performs CCA on cached count files and returns the projection for the
     // first view.
@@ -221,6 +226,12 @@ private:
     // Special string for representing the out-of-sentence buffer.
     const string kBufferString_ = "<!>";
 
+    // Computed word vectors.
+    unordered_map<string, Eigen::VectorXd> wordvectors_;
+
+    // Singular values of the correlation matrix.
+    Eigen::VectorXd singular_values_;
+
     // Path to the output directory.
     string output_directory_;
 
@@ -240,13 +251,10 @@ private:
 
     // Smoothing term for calculating the correlation matrix. If it's negative,
     // we let the model decide based on the smallest word count.
-    int smoothing_term_ = -1.0;
+    int smoothing_term_ = -1;
 
-    // Computed word vectors.
-    unordered_map<string, Eigen::VectorXd> wordvectors_;
-
-    // Singular values of the correlation matrix.
-    Eigen::VectorXd singular_values_;
+    // Number of clusters. If negative (default), it's set as the CCA dimension.
+    int num_clusters_ = -1;
 };
 
 #endif  // WORDREP_H

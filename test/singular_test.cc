@@ -374,37 +374,20 @@ TEST_F(CanonWordSimpleExample, SVDLIBCFailsWithoutSmoothingCutoff0WindowSize2) {
     canonword.ExtractStatistics(temp_file_path_);
     canonword.InduceLexicalRepresentations();
 
-    // The correlation matrix is:
+    // The correlation matrix is (up to some row-permutation):
     //    1.0000 0.0000 0.0000 0.0000 0.0000 0.0000
     //    0.0000 0.5774 0.0000 0.5774 0.5774 0.0000
     //    0.0000 0.0000 0.7071 0.0000 0.0000 0.0000
     //    0.0000 0.0000 0.7071 0.0000 0.0000 0.0000
     //    0.0000 0.0000 0.0000 0.0000 0.0000 1.0000
-    // Its two largest singular values are too close (1 and 1), so SVDLIBC
-    // gives rubbish singular vectors. Matlab's top 2 left singular vectors are:
-    //    -0.0000    0.2594
-    //    -1.0000   -0.0000
-    //    -0.0000    0.0000
-    //    -0.0000    0.0000
-    //    -0.0000   -0.9658
-    // SVDLIBC's top 2 left singular vectors are:
-    //    -0.0000  0.0001
-    //     0.8394  0.2564
-    //     0.3814 -0.2012
-    //     0.3814 -0.2012
-    //    -0.0668  0.9237
-    // The model does PCA on this wrong matrix after row normalization.
+    // Its two largest singular values are close (1.0001 and 1.0000).
     Eigen::VectorXd singular_values = *canonword.singular_values();
-    // These singular values are actually better than usual: SVDLIBC can return
-    // rank 0 and zero singular values when it has this problem!
-    EXPECT_NEAR(1.0000, singular_values(0), tol_);
+    EXPECT_NEAR(1.0000, singular_values(0), tol_);  // Wrong: should be 1.0001.
     EXPECT_NEAR(1.0000, singular_values(1), tol_);
 
-    unordered_map<string, Eigen::VectorXd> vectors =
-	*canonword.wordvectors();
-    Eigen::VectorXd vector1 = vectors[canonword.word_num2str(1)];
-    EXPECT_NEAR(0.3338, fabs(vector1(0)), tol_);  // Wrong.
-    EXPECT_NEAR(0.4164, fabs(vector1(1)), tol_);  // Wrong.
+    // Note: I'm not checking them explicitly, but SVDLIBC gives rubbish
+    // singular vectors. But these singular values are actually better than
+    // usual: SVDLIBC can even return rank 0 and zero singular values!
 }
 
 // Checks that SVDLIBC doesn't fail if some smoothing is applied to make the gap
@@ -418,43 +401,18 @@ TEST_F(CanonWordSimpleExample, SVDLIBCSucceedsWithSmoothingCutoff0WindowSize2) {
     canonword.ExtractStatistics(temp_file_path_);
     canonword.InduceLexicalRepresentations();
 
-    // The correlation matrix is now:
+    // The correlation matrix is now (up to some row-permutation):
     //    0.7500 0.0000 0.0000 0.0000 0.0000 0.0000
     //    0.0000 0.3536 0.0000 0.3536 0.3536 0.0000
     //    0.0000 0.0000 0.4082 0.0000 0.0000 0.0000
     //    0.0000 0.0000 0.4082 0.0000 0.0000 0.0000
     //    0.0000 0.0000 0.0000 0.0000 0.0000 0.5000
     // Its two largest singular values are not as close (0.7500 and 0.6124),
-    // so SVDLIBC gives correct top 2 left singular vectors, which are:
-    //    1.0000 0.0000
-    //    0.0000 1.0000
-    //    0.0000 0.0000
-    //    0.0000 0.0000
-    //    0.0000 0.0000
-    // HOWEVER, the "zero" values are not truly zero but some tiny values. After
-    // row normalization, they blow up to arbitrary values as follows:
-    //    1.0000    0.0000
-    //   -0.0000    1.0000
-    //    0.7742    0.6329
-    //    0.7742    0.6329
-    //   -0.9976    0.0690
-    // This affects the post-processing PCA step. We will take this as ground
-    // truth (Matlab gives a different blow-up) and do PCA on this matrix, which
-    // gives:
-    //   0.6437   -0.5287
-    //  -0.2596    0.5594
-    //   0.4774    0.1223
-    //   0.4774    0.1223
-    //  -1.3390   -0.2754
+    // so SVDLIBC gives correct top 2 left singular vectors (I won't check for
+    // them explictly).
     Eigen::VectorXd singular_values = *canonword.singular_values();
-    EXPECT_NEAR(0.7500, singular_values(0), tol_);
-    EXPECT_NEAR(0.6124, singular_values(1), tol_);
-
-    unordered_map<string, Eigen::VectorXd> vectors =
-	*canonword.wordvectors();
-    Eigen::VectorXd vector1 = vectors[canonword.word_num2str(1)];
-    EXPECT_NEAR(0.2596, fabs(vector1(0)), tol_);
-    EXPECT_NEAR(0.5594, fabs(vector1(1)), tol_);
+    EXPECT_NEAR(0.7500, singular_values(0), tol_);  // Correct.
+    EXPECT_NEAR(0.6124, singular_values(1), tol_);  // Correct.
 }
 
 // Only checks counts with cutoff 1 and window size 3.
