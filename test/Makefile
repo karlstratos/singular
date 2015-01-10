@@ -27,7 +27,12 @@ WARN = -Wall
 DEBUG = -g
 
 # Flags passed to the C++ compiler.
-CXXFLAGS = $(WARN) $(DEBUG) -std=c++11 -stdlib=libc++
+CXXFLAGS = $(WARN) $(DEBUG) -std=c++11
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+# Tested on Apple (Darwin) clang version 4.0 (based on LLVM 3.1svn)
+	CFLAGS += -stdlib=libc++
+endif
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
@@ -79,7 +84,7 @@ gtest_main.a: gtest-all.o gtest_main.o
 # Test files in the source directory.
 singular_test: singular_test.o sparsecca.o sparsesvd.o cluster.o util.o \
 	       gtest_main.a wordrep.o libsvd.a
-	       $(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
+	       $(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ -lpthread
 
 singular_test.o: sparsecca.o sparsesvd.o
 	         $(CXX) -I $(EIGEN) $(CPPFLAGS) $(CXXFLAGS) -c \
