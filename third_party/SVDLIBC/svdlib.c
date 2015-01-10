@@ -257,9 +257,11 @@ static SMat svdLoadSparseTextHBFile(FILE *file) {
   long i, x, rows, cols, vals, num_mat;
   SMat S;
   /* Skip the header line: */
-  if (!fgets(line, 128, file));
+  if (!fgets(line, 128, file)) 
+    ;
   /* Skip the line giving the number of lines in this file: */
-  if (!fgets(line, 128, file));
+  if (!fgets(line, 128, file))
+    ;
   /* Read the line with useful dimensions: */
   if (fscanf(file, "%*s%ld%ld%ld%ld\n",
              &rows, &cols, &vals, &num_mat) != 4) {
@@ -272,7 +274,8 @@ static SMat svdLoadSparseTextHBFile(FILE *file) {
     return NULL;
   }
   /* Skip the line giving the formats: */
-  if (!fgets(line, 128, file));
+  if (!fgets(line, 128, file))
+    ;
 
   S = svdNewSMat(rows, cols, vals);
   if (!S) return NULL;
