@@ -31,7 +31,7 @@ CXXFLAGS = $(WARN) $(DEBUG) -std=c++11
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Tested on Apple (Darwin) clang version 4.0 (based on LLVM 3.1svn)
-	CFLAGS += -stdlib=libc++
+	CXXFLAGS += -stdlib=libc++
 endif
 
 # All tests produced by this Makefile.  Remember to add new tests you
