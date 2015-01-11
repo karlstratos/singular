@@ -316,7 +316,7 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 		token : kRareString_;
 	    window.push_back(new_string);
 	    if (window.size() >= window_size_) {
-		 // Collect statistics from the full window.
+		// Collect statistics from the full window.
 		Word word = word_str2num_[window[word_index]];
 		++count_word[word];
 		for (Word context_index : context_indices) {
@@ -330,8 +330,11 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 	    }
 	}
 
-	if (sentence_per_line_) {
-	    // Put end buffering and collect counts.
+	if (sentence_per_line_) {  // End-buffer and collect counts.
+	    // But first fill up the window.
+	    while (window.size() < window_size_) {
+		window.push_back(kBufferString_);
+	    }
 	    for (size_t buffering = word_index + 1; buffering < window_size_;
 		 ++buffering) {
 		window.push_back(kBufferString_);
@@ -353,8 +356,11 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 	}
     }
 
-    if (!sentence_per_line_) {
-	// Put end buffering and collect counts.
+    if (!sentence_per_line_) {  // End-buffer and collect counts.
+	// But first fill up the window.
+	while (window.size() < window_size_) {
+	    window.push_back(kBufferString_);
+	}
 	for (size_t buffering = word_index + 1; buffering < window_size_;
 	     ++buffering) {
 	    window.push_back(kBufferString_);
