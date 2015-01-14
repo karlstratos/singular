@@ -262,7 +262,7 @@ private:
     int num_clusters_ = -1;
 
     // Maximum number of K-means iterations we shall humour.
-    size_t max_num_kmeans_iterations_ = 10;
+    size_t max_num_kmeans_iterations_ = 20;
 };
 
 #endif  // WORDREP_H
