@@ -45,6 +45,9 @@ public:
     // Returns the number of clusters.
     int num_clusters() { return num_clusters_; }
 
+    // Returns the maximum number of K-means iterations.
+    size_t max_num_kmeans_iterations() { return max_num_kmeans_iterations_; }
+
 private:
     // Path to a text corpus.
     string corpus_path_;
@@ -72,6 +75,9 @@ private:
 
     // Number of clusters. If negative (default), it's set as the CCA dimension.
     int num_clusters_ = -1;
+
+    // Maximum number of K-means iterations.
+    size_t max_num_kmeans_iterations_ = 10;
 };
 
 #endif  // ARGUMENTS_H_

@@ -63,6 +63,11 @@ public:
     // Sets the number of clusters.
     void set_num_clusters(int num_clusters) { num_clusters_ = num_clusters; }
 
+    // Sets the maximum number of K-means iterations.
+    void set_max_num_kmeans_iterations(int max_num_kmeans_iterations) {
+	max_num_kmeans_iterations_ = max_num_kmeans_iterations;
+    }
+
     // Returns the computed word vectors
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
@@ -255,6 +260,9 @@ private:
 
     // Number of clusters. If negative (default), it's set as the CCA dimension.
     int num_clusters_ = -1;
+
+    // Maximum number of K-means iterations we shall humour.
+    size_t max_num_kmeans_iterations_ = 10;
 };
 
 #endif  // WORDREP_H

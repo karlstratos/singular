@@ -4,8 +4,9 @@
 
 #include <limits>
 
-void KMeansSolver::Cluster(const vector<Eigen::VectorXd> &ordered_points,
-			   size_t K, vector<size_t> *cluster_mapping) {
+bool KMeansSolver::Cluster(const vector<Eigen::VectorXd> &ordered_points,
+			   size_t K, vector<size_t> *cluster_mapping,
+			   size_t max_num_iterations) {
     ASSERT(ordered_points.size() > 0, "Empty set of points.");
     size_t dimension = ordered_points[0].size();
 
@@ -22,7 +23,9 @@ void KMeansSolver::Cluster(const vector<Eigen::VectorXd> &ordered_points,
     // Step 2 until convergence.
     cluster_mapping->clear();
     cluster_mapping->resize(ordered_points.size());
-    while (true) {
+    size_t num_iterations = 0;
+    bool clustering_is_converged = false;
+    while (num_iterations < max_num_iterations) {
 	// Step 1: Assign each point to the closest centroid (cluster).
 	bool clusters_have_not_changed = true;
 	for (size_t point_num = 0; point_num < ordered_points.size();
@@ -43,7 +46,10 @@ void KMeansSolver::Cluster(const vector<Eigen::VectorXd> &ordered_points,
 	    }
 	    (*cluster_mapping)[point_num] = closest_centroid_num;
 	}
-	if (clusters_have_not_changed) { break; }  // Converged.
+	if (clusters_have_not_changed) {
+	    clustering_is_converged = true;
+	    break;
+	}
 
 	// Step 2: Re-compute centroids as the means of clustered points.
 	centroid.clear();
@@ -71,5 +77,7 @@ void KMeansSolver::Cluster(const vector<Eigen::VectorXd> &ordered_points,
 		}
 	    }
 	}
+	++num_iterations;
     }
+    return clustering_is_converged;
 }

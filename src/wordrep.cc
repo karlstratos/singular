@@ -628,12 +628,20 @@ void CanonWord::PerformKMeans(
     // where K is the CCA dimension.
     time_t begin_time_kmeans = time(NULL);  // K-means time.
     log_ << endl << "[" << K << "-means clustering with frequent words "
-	 << "as initial centroids]" << endl;
+	 << "as initial centroids (max " << max_num_kmeans_iterations_
+	 << " iterations)]" << endl;
     vector<size_t> cluster_mapping;
     KMeansSolver kmeans_solver;
-    kmeans_solver.Cluster(sorted_vectors, K, &cluster_mapping);
+    bool kmeans_converged =
+	kmeans_solver.Cluster(sorted_vectors, K, &cluster_mapping,
+			      max_num_kmeans_iterations_);
     double time_kmeans = difftime(time(NULL), begin_time_kmeans);
     StringManipulator string_manipulator;
+    if (kmeans_converged) {
+	log_ << "   Converged" << endl;
+    } else {
+	log_ << "   Did not converge" << endl;
+    }
     log_ << "   Time taken: " << string_manipulator.print_time(time_kmeans)
 	 << endl;
 
