@@ -60,14 +60,6 @@ public:
 	smoothing_term_ = smoothing_term;
     }
 
-    // Sets the number of clusters.
-    void set_num_clusters(int num_clusters) { num_clusters_ = num_clusters; }
-
-    // Sets the maximum number of K-means iterations.
-    void set_max_num_kmeans_iterations(int max_num_kmeans_iterations) {
-	max_num_kmeans_iterations_ = max_num_kmeans_iterations;
-    }
-
     // Returns the computed word vectors
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
@@ -161,6 +153,11 @@ private:
 	return output_directory_ + "/wordvectors_" + Signature(2);
     }
 
+    // Returns the path to the word vectors in a PCA basis.
+    string WordVectorsPCAPath() {
+	return output_directory_ + "/wordvectors_pca_" + Signature(2);
+    }
+
     // Returns the path to the singular values.
     string SingularValuesPath() {
 	return output_directory_ + "/singular_values_" + Signature(2);
@@ -173,7 +170,7 @@ private:
 
     // Returns the path to the K-means assignment.
     string KMeansPath() {
-	return output_directory_ + "/kmeans_" + Signature(3);
+	return output_directory_ + "/kmeans_" + Signature(2);
     }
 
     // Returns a string signature of tunable parameters.
@@ -181,8 +178,6 @@ private:
     //    version=1: rare_cutoff_, window_size_, sentence_per_line_
     //    version=2: rare_cutoff_, window_size_, sentence_per_line_, cca_dim_,
     //               smoothing_term_
-    //    version=3: rare_cutoff_, window_size_, sentence_per_line_, cca_dim_,
-    //               smoothing_term_, num_clusters_
     string Signature(size_t version);
 
     // Loads the word-integer dictionary from a cached file.
@@ -257,12 +252,6 @@ private:
     // Smoothing term for calculating the correlation matrix. If it's negative,
     // we let the model decide based on the smallest word count.
     int smoothing_term_ = -1;
-
-    // Number of clusters. If negative (default), it's set as the CCA dimension.
-    int num_clusters_ = -1;
-
-    // Maximum number of K-means iterations we shall humour.
-    size_t max_num_kmeans_iterations_ = 20;
 };
 
 #endif  // WORDREP_H

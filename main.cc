@@ -19,6 +19,5 @@ int main (int argc, char* argv[]) {
     // Induce word representations from the statistics in the output directory.
     canonword.set_cca_dim(argparser.cca_dim());
     canonword.set_smoothing_term(argparser.smoothing_term());
-    canonword.set_num_clusters(argparser.num_clusters());
     canonword.InduceLexicalRepresentations();
 }

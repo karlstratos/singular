@@ -57,13 +57,9 @@ void CanonWord::InduceLexicalRepresentations() {
     // Induce vector representations of word types based on cached count files.
     InduceWordVectors(sorted_wordcount);
 
-    if (num_clusters_ < 0) {
-	// Set the default number of clusters to be the CCA dimension.
-	num_clusters_ = cca_dim_;
-    }
-
-    // Do K-means clustering over word vectors.
-    PerformKMeans(num_clusters_, sorted_wordcount);
+    // TODO: Figure out whether to remove k-means entirely.
+    // Do K-means clustering over word vectors where K = CCA dimension.
+    //PerformKMeans(cca_dim_, sorted_wordcount);
 }
 
 Word CanonWord::word_str2num(const string &word_string) {
@@ -409,25 +405,39 @@ void CanonWord::InduceWordVectors(
     if (!file_manipulator.exists(WordVectorsPath())) {
 	// If word vectors are not already computed, perform CCA on word counts.
 	Eigen::MatrixXd word_matrix = PerformCCAOnComputedCounts();
-	for (size_t i = 0; i < word_matrix.cols(); ++i) {
-	    word_matrix.col(i).normalize();  // Normalize each column (word).
-	}
-
-	// Put word vectors in the PCA basis.
-	ChangeOfBasisToPCACoordinates(&word_matrix);
+	ASSERT(word_matrix.cols() == sorted_wordcount.size(), "CCA projection "
+	       "dimension and vocabulary size mismatch: " << word_matrix.cols()
+	       << " vs " << sorted_wordcount.size());
 
 	// Write word vectors sorted in decreasing frequency.
 	ofstream wordvectors_file(WordVectorsPath(), ios::out);
 	for (size_t i = 0; i < sorted_wordcount.size(); ++i) {
 	    string word_string = sorted_wordcount.at(i).first;
 	    size_t word_count = sorted_wordcount.at(i).second;
+	    Word word = word_str2num_[word_string];
+	    word_matrix.col(word).normalize();  // Normalize each column (word).
 	    wordvectors_file << word_count << " " << word_string;
+	    for (size_t j = 0; j < word_matrix.col(word).size(); ++ j) {
+		wordvectors_file << " " << word_matrix.col(word)(j);
+	    }
+	    wordvectors_file << endl;
+	}
+
+	// Put word vectors in a PCA basis.
+	ChangeOfBasisToPCACoordinates(&word_matrix);
+
+	// Write word vectors in a PCA basis sorted in decreasing frequency.
+	ofstream wordvectors_pca_file(WordVectorsPCAPath(), ios::out);
+	for (size_t i = 0; i < sorted_wordcount.size(); ++i) {
+	    string word_string = sorted_wordcount.at(i).first;
+	    size_t word_count = sorted_wordcount.at(i).second;
+	    wordvectors_pca_file << word_count << " " << word_string;
 	    ASSERT(wordvectors_.find(word_string) != wordvectors_.end(),
 		   "No vector computed for the word: " << word_string);
 	    for (size_t j = 0; j < wordvectors_[word_string].size(); ++ j) {
-		wordvectors_file << " " << wordvectors_[word_string](j);
+		wordvectors_pca_file << " " << wordvectors_[word_string](j);
 	    }
-	    wordvectors_file << endl;
+	    wordvectors_pca_file << endl;
 	}
     } else {
 	// Otherwise, load the computed word vectors.
@@ -452,7 +462,7 @@ void CanonWord::InduceWordVectors(
 }
 
 string CanonWord::Signature(size_t version) {
-    ASSERT(version <= 3, "Unrecognized signature version: " << version);
+    ASSERT(version <= 2, "Unrecognized signature version: " << version);
 
     string signature = "cutoff" + to_string(rare_cutoff_);
     if (version >= 1) {
@@ -464,9 +474,6 @@ string CanonWord::Signature(size_t version) {
     if (version >= 2) {
 	signature += "_dim" + to_string(cca_dim_);
 	signature += "_smooth" + to_string(smoothing_term_);
-    }
-    if (version >= 3) {
-	signature += "_cluster" + to_string(num_clusters_);
     }
     return signature;
 }
@@ -628,13 +635,11 @@ void CanonWord::PerformKMeans(
     // where K is the CCA dimension.
     time_t begin_time_kmeans = time(NULL);  // K-means time.
     log_ << endl << "[" << K << "-means clustering with frequent words "
-	 << "as initial centroids (max " << max_num_kmeans_iterations_
-	 << " iterations)]" << endl;
+	 << "as initial centroids]" << endl;
     vector<size_t> cluster_mapping;
     KMeansSolver kmeans_solver;
     bool kmeans_converged =
-	kmeans_solver.Cluster(sorted_vectors, K, &cluster_mapping,
-			      max_num_kmeans_iterations_);
+	kmeans_solver.Cluster(sorted_vectors, K, &cluster_mapping, 20);
     double time_kmeans = difftime(time(NULL), begin_time_kmeans);
     StringManipulator string_manipulator;
     if (kmeans_converged) {

@@ -22,10 +22,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    smoothing_term_ = stoi(argv[++i]);
 	} else if (arg == "--from_scratch") {
 	    from_scratch_ = true;
-	} else if (arg == "--num_clusters") {
-	    num_clusters_ = stoi(argv[++i]);
-	} else if (arg == "--max_num_kmeans_iterations") {
-	    max_num_kmeans_iterations_ = stoi(argv[++i]);
 	} else if (arg == "-h" || arg == "--help"){
 	    display_options_and_quit = true;
 	} else {
@@ -68,15 +64,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--from_scratch " << endl
 	     << "Recompute counts from scratch (no caching)?" << endl << endl;
-
-	cout << "--num_clusters "
-	     << "(default: " << num_clusters_ << ")" << endl
-	     << "Number of clusters (-1 means it will be set as the CCA "
-	     << "dimension)." << endl << endl;
-
-	cout << "--max_num_kmeans_iterations "
-	     << "(default: " << max_num_kmeans_iterations_ << ")" << endl
-	     << "Maximum number of K-means iterations." << endl << endl;
 
 	exit(0);
     }
