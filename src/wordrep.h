@@ -45,6 +45,9 @@ public:
     // Sets the context window size.
     void set_window_size(int window_size) { window_size_ = window_size; }
 
+    // Sets the flag for using bag-of-words context.
+    void set_bag_of_words(bool bag_of_words) { bag_of_words_ = bag_of_words; }
+
     // Sets the flag for indicating that there is a sentence per line in the
     // text corpus.
     void set_sentence_per_line(bool sentence_per_line) {
@@ -242,6 +245,9 @@ private:
     // Size of the context to compute covariance on. Note that it needs to be
     // odd if we want the left and right context to have the same length.
     size_t window_size_ = 3;
+
+    // Use bag-of-words (i.e., not position sensitive) context?
+    bool bag_of_words_ = false;
 
     // Have a sentence per line in the text corpus?
     bool sentence_per_line_ = false;

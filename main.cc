@@ -10,6 +10,7 @@ int main (int argc, char* argv[]) {
     CanonWord canonword(argparser.output_directory());
     canonword.set_rare_cutoff(argparser.rare_cutoff());
     canonword.set_window_size(argparser.window_size());
+    canonword.set_bag_of_words(argparser.bag_of_words());
     canonword.set_sentence_per_line(argparser.sentence_per_line());
     if (!argparser.corpus_path().empty()) {
 	// If given a corpus, extract statistics from it.

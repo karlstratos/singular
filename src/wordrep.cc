@@ -316,8 +316,11 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 		Word word = word_str2num_[window[word_index]];
 		++count_word[word];
 		for (Word context_index : context_indices) {
-		    string context_string = position_markers[context_index] +
-			window[context_index];
+		    string context_string = window[context_index];
+		    if (!bag_of_words_) {
+			context_string =
+			    position_markers[context_index] + context_string;
+		    }
 		    Context context = AddContextIfUnknown(context_string);
 		    ++count_context[context];
 		    ++count_word_context[context][word];
@@ -337,8 +340,11 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 		Word word = word_str2num_[window[word_index]];
 		++count_word[word];
 		for (Word context_index : context_indices) {
-		    string context_string = position_markers[context_index] +
-			window[context_index];
+		    string context_string = window[context_index];
+		    if (!bag_of_words_) {
+			context_string =
+			    position_markers[context_index] + context_string;
+		    }
 		    Context context = AddContextIfUnknown(context_string);
 		    ++count_context[context];
 		    ++count_word_context[context][word];
@@ -363,8 +369,11 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
 	    Word word = word_str2num_[window[word_index]];
 	    ++count_word[word];
 	    for (Word context_index : context_indices) {
-		string context_string = position_markers[context_index] +
-		    window[context_index];
+		string context_string = window[context_index];
+		if (!bag_of_words_) {
+		    context_string =
+			position_markers[context_index] + context_string;
+		}
 		Context context = AddContextIfUnknown(context_string);
 		++count_context[context];
 		++count_word_context[context][word];
