@@ -1,8 +1,8 @@
 # Author: Karl Stratos (karlstratos@gmail.com)
 """
-This *Python Version 2* module is used to evaluate given word embeddings on the
-word similarity task. We use Python 2 (not 3) to utilize the scipy functions
-that calculate Pearson's and Spearman's rank correlations.
+This module is used to evaluate given word embeddings on the word similarity
+task. We use scipy functions to calculate Pearson's and Spearman's rank
+correlations.
 
 Argument 1 [input 1: each line = word1 word2 similarity_score]
 Argument 2 [input 2: word embeddings file]
@@ -12,6 +12,26 @@ from numpy import array
 from numpy import dot
 from numpy import linalg
 from scipy import stats
+
+def read_normalized_embeddings(embedding_path):
+    """Read embeddings from the given path."""
+    embedding = {}
+    dim = 0
+    with open(embedding_path, "r") as embedding_file:
+        for line in embedding_file:
+            tokens = line.split()
+            if len(tokens) > 0:
+                word = tokens[1]
+                values = []
+                for i in range(2, len(tokens)):
+                    values.append(float(tokens[i]))
+                if dim:
+                    assert len(values) == dim
+                else:
+                    dim = len(values)
+                embedding[word] = array(values)
+                embedding[word] /= linalg.norm(embedding[word])
+    return embedding, dim
 
 def evaluate_wordsim(similarity_path, embedding_path):
     """
@@ -38,21 +58,7 @@ def evaluate_wordsim(similarity_path, embedding_path):
     print "Read {0} word pairs with similarity scores".format(len(word_pairs))
 
     # Read (and normalize) embeddings for word types we need.
-    embedding = {}
-    dim = 0
-    with open(embedding_path, "r") as embedding_file:
-        for line in embedding_file:
-            tokens = line.split()
-            if len(tokens) > 0:
-                word = tokens[1]
-                if word in similarity_vocab:
-                    # We need this embedding.
-                    values = []
-                    for i in range(2, len(tokens)):
-                        values.append(float(tokens[i]))
-                    dim = len(values)
-                    embedding[word] = array(values)
-                    embedding[word] /= linalg.norm(embedding[word])
+    embedding, dim = read_normalized_embeddings(embedding_path)
     print "Read {0} embeddings of dimension {1}".format(len(embedding), dim)
 
     # Compute consine similarity scores based on the normalized embeddings.
