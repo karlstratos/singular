@@ -3,6 +3,7 @@
 #include "wordrep.h"
 
 #include <deque>
+#include <dirent.h>
 #include <iomanip>
 #include <map>
 
@@ -16,7 +17,19 @@ void CanonWord::SetOutputDirectory(const string &output_directory) {
     // Prepare the output directory and the log file.
     ASSERT(system(("mkdir -p " + output_directory_).c_str()) == 0,
 	   "Cannot create directory: " << output_directory_);
-    log_.open(LogPath(), ios::out);
+
+    // Obtain the latest version marker for log.
+    size_t latest_version = 0;
+    DIR *directory = opendir(output_directory_.c_str());
+    struct dirent *entry;
+    while (NULL != (entry = readdir(directory))) {
+	string file_name = entry->d_name;
+	if (file_name.substr(0, 3) == "log") {
+	    size_t version = stoi(file_name.substr(4));
+	    if (version > latest_version) { latest_version = version; }
+	}
+    }
+    log_.open(LogPath() + "." + to_string(latest_version + 1), ios::out);
     log_ << fixed << setprecision(2);
 }
 
@@ -289,13 +302,18 @@ void CanonWord::ComputeCovariance(const string &corpus_file) {
     unordered_map<Word, double> count_word;  // i-th: count of word i
     unordered_map<Word, double> count_context;  // j-th: count of context j
 
-    log_ << endl << "[Counting ";
-    if (sentence_per_line_) {
-	log_ << "(1 line = 1 sentence)";
+    log_ << endl << "[Counting]" << endl;
+    if (bag_of_words_) {
+	log_ << "   Context = bag-of-words" << endl;
     } else {
-	log_ << "(entire text = 1 sentence)";
+	log_ << "   Context = position-sensitive" << endl;
     }
-    log_ << "]" << endl << flush;
+    if (sentence_per_line_) {
+	log_ << "   Line = sentence" << endl;
+    } else {
+	log_ << "   Text = sentence" << endl;
+    }
+    log_ << flush;
     time_t begin_time_counting = time(NULL);  // Counting time.
     ifstream file(corpus_file, ios::in);
     ASSERT(file.is_open(), "Cannot open file: " << corpus_file);
@@ -473,11 +491,14 @@ void CanonWord::InduceWordVectors(
 string CanonWord::Signature(size_t version) {
     ASSERT(version <= 2, "Unrecognized signature version: " << version);
 
-    string signature = "cutoff" + to_string(rare_cutoff_);
+    string signature = "rare" + to_string(rare_cutoff_);
     if (version >= 1) {
 	signature += "_window" + to_string(window_size_);
+	if (bag_of_words_) {
+	    signature += "_bow";
+	}
 	if (sentence_per_line_) {
-	    signature += "_sentperline";
+	    signature += "_spl";
 	}
     }
     if (version >= 2) {

@@ -178,9 +178,10 @@ private:
 
     // Returns a string signature of tunable parameters.
     //    version=0: rare_cutoff_
-    //    version=1: rare_cutoff_, window_size_, sentence_per_line_
-    //    version=2: rare_cutoff_, window_size_, sentence_per_line_, cca_dim_,
-    //               smoothing_term_
+    //    version=1: rare_cutoff_, window_size_, bag_of_words,
+    //               sentence_per_line_
+    //    version=2: rare_cutoff_, window_size_, bag_of_words,
+    //               sentence_per_line_, cca_dim_, smoothing_term_
     string Signature(size_t version);
 
     // Loads the word-integer dictionary from a cached file.
