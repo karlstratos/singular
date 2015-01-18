@@ -171,9 +171,9 @@ private:
 	return output_directory_ + "/pca_variance_" + Signature(2);
     }
 
-    // Returns the path to the K-means assignment.
-    string KMeansPath() {
-	return output_directory_ + "/kmeans_" + Signature(2);
+    // Returns the path to the agglomeratively clusterered word vectors.
+    string AgglomerativePath() {
+	return output_directory_ + "/agglomerative_" + Signature(2);
     }
 
     // Returns a string signature of tunable parameters.
@@ -203,11 +203,6 @@ private:
     void PerformAgglomerativeClustering(
 	size_t num_clusters,
 	const vector<pair<string, size_t> > &sorted_wordcount);
-
-    // Do K-means clustering over word vectors. It initializes the K centroids
-    // as the K most frequent word types.
-    void PerformKMeans(size_t K,
-		       const vector<pair<string, size_t> > &sorted_wordcount);
 
     // Count of each word string type appearing in a corpus.
     unordered_map<string, size_t> wordcount_;

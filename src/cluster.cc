@@ -4,13 +4,16 @@
 
 #include <cfloat>
 #include <limits>
+#include <stack>
 
 void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
     size_t n = ordered_points.size();  // n = number of points.
     ASSERT(m <= n, "Number of clusters " << m << " is smaller than number of "
 	   << "points: " << n);
-    size_t d = ordered_points[0].size();  // d = dimension of the vector space
 
+    // Note that we will compute an ordered list of 2n-1 clusters:
+    //    (n original points)   0     1     2   ...    n-2   n-1
+    //           (n-1 merges)   n   n+1   n+2   ...   2n-2
     Z_.resize(n - 1);  // Information about the n-1 merges.
     size_.resize(2 * n - 1);  // Clusters' sizes.
     active_.resize(m + 1);  // Active clusters.
@@ -18,7 +21,7 @@ void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
     lb_.resize(m + 1);  // Lowerbounds.
     twin_.resize(m + 1);  // Indices in {0 ... m} for merge candidates.
     tight_.resize(m + 1);  // Is the current lowerbound tight?
-    num_extra_tightening_ = 0;  // Reset the number of tightening operations.
+    num_extra_tightening_ = 0;  // Number of tightening operations.
 
     // Initialize the first m clusters (also active), and tighten them.
     // This step involves O(dm^2) computations.
@@ -188,6 +191,7 @@ void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
 		   "twin: something got screwed while shifting");
 	}
     }
+    LabelLeaves();
 }
 
 double Greedo::ComputeDistance(const vector<Eigen::VectorXd> &ordered_points,
@@ -210,11 +214,16 @@ void Greedo::ComputeMergedMean(const vector<Eigen::VectorXd> &ordered_points,
     *new_mean = scale1 * mean_[active_index1] + scale2 * mean_[active_index2];
 }
 
-void Greedo::LabelLeaves(unordered_map<string, vector<size_t> >& bit2cluster) {
+void Greedo::LabelLeaves() {
     ASSERT(Z_.size() > 0, "No merge information to label leaves!");
+    ASSERT(active_.size() > 0, "Active clusters missing!");
+    bit2cluster_.clear();
 
     // Recover the number of points, n, from the size of Z_, n-1.
     size_t n = Z_.size() + 1;
+
+    // Recover the number of clusters, m, from the size of active_, m+1.
+    size_t m = active_.size() - 1;
 
     // Use breadth-first search (BFS) to traverse the tree. Maintain bit strings
     // to mark the path from the root.
@@ -224,108 +233,29 @@ void Greedo::LabelLeaves(unordered_map<string, vector<size_t> >& bit2cluster) {
     bfs_stack.push(make_pair(2 * n - 2, ""));
 
     while(!bfs_stack.empty()){
-        std::pair<size_t,string> cluster_bits_pair = bfs_stack.top();
+        std::pair<size_t,string> cluster_bitstring_pair = bfs_stack.top();
         bfs_stack.pop();
-        size_t cluster = cluster_bits_pair.first;
-        string bitstring = cluster_bits_pair.second;
-        // if node < n, it's a leaf node
-        if (node < n) {
-	    subtree[bits].push_back(node);
-	}
-        else
-        {
-            size_t node1 = Z[node-n][0];
-            size_t node2 = Z[node-n][1];
+        size_t cluster = cluster_bitstring_pair.first;
+        string bitstring = cluster_bitstring_pair.second;
 
-            string left_bits = bits;
-            string right_bits = bits;
+        if (cluster < n) {
+	    // We have a leaf cluster. Add to the current bit string.
+	    bit2cluster_[bitstring].push_back(cluster);
+	} else {
+	    // We have a non-leaf cluster. Branch to its two children.
+            size_t left_child_cluster = get<0>(Z_[cluster - n]);
+            size_t right_child_cluster = get<1>(Z_[cluster - n]);
 
-            if (node >= 2*n - m)
-            {
-                left_bits = left_bits + "0";
-                right_bits = right_bits + "1";
+            string left_bitstring = bitstring;
+            string right_bitstring = bitstring;
+            if (cluster >= 2 * n - m) {
+		// Prune branches to have only m leaf clusters.
+                left_bitstring += "0";
+                right_bitstring += "1";
             }
 
-            bfs_stack.push(make_pair(node1,left_bits));
-            bfs_stack.push(make_pair(node2,right_bits));
+            bfs_stack.push(make_pair(left_child_cluster, left_bitstring));
+            bfs_stack.push(make_pair(right_child_cluster, right_bitstring));
         }
     }
-}
-
-bool KMeansSolver::Cluster(const vector<Eigen::VectorXd> &ordered_points,
-			   size_t K, vector<size_t> *cluster_mapping,
-			   size_t max_num_iterations) {
-    ASSERT(ordered_points.size() > 0, "Empty set of points.");
-    size_t dimension = ordered_points[0].size();
-
-    ASSERT(K <= ordered_points.size(), "Number of clusters " << K << " bigger "
-	   << "than number of points " << ordered_points.size());
-
-    // Initialize the K centroids as the first K of the given points.
-    vector<Eigen::VectorXd> centroid(K);
-    for (size_t cluster_num = 0; cluster_num < K; ++cluster_num) {
-	centroid[cluster_num] = ordered_points[cluster_num];
-    }
-
-    // Repeatedly update the cluster mapping by alternating between Step 1 and
-    // Step 2 until convergence.
-    cluster_mapping->clear();
-    cluster_mapping->resize(ordered_points.size());
-    size_t num_iterations = 0;
-    bool clustering_is_converged = false;
-    while (num_iterations < max_num_iterations) {
-	// Step 1: Assign each point to the closest centroid (cluster).
-	bool clusters_have_not_changed = true;
-	for (size_t point_num = 0; point_num < ordered_points.size();
-	     ++point_num) {
-	    double min_squared_distance = numeric_limits<double>::infinity();
-	    size_t closest_centroid_num = 0;
-	    for (size_t cluster_num = 0; cluster_num < K; ++cluster_num) {
-		Eigen::VectorXd diff =
-		    ordered_points[point_num] - centroid[cluster_num];
-		double squared_distance = diff.squaredNorm();
-		if (squared_distance < min_squared_distance) {
-		    closest_centroid_num = cluster_num;
-		    min_squared_distance = squared_distance;
-		}
-	    }
-	    if (cluster_mapping->at(point_num) != closest_centroid_num) {
-		clusters_have_not_changed = false;
-	    }
-	    (*cluster_mapping)[point_num] = closest_centroid_num;
-	}
-	if (clusters_have_not_changed) {
-	    clustering_is_converged = true;
-	    break;
-	}
-
-	// Step 2: Re-compute centroids as the means of clustered points.
-	centroid.clear();
-	centroid.resize(K);
-	vector<size_t> cluster_size(K);  // How many points in a cluster?
-	for (size_t point_num = 0; point_num < ordered_points.size();
-	     ++point_num) {
-	    size_t assigned_cluster_num = cluster_mapping->at(point_num);
-	    if (centroid[assigned_cluster_num].size() == 0) {
-		centroid[assigned_cluster_num] = ordered_points[point_num];
-	    } else {
-		centroid[assigned_cluster_num] += ordered_points[point_num];
-	    }
-	    ++cluster_size[assigned_cluster_num];
-	}
-	for (size_t cluster_num = 0; cluster_num < K; ++cluster_num) {
-	    centroid[cluster_num] /= cluster_size[cluster_num];
-
-	    if (centroid[cluster_num].size() == 0) {
-		// For an empty cluster, set the centroid in the "outer space".
-		centroid[cluster_num].resize(dimension);
-		for (size_t i = 0; i < dimension; ++i) {
-		    centroid[cluster_num](i) =
-			numeric_limits<double>::infinity();
-		}
-	    }
-	}
-	++num_iterations;
-    }
-    return clustering_is_converged;
 }

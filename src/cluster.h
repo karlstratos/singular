@@ -11,22 +11,23 @@
 #include "util.h"
 
 // GREEDdy agglOmerative (Greedo) clustering over n points in a Euclidean space.
-// It repeatedly merges a pair of clusters (initially singletons) to obtain a
-// single hierarchy. For efficiency, every merge considers at most m+1 "active"
-// clusters (initially m + 1 singletons). The resulting hierarchy has m leaf
-// clusters.
-//
-// Clustering involves computing an ordered list of 2n-1 clusters:
-//    (n original points)   0     1     2   ...    n-2   n-1
-//    (n-1 merges)          n   n+1   n+2   ...   2n-2
-// Greedo recovers a final hierarchy by keeping track of which clusters merge
-// together and by pruning below the m clusters closest to the root.
+// It repeatedly merges initially singleton clusters until it obtains a single
+// hierarchy. Also, every merge considers at most m+1 "active" clusters where m
+// is the number of leaf clusters in the hierarchy. It can be seen as a variant
+// of the algorithm in: Fast and memory efficient implementation of the exact
+// pnn (Franti et al., 2000).
 class Greedo {
 public:
-    // Perform agglomerative clustering over the given *ordered* points to
+    // Performs agglomerative clustering over the given *ordered* points to
     // obtain a single hierarchy with m leaf nodes. The first m points will
-    // serve as initial m clusters in the algorithm.
+    // serve as the initial m clusters, and subsequent clusters will be added
+    // from left to right.
     void Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m);
+
+    // Returns the mapping between bit strings and subsets in {0 ... n-1}.
+    unordered_map<string, vector<size_t> > *bit2cluster() {
+	return &bit2cluster_;
+    }
 private:
     // Computes the distance between two active clusters.
     double ComputeDistance(const vector<Eigen::VectorXd> &ordered_points,
@@ -43,7 +44,7 @@ private:
     //                   /  \
     //                1010  1011
     //             {0,3,9}   {77,1,8}
-    void LabelLeaves(unordered_map<string, vector<size_t> >& bit2cluster);
+    void LabelLeaves();
 
     // Information of the n-1 merges. For i in {0 ... n-2}:
     //    get<0>(Z_[i]) = left child of cluster n+i
@@ -80,18 +81,9 @@ private:
     // Total number of tightening operations performed because lowerbounds were
     // not tight.
     size_t num_extra_tightening_ = 0;
-};
 
-class KMeansSolver {
-public:
-    // Clusters given points into K groups using K-means. It assumes that
-    // points are ordered such that the first K serve as initial centroids.
-    // The value cluster_mapping[i] in [0, K) indicates the cluster of the
-    // i-th point. It returns true if clustering has converged within the given
-    // number of iterations, false otherwise.
-    bool Cluster(const vector<Eigen::VectorXd> &ordered_points,
-		 size_t K, vector<size_t> *cluster_mapping,
-		 size_t max_num_iterations);
+    // Mapping from a bit string to a set of clustered points.
+    unordered_map<string, vector<size_t> > bit2cluster_;
 };
 
 #endif  // CLUSTER_H

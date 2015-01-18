@@ -72,10 +72,6 @@ void CanonWord::InduceLexicalRepresentations() {
 
     // Perform greedy agglomerative clustering over word vectors.
     PerformAgglomerativeClustering(cca_dim_, sorted_wordcount);
-
-    // TODO: Figure out whether to remove k-means entirely.
-    // Do K-means clustering over word vectors where K = CCA dimension.
-    //PerformKMeans(cca_dim_, sorted_wordcount);
 }
 
 Word CanonWord::word_str2num(const string &word_string) {
@@ -656,7 +652,7 @@ void CanonWord::ChangeOfBasisToPCACoordinates(Eigen::MatrixXd *word_matrix) {
 void CanonWord::PerformAgglomerativeClustering(
     size_t num_clusters,
     const vector<pair<string, size_t> > &sorted_wordcount) {
-    ASSERT(wordvectors_.size() > 0, "No word vectors to do K-means on!");
+    ASSERT(wordvectors_.size() > 0, "No word vectors to cluster!");
 
     // Prepare a list of word vectors sorted in decreasing frequency.
     vector<Eigen::VectorXd> sorted_vectors(sorted_wordcount.size());
@@ -665,9 +661,8 @@ void CanonWord::PerformAgglomerativeClustering(
 	sorted_vectors[i] = wordvectors_[word_string];
     }
 
-    // Do agglomerative clustering over word vectors sorted in decreasing
-    // frequency.
-    time_t begin_time_greedo = time(NULL);  // Agglomerative clustering time.
+    // Do agglomerative clustering over the sorted word vectors.
+    time_t begin_time_greedo = time(NULL);
     log_ << endl << "[Agglomerative clustering with " << num_clusters
 	 << " clusters]" << endl;
     Greedo greedo;
@@ -676,52 +671,30 @@ void CanonWord::PerformAgglomerativeClustering(
     StringManipulator string_manipulator;
     log_ << "   Time taken: " << string_manipulator.print_time(time_greedo)
 	 << endl;
-}
 
-void CanonWord::PerformKMeans(
-    size_t K, const vector<pair<string, size_t> > &sorted_wordcount) {
-    ASSERT(wordvectors_.size() > 0, "No word vectors to do K-means on!");
-
-    // Prepare a list of word vectors sorted in decreasing frequency.
-    vector<Eigen::VectorXd> sorted_vectors(sorted_wordcount.size());
-    for (size_t i = 0; i < sorted_wordcount.size(); ++i) {
-	string word_string = sorted_wordcount.at(i).first;
-	sorted_vectors[i] = wordvectors_[word_string];
+    // Lexicographically sort bit strings for enhanced readability.
+    vector<string> bitstring_types;
+    for (const auto &bitstring_pair : *greedo.bit2cluster()) {
+	bitstring_types.push_back(bitstring_pair.first);
     }
+    sort(bitstring_types.begin(), bitstring_types.end());
 
-    // Do K-means clustering over word vectors sorted in decreasing frequency
-    // where K is the CCA dimension.
-    time_t begin_time_kmeans = time(NULL);  // K-means time.
-    log_ << endl << "[" << K << "-means clustering with frequent words "
-	 << "as initial centroids]" << endl;
-    vector<size_t> cluster_mapping;
-    KMeansSolver kmeans_solver;
-    bool kmeans_converged =
-	kmeans_solver.Cluster(sorted_vectors, K, &cluster_mapping, 20);
-    double time_kmeans = difftime(time(NULL), begin_time_kmeans);
-    StringManipulator string_manipulator;
-    if (kmeans_converged) {
-	log_ << "   Converged" << endl;
-    } else {
-	log_ << "   Did not converge" << endl;
-    }
-    log_ << "   Time taken: " << string_manipulator.print_time(time_kmeans)
-	 << endl;
+    // Write the bit strings and their associated word types.
+    ofstream greedo_file(AgglomerativePath(), ios::out);
+    unordered_map<string, vector<size_t> > *bit2cluster = greedo.bit2cluster();
+    for (const auto &bitstring : bitstring_types) {
+	vector<pair<string, size_t> > sorting_vector;  // Sort each cluster.
+	for (size_t cluster : bit2cluster->at(bitstring)) {
+	    string word_string = sorted_wordcount[cluster].first;
+	    size_t count = sorted_wordcount[cluster].second;
+	    sorting_vector.push_back(make_pair(word_string, count));
+	}
+	sort(sorting_vector.begin(), sorting_vector.end(),
+	     sort_pairs_second<string, size_t, greater<size_t> >());
 
-    // Write the clusters.
-    unordered_map<size_t, vector<Word> > cluster2word;
-    for (Word word = 0; word < sorted_wordcount.size(); ++word) {
-	size_t assigned_cluster_num = cluster_mapping[word];
-	cluster2word[assigned_cluster_num].push_back(word);
-    }
-    ofstream kmeans_file(KMeansPath(), ios::out);
-    for (const auto &cluster_pair : cluster2word) {
-	size_t cluster_num = cluster_pair.first;
-	for (Word word : cluster_pair.second) {
-	    string word_string = sorted_wordcount[word].first;
-	    size_t word_frequency = sorted_wordcount[word].second;
-	    kmeans_file << cluster_num << " " << word_string << " "
-			<< word_frequency << endl;
+	for (const auto &word_pair : sorting_vector) {
+	    greedo_file << bitstring << " " << word_pair.first << " "
+			<< word_pair.second << endl;
 	}
     }
 }
