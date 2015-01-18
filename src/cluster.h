@@ -37,6 +37,14 @@ private:
 			   size_t active_index1, size_t active_index2,
 			   Eigen::VectorXd *new_mean);
 
+    // Based on the computed hierarchy, create a mapping from a leaf-node bit
+    // string indicating the path from the root to the associated clusters.
+    //                    ...
+    //                   /  \
+    //                1010  1011
+    //             {0,3,9}   {77,1,8}
+    void LabelLeaves(unordered_map<string, vector<size_t> >& bit2cluster);
+
     // Information of the n-1 merges. For i in {0 ... n-2}:
     //    get<0>(Z_[i]) = left child of cluster n+i
     //    get<1>(Z_[i]) = right child of cluster n+i

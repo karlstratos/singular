@@ -210,6 +210,48 @@ void Greedo::ComputeMergedMean(const vector<Eigen::VectorXd> &ordered_points,
     *new_mean = scale1 * mean_[active_index1] + scale2 * mean_[active_index2];
 }
 
+void Greedo::LabelLeaves(unordered_map<string, vector<size_t> >& bit2cluster) {
+    ASSERT(Z_.size() > 0, "No merge information to label leaves!");
+
+    // Recover the number of points, n, from the size of Z_, n-1.
+    size_t n = Z_.size() + 1;
+
+    // Use breadth-first search (BFS) to traverse the tree. Maintain bit strings
+    // to mark the path from the root.
+    stack<pair<size_t, string> > bfs_stack;  // [  ... (77, "10011") ]
+
+    // Push the root cluster (2n-2) with an empty bit string.
+    bfs_stack.push(make_pair(2 * n - 2, ""));
+
+    while(!bfs_stack.empty()){
+        std::pair<size_t,string> cluster_bits_pair = bfs_stack.top();
+        bfs_stack.pop();
+        size_t cluster = cluster_bits_pair.first;
+        string bitstring = cluster_bits_pair.second;
+        // if node < n, it's a leaf node
+        if (node < n) {
+	    subtree[bits].push_back(node);
+	}
+        else
+        {
+            size_t node1 = Z[node-n][0];
+            size_t node2 = Z[node-n][1];
+
+            string left_bits = bits;
+            string right_bits = bits;
+
+            if (node >= 2*n - m)
+            {
+                left_bits = left_bits + "0";
+                right_bits = right_bits + "1";
+            }
+
+            bfs_stack.push(make_pair(node1,left_bits));
+            bfs_stack.push(make_pair(node2,right_bits));
+        }
+    }
+}
+
 bool KMeansSolver::Cluster(const vector<Eigen::VectorXd> &ordered_points,
 			   size_t K, vector<size_t> *cluster_mapping,
 			   size_t max_num_iterations) {

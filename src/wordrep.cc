@@ -70,6 +70,9 @@ void CanonWord::InduceLexicalRepresentations() {
     // Induce vector representations of word types based on cached count files.
     InduceWordVectors(sorted_wordcount);
 
+    // Perform greedy agglomerative clustering over word vectors.
+    PerformAgglomerativeClustering(cca_dim_, sorted_wordcount);
+
     // TODO: Figure out whether to remove k-means entirely.
     // Do K-means clustering over word vectors where K = CCA dimension.
     //PerformKMeans(cca_dim_, sorted_wordcount);
@@ -648,6 +651,31 @@ void CanonWord::ChangeOfBasisToPCACoordinates(Eigen::MatrixXd *word_matrix) {
 	string word_string = word_num2str_[word];
 	wordvectors_[word_string] = word_matrix_pca.col(word);
     }
+}
+
+void CanonWord::PerformAgglomerativeClustering(
+    size_t num_clusters,
+    const vector<pair<string, size_t> > &sorted_wordcount) {
+    ASSERT(wordvectors_.size() > 0, "No word vectors to do K-means on!");
+
+    // Prepare a list of word vectors sorted in decreasing frequency.
+    vector<Eigen::VectorXd> sorted_vectors(sorted_wordcount.size());
+    for (size_t i = 0; i < sorted_wordcount.size(); ++i) {
+	string word_string = sorted_wordcount.at(i).first;
+	sorted_vectors[i] = wordvectors_[word_string];
+    }
+
+    // Do agglomerative clustering over word vectors sorted in decreasing
+    // frequency.
+    time_t begin_time_greedo = time(NULL);  // Agglomerative clustering time.
+    log_ << endl << "[Agglomerative clustering with " << num_clusters
+	 << " clusters]" << endl;
+    Greedo greedo;
+    greedo.Cluster(sorted_vectors, num_clusters);
+    double time_greedo = difftime(time(NULL), begin_time_greedo);
+    StringManipulator string_manipulator;
+    log_ << "   Time taken: " << string_manipulator.print_time(time_greedo)
+	 << endl;
 }
 
 void CanonWord::PerformKMeans(

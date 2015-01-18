@@ -198,6 +198,12 @@ private:
     // each column of the matrix is a word vector.
     void ChangeOfBasisToPCACoordinates(Eigen::MatrixXd *word_matrix);
 
+    // Perform greedy agglomerative clustering over word vectors. It initializes
+    // clusters with the most frequent word types.
+    void PerformAgglomerativeClustering(
+	size_t num_clusters,
+	const vector<pair<string, size_t> > &sorted_wordcount);
+
     // Do K-means clustering over word vectors. It initializes the K centroids
     // as the K most frequent word types.
     void PerformKMeans(size_t K,
