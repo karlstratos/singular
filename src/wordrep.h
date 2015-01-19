@@ -122,8 +122,31 @@ private:
     void ComputeCovariance(const string &corpus_file);
 
     // Induces vector representations of word types based on cached count files.
-    void InduceWordVectors(
-	const vector<pair<string, size_t> > &sorted_wordcount);
+    void InduceWordVectors();
+
+    // Loads the word-integer dictionary from a cached file.
+    void LoadWordIntegerDictionary();
+
+    // Prepares sorted word counts from a cached file.
+    void PrepareSortedWordCounts();
+
+    // Performs CCA on cached count files and returns the projection for the
+    // first view.
+    Eigen::MatrixXd PerformCCAOnComputedCounts();
+
+    // Perform greedy agglomerative clustering over word vectors.
+    void PerformAgglomerativeClustering(size_t num_clusters);
+
+    // Performs PCA on word vectors to put them in the PCA basis.
+    void RotateWordVectorsToPCACoordinates();
+
+    // Returns a string signature of tunable parameters.
+    //    version=0: rare_cutoff_
+    //    version=1: rare_cutoff_, window_size_, bag_of_words,
+    //               sentence_per_line_
+    //    version=2: rare_cutoff_, window_size_, bag_of_words,
+    //               sentence_per_line_, cca_dim_, smoothing_term_
+    string Signature(size_t version);
 
     // Returns the path to the corpus information file.
     string CorpusInfoPath() { return output_directory_ + "/corpus_info"; }
@@ -176,36 +199,8 @@ private:
 	return output_directory_ + "/agglomerative_" + Signature(2);
     }
 
-    // Returns a string signature of tunable parameters.
-    //    version=0: rare_cutoff_
-    //    version=1: rare_cutoff_, window_size_, bag_of_words,
-    //               sentence_per_line_
-    //    version=2: rare_cutoff_, window_size_, bag_of_words,
-    //               sentence_per_line_, cca_dim_, smoothing_term_
-    string Signature(size_t version);
-
-    // Loads the word-integer dictionary from a cached file.
-    void LoadWordIntegerDictionary();
-
-    // Loads the word counts from a cached file.
-    void LoadWordCounts();
-
-    // Performs CCA on cached count files and returns the projection for the
-    // first view.
-    Eigen::MatrixXd PerformCCAOnComputedCounts();
-
-    // Performs PCA on word vectors to put them in the PCA basis. Assumes that
-    // each column of the matrix is a word vector.
-    void ChangeOfBasisToPCACoordinates(Eigen::MatrixXd *word_matrix);
-
-    // Perform greedy agglomerative clustering over word vectors. It initializes
-    // clusters with the most frequent word types.
-    void PerformAgglomerativeClustering(
-	size_t num_clusters,
-	const vector<pair<string, size_t> > &sorted_wordcount);
-
-    // Count of each word string type appearing in a corpus.
-    unordered_map<string, size_t> wordcount_;
+    // Word-count pairs sorted in decreasing frequency.
+    vector<pair<string, size_t> > sorted_wordcount_;
 
     // Maps a word string to an integer ID.
     unordered_map<string, Word> word_str2num_;

@@ -176,6 +176,17 @@ void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
 		   "twin: something got screwed while shifting");
 	}
     }
+
+    // Organize merges so that the right child cluster is always more recent
+    // than the left child cluster.
+    for (size_t i = 0; i < n - 1; ++i) {
+	if (get<0>(Z_[i]) > get<1>(Z_[i])) {
+	    double temp = get<0>(Z_[i]);
+	    get<0>(Z_[i]) = get<1>(Z_[i]);
+	    get<1>(Z_[i]) = temp;
+	}
+    }
+
     LabelLeaves();  // Clustering done: label bit strings.
 }
 
@@ -247,12 +258,12 @@ void Greedo::LabelLeaves() {
 
             string left_bitstring = bitstring;
             string right_bitstring = bitstring;
+
             if (cluster >= 2 * n - m) {
 		// Prune branches to have only m leaf clusters.
                 left_bitstring += "0";
                 right_bitstring += "1";
             }
-
             bfs_stack.push(make_pair(left_child_cluster, left_bitstring));
             bfs_stack.push(make_pair(right_child_cluster, right_bitstring));
         }
