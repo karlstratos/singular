@@ -20,18 +20,23 @@ class Greedo {
 public:
     // Performs agglomerative clustering over the given *ordered* points to
     // obtain a single hierarchy with m leaf nodes. The first m points will
-    // serve as the initial m clusters, and subsequent clusters will be added
-    // from left to right.
+    // serve as the initial m active clusters, and subsequent points will be
+    // added from left to right.
     void Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m);
 
     // Returns the mapping between bit strings and subsets in {0 ... n-1}.
     unordered_map<string, vector<size_t> > *bit2cluster() {
 	return &bit2cluster_;
     }
+
 private:
     // Computes the distance between two active clusters.
     double ComputeDistance(const vector<Eigen::VectorXd> &ordered_points,
 			   size_t active_index1, size_t active_index2);
+
+    // Update two active clusters' lowerbounds / twins given their distance.
+    void UpdateLowerbounds(size_t active_index1, size_t active_index2,
+			   double distance);
 
     // Computes the new mean resulting from merging two active clusters.
     void ComputeMergedMean(const vector<Eigen::VectorXd> &ordered_points,

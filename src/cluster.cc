@@ -11,9 +11,24 @@ void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
     ASSERT(m <= n, "Number of clusters " << m << " is smaller than number of "
 	   << "points: " << n);
 
-    // Note that we will compute an ordered list of 2n-1 clusters:
-    //    (n original points)   0     1     2   ...    n-2   n-1
-    //           (n-1 merges)   n   n+1   n+2   ...   2n-2
+    //--------------------------------------------------------------------------
+    // (Sketch of the algorithm)
+    // We compute an ordered list of 2n-1 clusters (n original points as
+    // singletons + n-1 merges):
+    //    [Singletons]       0     1     2   ...    n-2   n-1
+    //    [Non-singletons]   n   n+1   n+2   ...   2n-2
+    // Normally in agglomerative clustering, we would start with the first n
+    // singleton clusters and repeatedly merge: with the Franti et al. (2000)
+    // trick, this would take O(gdn^2) where g is a data-dependent constant
+    // and d is the dimension of the vector space.
+    //
+    // Here, we will instead start with the first m singleton clusters and
+    // repeatedly merge. At every iteration, we will include the next singleton
+    // cluster for consideration. Thus in any given moment, we handle at most
+    // m+1 "active" clusters. Again applying the Franti et al. (2000) trick,
+    // this now taks O(gdmn).
+    //--------------------------------------------------------------------------
+
     Z_.resize(n - 1);  // Information about the n-1 merges.
     size_.resize(2 * n - 1);  // Clusters' sizes.
     active_.resize(m + 1);  // Active clusters.
@@ -23,26 +38,15 @@ void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
     tight_.resize(m + 1);  // Is the current lowerbound tight?
     num_extra_tightening_ = 0;  // Number of tightening operations.
 
-    // Initialize the first m clusters (also active), and tighten them.
-    // This step involves O(dm^2) computations.
-    for (size_t i = 0; i < m; ++i) {
-	size_[i] = 1;
-	active_[i] = i;
-	mean_[i] = ordered_points[i];
-	lb_[i] = DBL_MAX;
-
-	for (int j = 0; j < i; ++j) {
-	    double dist = ComputeDistance(ordered_points, i, j);
-	    if (dist < lb_[i]) {  // Tighten the i-th active cluster.
-		lb_[i] = dist;
-		twin_[i] = j;
-		tight_[i] = true;
-	    }
-	    if (dist < lb_[j]) {  // Tighten the j-th active cluster.
-		lb_[j] = dist;
-		twin_[j] = i;
-		tight_[j] = true;
-	    }
+    // Initialize the first m clusters.
+    for (size_t a1 = 0; a1 < m; ++a1) {  // Tightening m clusters: O(dm^2).
+	size_[a1] = 1;
+	active_[a1] = a1;
+	mean_[a1] = ordered_points[a1];
+	lb_[a1] = DBL_MAX;
+	for (size_t a2 = 0; a2 < a1; ++a2) {
+	    double dist = ComputeDistance(ordered_points, a1, a2);
+	    UpdateLowerbounds(a1, a2, dist);
 	}
     }
 
@@ -50,148 +54,129 @@ void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
     size_t next_singleton = m;
     for (size_t merge_num = 0; merge_num < n - 1; ++merge_num) {
 	if (next_singleton < n) {
-	    // Set the next ordered point as the (m+1)-th active (singleton)
-	    // cluster and tighten it.
+	    // Set the next remaining point as the (m+1)-th active cluster.
 	    size_[next_singleton] = 1;
 	    active_[m] = next_singleton;
 	    mean_[m] = ordered_points[next_singleton];
 	    lb_[m] = DBL_MAX;
-
-	    for (int j = 0; j < m; ++j) {
-		double dist = ComputeDistance(ordered_points, m, j);
-		if (dist < lb_[m]) {  // Tighten the m-th active cluster.
-		    lb_[m] = dist;
-		    twin_[m] = j;
-		    tight_[m] = true;
-		}
-		if (dist < lb_[j]) {  // Tighten the j-th active cluster.
-		    lb_[j] = dist;
-		    twin_[j] = m;
-		    tight_[j] = true;
-		}
+	    for (int a = 0; a < m; ++a) {  // Tightening 1 cluster: O(dm).
+		double dist = ComputeDistance(ordered_points, m, a);
+		UpdateLowerbounds(m, a, dist);
 	    }
 	    ++next_singleton;
 	}
 
 	// Number of active clusters is m+1 until all singleton clusters are
-	// active. Then it decreases as: m ... 2.
+	// active. Then it decreases m ... 2.
 	size_t num_active_clusters = min(m + 1, n - merge_num);
 
-	// Find which active cluster has the smallest lowerbound. This requires
-	// just O(m) computations.
+	// Find which active cluster has the smallest lowerbound: O(m).
 	size_t candidate_index = 0;
 	double smallest_lowerbound = DBL_MAX;
-	for (size_t i = 0; i < num_active_clusters; ++i) {
-	    if (lb_[i] < smallest_lowerbound) {
-		smallest_lowerbound = lb_[i];
-		candidate_index = i;
+	for (size_t a = 0; a < num_active_clusters; ++a) {
+	    if (lb_[a] < smallest_lowerbound) {
+		smallest_lowerbound = lb_[a];
+		candidate_index = a;
 	    }
 	}
 
 	while (!tight_[candidate_index]) {
-	    // Tighten this candidate, which requires O(dm) computations.
+	    // The current candidate turns out to have a loose lowerbound.
+	    // Tighten it: O(dm).
 	    lb_[candidate_index] = DBL_MAX;  // Recompute lowerbound.
-	    for (size_t i = 0; i < num_active_clusters; ++i) {
-		if (i == candidate_index) continue;  // Skip self.
+	    for (size_t a = 0; a < num_active_clusters; ++a) {
+		if (a == candidate_index) continue;  // Skip self.
 		double dist =
-		    ComputeDistance(ordered_points, candidate_index, i);
-		if (dist < lb_[candidate_index]) {  // Tighten candidate.
-		    lb_[candidate_index] = dist;
-		    twin_[candidate_index] = i;
-		    tight_[candidate_index] = true;
-		}
-		if (dist < lb_[i]) {  // Tighten the i-th active cluster.
-		    lb_[i] = dist;
-		    twin_[i] = candidate_index;
-		    tight_[i] = true;
-		}
+		    ComputeDistance(ordered_points, candidate_index, a);
+		UpdateLowerbounds(candidate_index, a, dist);
 	    }
-	    num_extra_tightening_++;
+	    ++num_extra_tightening_;
 
-	    // Again, find which active cluster has the smallest lowerbound in
-	    // O(m) computations.
+	    // Again, find an active cluster with the smallest lowerbound: O(m).
 	    smallest_lowerbound = DBL_MAX;
-	    for (size_t i = 0; i < num_active_clusters; ++i) {
-		if (lb_[i] < smallest_lowerbound) {
-		    smallest_lowerbound = lb_[i];
-		    candidate_index = i;
+	    for (size_t a = 0; a < num_active_clusters; ++a) {
+		if (lb_[a] < smallest_lowerbound) {
+		    smallest_lowerbound = lb_[a];
+		    candidate_index = a;
 		}
 	    }
 	}
 
 	// At this point, we have a pair of active clusters with minimum
-	// distance. Denote their active indices by "a" and "b".
-	size_t a = candidate_index;
-	size_t b = twin_[a];
-	if (a > b) {  // WLOG, we will maintain a < b.
-	    size_t temp = a;
-	    a = b;
-	    b = temp;
+	// pairwise distance. Denote their active indices by "alpha" and "beta".
+	size_t alpha = candidate_index;
+	size_t beta = twin_[alpha];
+	if (alpha > beta) {  // WLOG, we will maintain alpha < beta.
+	    size_t temp = alpha;
+	    alpha = beta;
+	    beta = temp;
 	}
 
-	// Every cluster whose twin was in {a, b} now has a loose lowerbound.
-	for (size_t i = 0; i < num_active_clusters; ++i) {
-	    if (twin_[i] == a || twin_[i] == b) { tight_[i] = false; }
+	// Cluster whose twin was in {alpha, beta} has a loose lowerbound.
+	for (size_t a = 0; a < num_active_clusters; ++a) {
+	    if (twin_[a] == alpha || twin_[a] == beta) { tight_[a] = false; }
 	}
 
 	// Record the merge in Z_.
 	size_t merged_cluster = n + merge_num;
-	get<0>(Z_[merge_num]) = active_[a];
-	get<1>(Z_[merge_num]) = active_[b];
+	get<0>(Z_[merge_num]) = active_[alpha];
+	get<1>(Z_[merge_num]) = active_[beta];
 	get<2>(Z_[merge_num]) = smallest_lowerbound;
-	size_[merged_cluster] = size_[active_[a]] + size_[active_[b]];
 
-	// We now need to replace the a-th active cluster with this new merged
-	// cluster. Then we will shift active clusters past index b to the left
-	// by one position to overwrite b.
+	// Compute the size of the merged cluster.
+	size_[merged_cluster] = size_[active_[alpha]] + size_[active_[beta]];
 
-	// MUST compute the merge before changing active clusters!
-	ComputeMergedMean(ordered_points, a, b, &mean_[a]);
-	active_[a] = merged_cluster;
-	lb_[a] = DBL_MAX;
-	for (size_t i = 0; i < num_active_clusters; ++i) {
-	    if (i == a) continue;  // Skip self.
-	    if (i == b) continue;  // Active b will be overwritten anyway.
-	    double dist = ComputeDistance(ordered_points, a, i);
-	    if (dist < lb_[a]) {  // Tighten the a-th active cluster.
-		lb_[a] = dist;
-		twin_[a] = i;
-		tight_[a] = true;
-	    }
-	    if (dist < lb_[i]) {  // Tighten the i-th active cluster.
-		lb_[i] = dist;
-		twin_[i] = a;
-		tight_[i] = true;
-	    }
+	// MUST compute the merge mean before modifying active clusters!
+	ComputeMergedMean(ordered_points, alpha, beta, &mean_[alpha]);
+
+	//----------------------------------------------------------------------
+	// SHIFTING (Recall: alpha < beta)
+	// We now replace the (alpha)-th active cluster with the new merged
+	// cluster. Then we will shift active clusters past index beta to the
+	// left by one position to overwrite beta. Graphically speaking, the
+	// current M <= m+1 active clusters will change in structure (1 element
+	// shorter) as follows:
+	//
+	//     a_1   ...   alpha        ...  a   b   beta   c   d   ...   a_M
+	// =>
+	//     a_1   ...   alpha+beta   ...  a   b   c   d   ...   a_M
+	//----------------------------------------------------------------------
+
+	// Set the merged cluster as the (alpha)-th active cluster and tighten.
+	active_[alpha] = merged_cluster;
+	lb_[alpha] = DBL_MAX;
+	for (size_t a = 0; a < num_active_clusters; ++a) {
+	    if (a == alpha) continue;  // Skip self.
+	    if (a == beta) continue;  // beta will be overwritten anyway.
+	    double dist = ComputeDistance(ordered_points, alpha, a);
+	    UpdateLowerbounds(alpha, a, dist);
 	}
 
-	// Now shift the elements past b to the left by one (overwriting b).
-	for (size_t i = 0; i < num_active_clusters - 1; ++i) {
-	    if (i < b && twin_[i] > b) {
+	// Shift the elements past beta to the left by one (overwriting beta).
+	for (size_t a = 0; a < num_active_clusters - 1; ++a) {
+	    if (a < beta && twin_[a] > beta) {
 		// Even for non-shifting elements, if their twin index is
-		// greater than b, we must shift accordingly.
-		twin_[i] = twin_[i] - 1;
+		// greater than beta, we must shift accordingly.
+		twin_[a] = twin_[a] - 1;
 	    }
 
-	    if (i >= b) {
-		active_[i] = active_[i + 1];
-		mean_[i] = mean_[i + 1];
-		lb_[i] = lb_[i + 1];
+	    if (a >= beta) {
+		active_[a] = active_[a + 1];
+		mean_[a] = mean_[a + 1];
+		lb_[a] = lb_[a + 1];
+		tight_[a] = tight_[a + 1];
 
-		// Again, need to shift twin indices accordingly.
-		if (twin_[i + 1] < b) {
-		    twin_[i] = twin_[i + 1];
-		} else {
-		    twin_[i] = twin_[i + 1] - 1;
+		if (twin_[a + 1] < beta) {
+		    twin_[a] = twin_[a + 1];
+		} else {  // Again, need to shift twin indices accordingly.
+		    twin_[a] = twin_[a + 1] - 1;
 		}
-		tight_[i] = tight_[i + 1];
 	    }
-
-	    ASSERT(i != twin_[i], "Active index " << i << " has itself for "
+	    ASSERT(a != twin_[a], "Active index " << a << " has itself for "
 		   "twin: something got screwed while shifting");
 	}
     }
-    LabelLeaves();
+    LabelLeaves();  // Clustering done: label bit strings.
 }
 
 double Greedo::ComputeDistance(const vector<Eigen::VectorXd> &ordered_points,
@@ -201,6 +186,20 @@ double Greedo::ComputeDistance(const vector<Eigen::VectorXd> &ordered_points,
     double scale = 2.0 * size1 * size2 / (size1 + size2);
     Eigen::VectorXd diff = mean_[active_index1] - mean_[active_index2];
     return scale * diff.squaredNorm();
+}
+
+void Greedo::UpdateLowerbounds(size_t active_index1, size_t active_index2,
+			       double distance) {
+    if (distance < lb_[active_index1]) {
+	lb_[active_index1] = distance;
+	twin_[active_index1] = active_index2;
+	tight_[active_index1] = true;
+    }
+    if (distance < lb_[active_index2]) {
+	lb_[active_index2] = distance;
+	twin_[active_index2] = active_index1;
+	tight_[active_index2] = true;
+    }
 }
 
 void Greedo::ComputeMergedMean(const vector<Eigen::VectorXd> &ordered_points,
