@@ -1,0 +1,27 @@
+Author: Karl Stratos (karlstratos@gmail.com)
+This directory contains public datasets for testing some aspects of the quality
+of computed word embeddings.
+
+wordsim353.txt:
+- Description: 353 word pairs and their human similarity scores
+- Example line: "love sex 6.77"
+- URL: http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/
+- Date: January 2015
+
+men.txt:
+- Description: 3000 word pairs and their human similarity scores
+- Example line: "floor roof 39.000000"
+- URL: http://clic.cimec.unitn.it/~elia.bruni/MEN.html
+- Date: January 2015
+
+syntactic_analogies.txt:
+- Description: 8000 syntactic analogies (preceded by their categories)
+- Example line: "JJR_JJ better good heavier heavy"
+- URL: http://research.microsoft.com/en-us/um/people/gzweig/Pubs/myz_naacl13_test_set.tgz
+- Date: January 2015
+
+mixed_analogies.txt:
+- Description: 19544 syntactic/semantic analogies (preceded by their categories)
+- Example line: "capital-common-countries Athens Greece Baghdad Iraq"
+- URL: http://www.fit.vutbr.cz/~imikolov/rnnlm/word-test.v1.txt
+- Date: January 2015

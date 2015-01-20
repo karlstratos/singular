@@ -77,12 +77,12 @@ def spearmans_correlation(x, y):
     # Figure out which value corresponds to which position.
     mydict1 = {}
     for i, x_val in enumerate(x_sorted):
-        mydict1[x_val] = i
+        mydict1[x_val] = i  # May be many-to-one (doesn't matter).
     x_indices = [mydict1[x_val] for x_val in x]
 
     mydict2 = {}
     for i, y_val in enumerate(y_sorted):
-        mydict2[y_val] = i
+        mydict2[y_val] = i  # May be many-to-one (doesn't matter).
     y_indices = [mydict2[y_val] for y_val in y]
 
     final_x = []

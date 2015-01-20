@@ -134,7 +134,16 @@ private:
     // first view.
     Eigen::MatrixXd PerformCCAOnComputedCounts();
 
-    // Perform greedy agglomerative clustering over word vectors.
+    // Tests the quality of word vectors on simple tasks.
+    void TestQualityOfWordVectors();
+
+    // Checks the word similairity performance on the wordsim353 dataset.
+    void TestWordsim353();
+
+    // Checks the word similairity performance on the MEN dataset.
+    void TestMEN();
+
+    // Performs greedy agglomerative clustering over word vectors.
     void PerformAgglomerativeClustering(size_t num_clusters);
 
     // Performs PCA on word vectors to put them in the PCA basis.

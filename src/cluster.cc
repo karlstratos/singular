@@ -10,6 +10,8 @@ void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
     size_t n = ordered_points.size();  // n = number of points.
     ASSERT(m <= n, "Number of clusters " << m << " is smaller than number of "
 	   << "points: " << n);
+    num_points_ = n;
+    num_clusters_ = m;
 
     //--------------------------------------------------------------------------
     // (Sketch of the algorithm)
@@ -229,11 +231,8 @@ void Greedo::LabelLeaves() {
     ASSERT(active_.size() > 0, "Active clusters missing!");
     bit2cluster_.clear();
 
-    // Recover the number of points, n, from the size of Z_, n-1.
-    size_t n = Z_.size() + 1;
-
-    // Recover the number of clusters, m, from the size of active_, m+1.
-    size_t m = active_.size() - 1;
+    size_t n = num_points_;
+    size_t m = num_clusters_;
 
     // Use breadth-first search (BFS) to traverse the tree. Maintain bit strings
     // to mark the path from the root.

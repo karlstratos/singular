@@ -27,6 +27,12 @@ public:
     bool exists(const string &file_path);
 };
 
+class Stat {
+public:
+    // Computes Spearman's rank correlation coefficient.
+    double ComputeSpearman(const vector<double> &x, const vector<double> &y);
+};
+
 class Sampler {
 public:
     // [*Warning* Unchecked for correctness.]

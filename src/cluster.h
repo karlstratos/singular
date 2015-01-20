@@ -29,6 +29,12 @@ public:
 	return &bit2cluster_;
     }
 
+    // Returns the average number of tightening operations performed per
+    // merge because lowerbounds were not tight. This is upperbounded by m.
+    double average_num_extra_tightening() {
+	return ((double) num_extra_tightening_) / (num_points_ - 1);
+    }
+
 private:
     // Computes the distance between two active clusters.
     double ComputeDistance(const vector<Eigen::VectorXd> &ordered_points,
@@ -50,6 +56,12 @@ private:
     //                1010  1011
     //             {0,3,9}   {77,1,8}
     void LabelLeaves();
+
+    // Number of data points (aka. n).
+    size_t num_points_;
+
+    // Number of clusters (aka. m).
+    size_t num_clusters_;
 
     // Information of the n-1 merges. For i in {0 ... n-2}:
     //    get<0>(Z_[i]) = left child of cluster n+i

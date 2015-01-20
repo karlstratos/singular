@@ -29,6 +29,7 @@ void CanonWord::SetOutputDirectory(const string &output_directory) {
 	    if (version > latest_version) { latest_version = version; }
 	}
     }
+    closedir(directory);
     log_.open(LogPath() + "." + to_string(latest_version + 1), ios::out);
     log_ << fixed << setprecision(2);
 }
@@ -62,6 +63,9 @@ void CanonWord::InduceLexicalRepresentations() {
 
     // Induce vector representations of word types based on cached count files.
     InduceWordVectors();
+
+    // Test the quality of word vectors on simple tasks.
+    TestQualityOfWordVectors();
 
     // Perform greedy agglomerative clustering over word vectors.
     PerformAgglomerativeClustering(cca_dim_);
@@ -579,6 +583,99 @@ Eigen::MatrixXd CanonWord::PerformCCAOnComputedCounts() {
     return *sparsecca_solver.cca_transformation_x();
 }
 
+void CanonWord::TestQualityOfWordVectors() {
+    log_ << fixed << setprecision(3);
+    log_ << endl << "[Quality of word vectors]" << endl;
+    TestWordsim353();
+    TestMEN();
+    log_ << fixed << setprecision(2);
+}
+
+void CanonWord::TestWordsim353() {
+    string wordsim353_path = "third_party/public_datasets/wordsim353.txt";
+    FileManipulator file_manipulator;
+    if (!file_manipulator.exists(wordsim353_path)) {
+	wordsim353_path = "../third_party/public_datasets/wordsim353.txt";
+    }
+    ASSERT(file_manipulator.exists(wordsim353_path),
+	   "Failed to find wordsim353.txt");
+
+    ifstream wordsim353_file(wordsim353_path, ios::in);
+    ASSERT(wordsim353_file.is_open(), "Cannot open file: " << wordsim353_path);
+    string line;
+    vector<string> tokens;
+    StringManipulator string_manipulator;
+    vector<double> human_scores;
+    vector<double> cosine_scores;
+    size_t num_instances = 0;
+    size_t num_skipped = 0;
+    while (wordsim353_file.good()) {
+	getline(wordsim353_file, line);
+	if (line == "") { continue; }
+	++num_instances;
+	string_manipulator.split(line, " ", &tokens);
+	string word1 = tokens[0];
+	string word2 = tokens[1];
+	double human_score = stod(tokens[2]);
+	if (wordvectors_.find(word1) != wordvectors_.end() &&
+	    wordvectors_.find(word2) != wordvectors_.end()) {
+	    // Assumes that word vectors already have length 1.
+	    double cosine_score = wordvectors_[word1].dot(wordvectors_[word2]);
+	    human_scores.push_back(human_score);
+	    cosine_scores.push_back(cosine_score);
+	} else {
+	    ++num_skipped;
+	}
+    }
+    Stat stat;
+    double spearman_corr = stat.ComputeSpearman(human_scores, cosine_scores);
+
+    log_ << "   wordsim353 (skipped " << num_skipped << " out of "
+	 << num_instances << "): " << spearman_corr << endl;
+}
+
+void CanonWord::TestMEN() {
+    string men_path = "third_party/public_datasets/men.txt";
+    FileManipulator file_manipulator;
+    if (!file_manipulator.exists(men_path)) {
+	men_path = "../third_party/public_datasets/men.txt";
+    }
+    ASSERT(file_manipulator.exists(men_path), "Failed to find men.txt");
+
+    ifstream men_file(men_path, ios::in);
+    ASSERT(men_file.is_open(), "Cannot open file: " << men_path);
+    string line;
+    vector<string> tokens;
+    StringManipulator string_manipulator;
+    vector<double> human_scores;
+    vector<double> cosine_scores;
+    size_t num_instances = 0;
+    size_t num_skipped = 0;
+    while (men_file.good()) {
+	getline(men_file, line);
+	if (line == "") { continue; }
+	++num_instances;
+	string_manipulator.split(line, " ", &tokens);
+	string word1 = tokens[0];
+	string word2 = tokens[1];
+	double human_score = stod(tokens[2]);
+	if (wordvectors_.find(word1) != wordvectors_.end() &&
+	    wordvectors_.find(word2) != wordvectors_.end()) {
+	    // Assumes that word vectors already have length 1.
+	    double cosine_score = wordvectors_[word1].dot(wordvectors_[word2]);
+	    human_scores.push_back(human_score);
+	    cosine_scores.push_back(cosine_score);
+	} else {
+	    ++num_skipped;
+	}
+    }
+    Stat stat;
+    double spearman_corr = stat.ComputeSpearman(human_scores, cosine_scores);
+
+    log_ << "   MEN (skipped " << num_skipped << " out of "
+	 << num_instances << "): " << spearman_corr << endl;
+}
+
 void CanonWord::PerformAgglomerativeClustering(size_t num_clusters) {
     // Check if we already have the agglomerative clustering result.
     FileManipulator file_manipulator;
@@ -600,6 +697,9 @@ void CanonWord::PerformAgglomerativeClustering(size_t num_clusters) {
     greedo.Cluster(sorted_vectors, num_clusters);
     double time_greedo = difftime(time(NULL), begin_time_greedo);
     StringManipulator string_manipulator;
+    log_ << "   Average number of tightenings: "
+	 << greedo.average_num_extra_tightening() << " (versus exhaustive "
+	 << num_clusters << ")" << endl;
     log_ << "   Time taken: " << string_manipulator.print_time(time_greedo)
 	 << endl;
 
@@ -657,10 +757,24 @@ void CanonWord::RotateWordVectorsToPCACoordinates() {
 
     // Compute variance in each dimension.
     ofstream pca_variance_file(PCAVariancePath(), ios::out);
+    vector<double> variances;
+    double sum_variances = 0.0;
     for (size_t i = 0; i < singular_values.size(); ++i) {
 	double ith_variance =
 	    pow(singular_values(i), 2) / (word_matrix.cols() - 1);
 	pca_variance_file << ith_variance << endl;
+	variances.push_back(ith_variance);
+	sum_variances += ith_variance;
+    }
+    double cumulative_variance = 0.0;
+    const double variance_percentage = 90.0;
+    for (size_t i = 0; i < variances.size(); ++i) {
+	cumulative_variance += variances[i];
+	if (cumulative_variance / sum_variances * 100 > variance_percentage) {
+	    log_ << "   Top " << i + 1 << " PCA dimensions contain > "
+		 << variance_percentage << "% of total variances" << endl;
+	    break;
+	}
     }
 
     // Compute word vectors in the PCA basis: right singular vectors times
