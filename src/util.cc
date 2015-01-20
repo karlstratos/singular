@@ -2,6 +2,7 @@
 
 #include "util.h"
 
+#include <algorithm>
 #include <math.h>
 #include <random>
 #include <sys/stat.h>
