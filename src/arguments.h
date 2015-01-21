@@ -45,6 +45,9 @@ public:
     // lets the model decide).
     int smoothing_term() { return smoothing_term_; }
 
+    // Returns the scaling method for SVD.
+    string scaling_method() { return scaling_method_; }
+
 private:
     // Path to a text corpus.
     string corpus_path_;
@@ -72,6 +75,9 @@ private:
 
     // Smoothing term for calculating the correlation matrix.
     int smoothing_term_ = -1;  // Let the model decide.
+
+    // Scaling method for SVD.
+    string scaling_method_ = "cca";
 };
 
 #endif  // ARGUMENTS_H_

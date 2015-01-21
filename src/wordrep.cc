@@ -539,33 +539,47 @@ Eigen::MatrixXd CanonWord::PerformCCAOnComputedCounts() {
 	   "read from the corpus: " << CountContextPath());
 
     time_t begin_time_cca = time(NULL);  // CCA time.
-    log_ << endl << "[Performing CCA on the computed counts]" << endl;
+    log_ << endl << "[Decomposing a matrix of scaled counts]" << endl;
     string line;
     vector<string> tokens;
     StringManipulator string_manipulator;
     ifstream count_word_context_file(CountWordContextPath(), ios::in);
     getline(count_word_context_file, line);
     string_manipulator.split(line, " ", &tokens);
-    log_ << "   Correlation matrix: " << tokens[0] << " x " << tokens[1]
-	 << " (" << tokens[2] << " nonzeros)" << endl;
-    log_ << "   CCA dimension: " << cca_dim_ << endl;
+    log_ << "   Matrix: " << tokens[0] << " x " << tokens[1] << " ("
+	 << tokens[2] << " nonzeros)" << endl;
+    log_ << "   Rank of SVD: " << cca_dim_ << endl;
 
     if (smoothing_term_ < 0) {
 	// If smoothing term is negative, set it based on the cutoff value
 	// (i.e., the smallest count) we used.
 	smoothing_term_ = 2 * rare_cutoff_;
-	log_ << "   Smoothing term: " << smoothing_term_ << " (automatically "
-	     << "set)" << endl << flush;
+	if (scaling_method_ == "cca") {
+	    log_ << "   Smoothing term: " << smoothing_term_
+		 << " (automatically set)" << endl << flush;
+	}
     } else {
-	log_ << "   Smoothing term: " << smoothing_term_ << endl << flush;
+	if (scaling_method_ == "cca") {
+	    log_ << "   Smoothing term: " << smoothing_term_ << endl << flush;
+	}
     }
 
     SparseCCASolver sparsecca_solver(cca_dim_, smoothing_term_);
+    // Obtain the number of words (samples).
+    ifstream count_word_file(CountWordPath(), ios::in);
+    while (count_word_file.good()) {
+	getline(count_word_file, line);
+	if (line == "") { continue; }
+	string_manipulator.split(line, " ", &tokens);
+	num_words_ += stoi(tokens[0]);
+    }
+    sparsecca_solver.set_num_samples(num_words_);
+    sparsecca_solver.set_scaling_method(scaling_method_);
     sparsecca_solver.PerformCCA(CountWordContextPath(),
 				CountWordPath(), CountContextPath());
     double time_cca = difftime(time(NULL), begin_time_cca);
     if (sparsecca_solver.rank() < cca_dim_) {
-	log_ << "   (*WARNING*) The correlation matrix has rank "
+	log_ << "   (*WARNING*) The matrix has rank "
 	     << sparsecca_solver.rank() << " < " << cca_dim_ << "!" << endl;
     }
 
@@ -819,7 +833,14 @@ string CanonWord::Signature(size_t version) {
     }
     if (version >= 2) {
 	signature += "_dim" + to_string(cca_dim_);
-	signature += "_smooth" + to_string(smoothing_term_);
+	if (scaling_method_ == "cca") {
+	    signature += "_cca";
+	    signature += "_smooth" + to_string(smoothing_term_);
+	} else if (scaling_method_ == "pmi") {
+	    signature += "_pmi";
+	} else {
+	    ASSERT(false, "Unknown scaling method: " << scaling_method_);
+	}
     }
     return signature;
 }

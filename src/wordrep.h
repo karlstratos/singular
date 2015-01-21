@@ -63,6 +63,11 @@ public:
 	smoothing_term_ = smoothing_term;
     }
 
+    // Sets the scaling method for SVD.
+    void set_scaling_method(string scaling_method) {
+	scaling_method_ = scaling_method;
+    }
+
     // Returns the computed word vectors
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
@@ -264,6 +269,9 @@ private:
     // Smoothing term for calculating the correlation matrix. If it's negative,
     // we let the model decide based on the smallest word count.
     int smoothing_term_ = -1;
+
+    // Scaling method for SVD.
+    string scaling_method_ = "cca";
 };
 
 #endif  // WORDREP_H

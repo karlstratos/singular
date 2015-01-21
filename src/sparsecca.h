@@ -69,6 +69,14 @@ public:
 	smoothing_term_ = smoothing_term;
     }
 
+    // Sets the number of samples used for covariance values.
+    void set_num_samples(size_t num_samples) { num_samples_ = num_samples; }
+
+    // Sets the scaling method for SVD.
+    void set_scaling_method(string scaling_method) {
+	scaling_method_ = scaling_method;
+    }
+
     // Returns the dimension of the CCA subspace.
     size_t cca_dim() { return cca_dim_; }
 
@@ -89,8 +97,16 @@ public:
     Eigen::VectorXd *cca_correlations() { return &cca_correlations_; }
 
 private:
-    // Extracts scaled singular vectors from an SVD solver.
-    void ExtractScaledSingularVectors(
+    // Loads variance/count vector from a file.
+    void LoadVariance(const string &variance_path,
+		      unordered_map<size_t, double> *variance);
+
+    // Scales a covariance value by variance in each variable.
+    double ScaleCovariance(double covariance_xy,
+			   double variance_x, double variance_y);
+
+    // Extracts CCA projections (scaled singular vectors) from an SVD solver.
+    void ExtractCCAProjections(
 	const SparseSVDSolver &svd_solver,
 	const unordered_map<size_t, double> &variance_x,
 	const unordered_map<size_t, double> &variance_y);
@@ -104,6 +120,17 @@ private:
 
     // Smoothing term for calculating the correlation matrix.
     double smoothing_term_;
+
+    // Number of samples used for covariance values.
+    size_t num_samples_ = 0;
+
+    // Scaling method for SVD.
+    //    "cca": CCA scaling.
+    //              f(x,y) / sqrt(f(x) + smoothing) / sqrt(f(y) + smoothing)
+    //    "pmi": Positive pointwise mutual information (PMI) scaling. This makes
+    //           sense when values are counts of binary variables.
+    //              max{log f(x,y) + log(# of samples) - log f(x) - log f(y), 0}
+    string scaling_method_ = "cca";
 
     // CCA tranformation for the first view X: (dimension) x |X|.
     Eigen::MatrixXd cca_transformation_x_;

@@ -24,6 +24,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    cca_dim_ = stoi(argv[++i]);
 	} else if (arg == "--smoothing") {
 	    smoothing_term_ = stoi(argv[++i]);
+	} else if (arg == "--scaling") {
+	    scaling_method_ = argv[++i];
 	} else if (arg == "-h" || arg == "--help"){
 	    display_options_and_quit = true;
 	} else {
@@ -70,6 +72,12 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: " << smoothing_term_ << ")" << endl
 	     << "Smoothing term for calculating the correlation matrix "
 	     << "(-1 lets the model decide)."  << endl << endl;
+
+	cout << "--scaling "
+	     << "(default: " << scaling_method_ << ")" << endl
+	     << "Scaling method for SVD." << endl
+	     << "\t\"cca\": CCA scaling" << endl
+	     << "\t\"pmi\": Positive PMI scaling" << endl << endl;
 
 	exit(0);
     }
