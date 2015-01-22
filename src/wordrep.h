@@ -1,31 +1,28 @@
 // Author: Karl Stratos (karlstratos@gmail.com)
 //
-// An application of CCA for inducing lexical representations. In a particular
-// setting, CCA is shown to recover the emission parameters of a hard-clustering
-// hidden Markov model (HMM): A spectral algorithm for learning class-based
-// n-gram models of natrual language (Stratos et al., 2014).
+// Code for inducing lexical representations.
 
 #ifndef WORDREP_H
 #define WORDREP_H
 
 #include <fstream>
 
-#include "sparsecca.h"
+#include "decompose.h"
 
 typedef size_t Word;
 typedef size_t Context;
 
-class CanonWord {
+class WordRep {
 public:
-    // Initializes CanonWord with no output directory.
-    CanonWord() { }
+    // Initializes empty.
+    WordRep() { }
 
-    // Initializes CanonWord with an output directory.
-    CanonWord(const string &output_directory) {
+    // Initializes with an output directory.
+    WordRep(const string &output_directory) {
 	SetOutputDirectory(output_directory);
     }
 
-    ~CanonWord() { }
+    ~WordRep() { }
 
     // Sets the output directory.
     void SetOutputDirectory(const string &output_directory);
@@ -39,41 +36,38 @@ public:
     // Induces lexical representations from word counts in the output directory.
     void InduceLexicalRepresentations();
 
-    // Sets the rare word cutoff value (-1 lets the model decide).
+    // Sets a rare word cutoff value (-1 lets the model decide).
     void set_rare_cutoff(int rare_cutoff) { rare_cutoff_ = rare_cutoff; }
 
-    // Sets the context window size.
-    void set_window_size(int window_size) { window_size_ = window_size; }
+    // Sets a context window size.
+    void set_window_size(size_t window_size) { window_size_ = window_size; }
 
-    // Sets the flag for using bag-of-words context.
+    // Sets a flag for using bag-of-words context.
     void set_bag_of_words(bool bag_of_words) { bag_of_words_ = bag_of_words; }
 
-    // Sets the flag for indicating that there is a sentence per line in the
+    // Sets a flag for indicating that there is a sentence per line in the
     // text corpus.
     void set_sentence_per_line(bool sentence_per_line) {
 	sentence_per_line_ = sentence_per_line;
     }
 
-    // Sets the dimension of the CCA subspace.
-    void set_cca_dim(size_t cca_dim) { cca_dim_ = cca_dim; }
+    // Sets a target dimension of word vectors.
+    void set_dim(size_t dim) { dim_ = dim; }
 
-    // Sets the smoothing term for calculating the correlation matrix (-1 lets
-    // the model decide).
-    void set_smoothing_term(int smoothing_term) {
-	smoothing_term_ = smoothing_term;
-    }
+    // Sets a smoothing value (-1 lets the model decide).
+    void set_smooth_value(int smooth_value) { smooth_value_ = smooth_value; }
 
-    // Sets the scaling method for SVD.
+    // Sets the scaling method.
     void set_scaling_method(string scaling_method) {
 	scaling_method_ = scaling_method;
     }
 
-    // Returns the computed word vectors
+    // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
     }
 
-    // Returns the singular values of the correlation matrix .
+    // Returns the singular values of the scaled count matrix.
     Eigen::VectorXd *singular_values() { return &singular_values_; }
 
     // Returns the special string for representing rare words.
@@ -122,9 +116,13 @@ private:
     // Determines rare word types.
     void DetermineRareWords();
 
-    // Computes the unnormalized covariance values (i.e., counts) from the given
-    // corpus file.
+    // Computes the unnormalized covariance values (i.e., cooccurrence counts)
+    // from the given corpus file.
     void ComputeCovariance(const string &corpus_file);
+
+    /***********
+Start From here, check wordrep.cc and test code.
+     ***********/
 
     // Induces vector representations of word types based on cached count files.
     void InduceWordVectors();
@@ -159,7 +157,7 @@ private:
     //    version=1: rare_cutoff_, window_size_, bag_of_words,
     //               sentence_per_line_
     //    version=2: rare_cutoff_, window_size_, bag_of_words,
-    //               sentence_per_line_, cca_dim_, smoothing_term_
+    //               sentence_per_line_, dim_, smooth_value_
     string Signature(size_t version);
 
     // Returns the path to the corpus information file.
@@ -263,12 +261,12 @@ private:
     // Have a sentence per line in the text corpus?
     bool sentence_per_line_ = false;
 
-    // Dimension of the CCA subspace.
-    size_t cca_dim_;
+    // Target dimension of word vectors.
+    size_t dim_;
 
     // Smoothing term for calculating the correlation matrix. If it's negative,
     // we let the model decide based on the smallest word count.
-    int smoothing_term_ = -1;
+    int smooth_value_ = -1;
 
     // Scaling method for SVD.
     string scaling_method_ = "cca";
