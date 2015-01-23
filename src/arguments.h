@@ -25,8 +25,8 @@ public:
     // Returns the flag for recomputing all counts from scratch.
     bool from_scratch() { return from_scratch_; }
 
-    // Returns the rare word cutoff value (-1 lets the model decide).
-    int rare_cutoff() { return rare_cutoff_; }
+    // Returns the rare word cutoff value.
+    size_t rare_cutoff() { return rare_cutoff_; }
 
     // Returns the size of the context to compute covariance on.
     size_t window_size() { return window_size_; }
@@ -38,14 +38,13 @@ public:
     // text corpus.
     bool sentence_per_line() { return sentence_per_line_; }
 
-    // Returns the dimension of the CCA subspace.
-    size_t cca_dim() { return cca_dim_; }
+    // Returns the target dimension of word vectors.
+    size_t dim() { return dim_; }
 
-    // Returns the smoothing term for calculating the correlation matrix (-1
-    // lets the model decide).
-    int smoothing_term() { return smoothing_term_; }
+    // Returns the smoothing value.
+    size_t smooth_value() { return smooth_value_; }
 
-    // Returns the scaling method for SVD.
+    // Returns the scaling method.
     string scaling_method() { return scaling_method_; }
 
 private:
@@ -55,28 +54,28 @@ private:
     // Output directory.
     string output_directory_;
 
-    // Recompute counts from scratch (no caching)?
+    // Recompute counts from scratch.
     bool from_scratch_ = false;
 
     // Rare word cutoff.
-    int rare_cutoff_ = -1;  // Let the model decide.
+    size_t rare_cutoff_ = 1;
 
     // Size of the context to compute covariance on.
-    size_t window_size_ = 3;  // 1 word to the left and to the right.
+    size_t window_size_ = 3;
 
-    // Use bag-of-words (i.e., not position sensitive) context?
+    // Use bag-of-words context?
     bool bag_of_words_ = false;
 
     // Have a sentence per line in the text corpus?
     bool sentence_per_line_ = false;
 
-    // Dimension of the CCA subspace.
-    size_t cca_dim_ = 1000;
+    // Target dimension of word vectors.
+    size_t dim_ = 100;
 
-    // Smoothing term for calculating the correlation matrix.
-    int smoothing_term_ = -1;  // Let the model decide.
+    // Smoothing value.
+    size_t smooth_value_ = 5;
 
-    // Scaling method for SVD.
+    // Scaling method.
     string scaling_method_ = "cca";
 };
 

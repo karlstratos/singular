@@ -14,8 +14,8 @@ void Decomposer::Decompose(
 	for (const auto &row_pair : col_pair.second) {
 	    size_t row = row_pair.first;
 	    (*joint_values)[col][row] =
-		ScaleCovariance(joint_values->at(col)[row],
-				values1.at(row), values2.at(col));
+		ScaleJointValue(joint_values->at(col)[row],
+				 values1.at(row), values2.at(col));
 	}
     }
 
@@ -38,11 +38,11 @@ void Decomposer::Decompose(const string &joint_values_path,
 
     // Load first scaling values.
     unordered_map<size_t, double> values1;
-    LoadVariance(values1_path, &values1);
+    LoadScalingValues(values1_path, &values1);
 
     // Load second scaling values.
     unordered_map<size_t, double> values2;
-    LoadVariance(values2_path, &values2);
+    LoadScalingValues(values2_path, &values2);
 
     // Check that dimensions match.
     SMat matrix = svd_solver.sparse_matrix();
@@ -58,8 +58,8 @@ void Decomposer::Decompose(const string &joint_values_path,
 	while (current_column_nonzero_index < next_column_start_nonzero_index) {
 	    size_t row = matrix->rowind[current_column_nonzero_index];
 	    matrix->value[current_column_nonzero_index] =
-		ScaleCovariance(matrix->value[current_column_nonzero_index],
-				values1[row], values2[col]);
+		ScaleJointValue(matrix->value[current_column_nonzero_index],
+				 values1[row], values2[col]);
 	    ++current_column_nonzero_index;
 	}
     }
@@ -127,8 +127,8 @@ void Decomposer::LoadScalingValues(
     }
 }
 
-double Decomposer::ScaleJointValues(double joint_value,
-				    double value1, double value2) {
+double Decomposer::ScaleJointValue(double joint_value,
+				   double value1, double value2) {
     double scaled_joint_value = joint_value;
     if (scaling_method_ == "cca") {
 	scaled_joint_value /= sqrt(value1 + smooth_value_);

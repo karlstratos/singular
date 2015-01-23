@@ -30,14 +30,14 @@ public:
     // Removes the content in the output directory.
     void ResetOutputDirectory();
 
-    // Computes word counts from the corpus with appropriate preprocessing.
+    // Extracts statistics from a corpus with preprocessing.
     void ExtractStatistics(const string &corpus_file);
 
     // Induces lexical representations from word counts in the output directory.
     void InduceLexicalRepresentations();
 
-    // Sets a rare word cutoff value (-1 lets the model decide).
-    void set_rare_cutoff(int rare_cutoff) { rare_cutoff_ = rare_cutoff; }
+    // Sets a rare word cutoff value.
+    void set_rare_cutoff(size_t rare_cutoff) { rare_cutoff_ = rare_cutoff; }
 
     // Sets a context window size.
     void set_window_size(size_t window_size) { window_size_ = window_size; }
@@ -54,8 +54,8 @@ public:
     // Sets a target dimension of word vectors.
     void set_dim(size_t dim) { dim_ = dim; }
 
-    // Sets a smoothing value (-1 lets the model decide).
-    void set_smooth_value(int smooth_value) { smooth_value_ = smooth_value; }
+    // Sets a smoothing value.
+    void set_smooth_value(size_t smooth_value) { smooth_value_ = smooth_value; }
 
     // Sets the scaling method.
     void set_scaling_method(string scaling_method) {
@@ -116,26 +116,20 @@ private:
     // Determines rare word types.
     void DetermineRareWords();
 
-    // Computes the unnormalized covariance values (i.e., cooccurrence counts)
-    // from the given corpus file.
-    void ComputeCovariance(const string &corpus_file);
-
-    /***********
-Start From here, check wordrep.cc and test code.
-     ***********/
+    // Slides a window across a corpus to collect statistics.
+    void SlideWindow(const string &corpus_file);
 
     // Induces vector representations of word types based on cached count files.
     void InduceWordVectors();
 
-    // Loads the word-integer dictionary from a cached file.
-    void LoadWordIntegerDictionary();
+    // Loads a filtered word dictionary from a cached file.
+    void LoadWordDictionary();
 
-    // Prepares sorted word counts from a cached file.
-    void PrepareSortedWordCounts();
+    // Load a sorted list of word-count pairs from a cached file.
+    void LoadSortedWordCounts();
 
-    // Performs CCA on cached count files and returns the projection for the
-    // first view.
-    Eigen::MatrixXd PerformCCAOnComputedCounts();
+    // Calculate a word matrix (column = word) from cached count files.
+    Eigen::MatrixXd CalculateWordMatrix();
 
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
@@ -229,9 +223,6 @@ Start From here, check wordrep.cc and test code.
     // Path to the log file.
     ofstream log_;
 
-    // Number of words (i.e., size of the corpus).
-    size_t num_words_ = 0;
-
     // Special string for representing rare words.
     const string kRareString_ = "<?>";
 
@@ -248,8 +239,7 @@ Start From here, check wordrep.cc and test code.
     string output_directory_;
 
     // If a word type appears <= this number, treat it as a rare symbol.
-    // If it is -1, we let the model decide rare words based on word counts.
-    int rare_cutoff_ = -1;
+    size_t rare_cutoff_ = 1;
 
     // Size of the context to compute covariance on. Note that it needs to be
     // odd if we want the left and right context to have the same length.
@@ -264,11 +254,10 @@ Start From here, check wordrep.cc and test code.
     // Target dimension of word vectors.
     size_t dim_;
 
-    // Smoothing term for calculating the correlation matrix. If it's negative,
-    // we let the model decide based on the smallest word count.
-    int smooth_value_ = -1;
+    // Smoothing value.
+    size_t smooth_value_ = 5;
 
-    // Scaling method for SVD.
+    // Scaling method.
     string scaling_method_ = "cca";
 };
 

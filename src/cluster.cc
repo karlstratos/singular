@@ -188,7 +188,6 @@ void Greedo::Cluster(const vector<Eigen::VectorXd> &ordered_points, size_t m) {
 	    get<1>(Z_[i]) = temp;
 	}
     }
-
     LabelLeaves();  // Clustering done: label bit strings.
 }
 

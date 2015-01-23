@@ -82,19 +82,19 @@ gtest_main.a: gtest-all.o gtest_main.o
 # function.
 
 # Test files in the source directory.
-singular_test: singular_test.o sparsecca.o sparsesvd.o cluster.o util.o \
+singular_test: singular_test.o decompose.o sparsesvd.o cluster.o util.o \
 	       gtest_main.a wordrep.o libsvd.a
 	       $(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ -lpthread
 
-singular_test.o: sparsecca.o sparsesvd.o
+singular_test.o: decompose.o sparsesvd.o
 	         $(CXX) -I $(EIGEN) $(CPPFLAGS) $(CXXFLAGS) -c \
 	         $(TEST_DIR)/singular_test.cc
 
-wordrep.o: sparsecca.o cluster.o
+wordrep.o: decompose.o cluster.o
 	   $(CXX) -I $(EIGEN) $(CXXFLAGS) -c $(USER_DIR)/src/wordrep.cc
 
-sparsecca.o: sparsesvd.o
-	     $(CXX) -I $(EIGEN) $(CXXFLAGS) -c $(USER_DIR)/src/sparsecca.cc
+decompose.o: sparsesvd.o
+	     $(CXX) -I $(EIGEN) $(CXXFLAGS) -c $(USER_DIR)/src/decompose.cc
 
 sparsesvd.o: util.o libsvd.a
 	     $(CXX) $(CXXFLAGS) -c $(USER_DIR)/src/sparsesvd.cc

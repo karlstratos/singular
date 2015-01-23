@@ -20,10 +20,10 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    bag_of_words_ = true;
 	} else if (arg == "--sentence-per-line") {
 	    sentence_per_line_ = true;
-	} else if (arg == "--cca-dim") {
-	    cca_dim_ = stoi(argv[++i]);
-	} else if (arg == "--smoothing") {
-	    smoothing_term_ = stoi(argv[++i]);
+	} else if (arg == "--dim") {
+	    dim_ = stoi(argv[++i]);
+	} else if (arg == "--smooth") {
+	    smooth_value_ = stoi(argv[++i]);
 	} else if (arg == "--scaling") {
 	    scaling_method_ = argv[++i];
 	} else if (arg == "-h" || arg == "--help"){
@@ -50,34 +50,30 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--rare "
 	     << "(default: " << rare_cutoff_ << ")" << endl
-	     << "Rare word cutoff value (-1 lets the model decide)."
-	     << endl << endl;
+	     << "Rare word cutoff value." << endl << endl;
 
 	cout << "--window "
 	     << "(default: " << window_size_ << ")" << endl
 	     << "Size of the context to compute covariance on." << endl << endl;
 
 	cout << "--bag-of-words" << endl
-	     << "Use bag-of-words (i.e., not position sensitive) context?"
+	     << "Use bag-of-words context?"
 	     << endl << endl;
 
 	cout << "--sentence-per-line " << endl
 	     << "Have a sentence per line in the text corpus?" << endl << endl;
 
-	cout << "--cca-dim "
-	     << "(default: " << cca_dim_ << ")" << endl
-	     << "Dimension of the CCA subspace." << endl << endl;
+	cout << "--dim "
+	     << "(default: " << dim_ << ")" << endl
+	     << "Target dimension of word vectors." << endl << endl;
 
-	cout << "--smoothing "
-	     << "(default: " << smoothing_term_ << ")" << endl
-	     << "Smoothing term for calculating the correlation matrix "
-	     << "(-1 lets the model decide)."  << endl << endl;
+	cout << "--smooth "
+	     << "(default: " << smooth_value_ << ")" << endl
+	     << "Smoothing value." << endl << endl;
 
 	cout << "--scaling "
 	     << "(default: " << scaling_method_ << ")" << endl
-	     << "Scaling method for SVD." << endl
-	     << "\t\"cca\": CCA scaling" << endl
-	     << "\t\"pmi\": Positive PMI scaling" << endl << endl;
+	     << "Scaling method: cca, pmi." << endl << endl;
 
 	exit(0);
     }
