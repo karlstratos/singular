@@ -27,7 +27,7 @@ void Decomposer::Decompose(
     rank_ = svd_solver.rank();
 
     // Extract scaled singular vectors from the SVD.
-    ExtractFromSVD(svd_solver, values1, values2);
+    ExtractFromSVD(&svd_solver, values1, values2);
 }
 
 void Decomposer::Decompose(const string &joint_values_path,
@@ -70,7 +70,7 @@ void Decomposer::Decompose(const string &joint_values_path,
     rank_ = svd_solver.rank();
 
     // Extract scaled singular vectors from the SVD.
-    ExtractFromSVD(svd_solver, values1, values2);
+    ExtractFromSVD(&svd_solver, values1, values2);
 }
 
 void Decomposer::Decompose(
@@ -148,31 +148,49 @@ double Decomposer::ScaleJointValue(double joint_value,
     return scaled_joint_value;
 }
 
-void Decomposer::ExtractFromSVD(const SparseSVDSolver &svd_solver,
+void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 				const unordered_map<size_t, double> &values1,
 				const unordered_map<size_t, double> &values2) {
     size_t dim1 = values1.size();
     size_t dim2 = values2.size();
-    ASSERT(svd_solver.HasSVDResult(), "No SVD result for extraction.");
-    ASSERT(svd_solver.left_singular_vectors()->rows == dim_ &&
-	   svd_solver.left_singular_vectors()->cols == dim1 &&
-	   svd_solver.right_singular_vectors()->rows == dim_ &&
-	   svd_solver.right_singular_vectors()->cols == dim2,
+    ASSERT(svd_solver->HasSVDResult(), "No SVD result for extraction.");
+    ASSERT(svd_solver->left_singular_vectors()->rows == dim_ &&
+	   svd_solver->left_singular_vectors()->cols == dim1 &&
+	   svd_solver->right_singular_vectors()->rows == dim_ &&
+	   svd_solver->right_singular_vectors()->cols == dim2,
 	   "Dimensions don't match between the SVD result and scaling values.");
 
     // Collect singular values.
     singular_values_.resize(dim_);
     for (size_t i = 0; i < dim_; ++i) {
-	singular_values_(i) = *(svd_solver.singular_values() + i);
+	singular_values_(i) = *(svd_solver->singular_values() + i);
     }
 
-    // Collect the matrix of scaled left singular vectors.
+    // Collect a matrix of left singular vectors as rows.
     left_matrix_.resize(dim_, dim1);
     for (size_t row = 0; row < dim_; ++row) {
 	for (size_t col = 0; col < dim1; ++col) {
 	    left_matrix_(row, col) =
-		svd_solver.left_singular_vectors()->value[row][col];
-	    double scale = 1.0;
+		svd_solver->left_singular_vectors()->value[row][col];
+	}
+    }
+
+    // Collect a matrix of right singular vectors as rows.
+    right_matrix_.resize(dim_, dim2);
+    for (size_t row = 0; row < dim_; ++row) {
+	for (size_t col = 0; col < dim2; ++col) {
+	    right_matrix_(row, col) =
+		svd_solver->right_singular_vectors()->value[row][col];
+	}
+    }
+    svd_solver->FreeSVDResult();  // We have the SVD result: free the memory.
+
+    // TODO: Compute weighted decomposition here.
+
+    // Post-SVD singular vector scaling.
+    double scale = 0;
+    for (size_t row = 0; row < dim_; ++row) {
+	for (size_t col = 0; col < dim1; ++col) {  // Left singular vectors.
 	    if (scaling_method_ == "cca") {
 		scale = sqrt(values1.at(col) + smooth_value_);
 	    } else if (scaling_method_ == "pmi") {
@@ -182,15 +200,7 @@ void Decomposer::ExtractFromSVD(const SparseSVDSolver &svd_solver,
 	    }
 	    left_matrix_(row, col) /= scale;
 	}
-    }
-
-    // Collect the matrix of scaled right singular vectors.
-    right_matrix_.resize(dim_, dim2);
-    for (size_t row = 0; row < dim_; ++row) {
-	for (size_t col = 0; col < dim2; ++col) {
-	    right_matrix_(row, col) =
-		svd_solver.right_singular_vectors()->value[row][col];
-	    double scale = 1.0;
+	for (size_t col = 0; col < dim2; ++col) {  // Right singular vectors.
 	    if (scaling_method_ == "cca") {
 		scale = sqrt(values2.at(col) + smooth_value_);
 	    } else if (scaling_method_ == "pmi") {

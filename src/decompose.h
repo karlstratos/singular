@@ -75,7 +75,7 @@ private:
     double ScaleJointValue(double joint_value, double value1, double value2);
 
     // Extracts scaled singular vectors from an SVD solver.
-    void ExtractFromSVD(const SparseSVDSolver &svd_solver,
+    void ExtractFromSVD(SparseSVDSolver *svd_solver,
 			const unordered_map<size_t, double> &values1,
 			const unordered_map<size_t, double> &values2);
 

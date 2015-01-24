@@ -482,7 +482,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     size_t num_nonzeros = stoi(tokens[2]);
 
     // Get the number of samples (= number of words).
-    size_t num_samples;
+    size_t num_samples = 0;
     ifstream count_word_file(CountWordPath(), ios::in);
     while (count_word_file.good()) {
 	getline(count_word_file, line);

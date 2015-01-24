@@ -74,13 +74,13 @@ public:
     // Returns the rank of the computed SVD.
     size_t rank() const { return svd_result_->d; }
 
-private:
     // Frees the loaded sparse matrix and sets it to nullptr.
     void FreeSparseMatrix();
 
     // Frees the loaded SVD result and sets it to nullptr.
     void FreeSVDResult();
 
+private:
     // Sparse matrix for SVD.
     SMat sparse_matrix_ = nullptr;
 
