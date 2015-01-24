@@ -236,8 +236,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
     log_ << "   Corpus format: " <<  corpus_format << endl << flush;
 
     // Figure out the indices of the current and context words.
-    size_t word_index = (window_size_ % 2 == 0) ?  // Right-biased
-	(window_size_ / 2) - 1 : window_size_ / 2;
+    size_t word_index = (window_size_ - 1) / 2;  // Right-biased
     vector<size_t> context_indices;
     vector<string> position_markers(window_size_);
     for (size_t context_index = 0; context_index < window_size_;
