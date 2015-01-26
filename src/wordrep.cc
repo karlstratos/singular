@@ -527,76 +527,81 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 }
 
 void WordRep::TestQualityOfWordVectors() {
-    log_ << endl << "[Quality of word vectors]" << endl;
-    TestWordsim353();
-    TestMEN();
-    TestSyntacticAnalogy();
-    //TestMixedAnalogy();
-}
-
-void WordRep::TestWordsim353() {
-    StringManipulator string_manipulator;
-    string line;
-    vector<string> tokens;
     string wordsim353_path = "third_party/public_datasets/wordsim353.txt";
-    FileManipulator file_manipulator;
-    if (!file_manipulator.exists(wordsim353_path)) {
-	wordsim353_path = "../" + wordsim353_path;
-    }
-    ASSERT(file_manipulator.exists(wordsim353_path),
-	   "Failed to find wordsim353.txt");
-
-    ifstream wordsim353_file(wordsim353_path, ios::in);
-    ASSERT(wordsim353_file.is_open(), "Cannot open file: " << wordsim353_path);
-    vector<double> human_scores;
-    vector<double> cosine_scores;
-    size_t num_instances = 0;
-    size_t num_handled = 0;
-    while (wordsim353_file.good()) {
-	getline(wordsim353_file, line);
-	if (line == "") { continue; }
-	++num_instances;
-	string_manipulator.split(line, " ", &tokens);
-	string word1 = tokens[0];
-	string word2 = tokens[1];
-	double human_score = stod(tokens[2]);
-	if (wordvectors_.find(word1) != wordvectors_.end() &&
-	    wordvectors_.find(word2) != wordvectors_.end()) {
-	    // Assumes that word vectors already have length 1.
-	    double cosine_score = wordvectors_[word1].dot(wordvectors_[word2]);
-	    human_scores.push_back(human_score);
-	    cosine_scores.push_back(cosine_score);
-	    ++num_handled;
-	}
-    }
-    Stat stat;
-    double spearman_corr = stat.ComputeSpearman(human_scores, cosine_scores);
-    log_ << "   wordsim353: " << spearman_corr << "(answered " << num_handled
-	 << " out of " << num_instances << " questions)" << endl;
-}
-
-void WordRep::TestMEN() {
-    StringManipulator string_manipulator;
-    string line;
-    vector<string> tokens;
     string men_path = "third_party/public_datasets/men.txt";
+    string syn_path = "third_party/public_datasets/syntactic_analogies.txt";
+    string mixed_path = "third_party/public_datasets/mixed_analogies.txt";
     FileManipulator file_manipulator;
-    if (!file_manipulator.exists(men_path)) {
-	men_path = "../" + men_path;
+    if (!file_manipulator.exists(wordsim353_path) ||
+	!file_manipulator.exists(men_path) ||
+	!file_manipulator.exists(syn_path) ||
+	!file_manipulator.exists(mixed_path)) {
+	// Skip evaluation (e.g., in unit tests) if files are not found.
+	return;
     }
-    ASSERT(file_manipulator.exists(men_path), "Failed to find men.txt");
+    log_ << endl << "[Quality of word vectors]" << endl;
 
-    ifstream men_file(men_path, ios::in);
-    ASSERT(men_file.is_open(), "Cannot open file: " << men_path);
+    // Use 3 decimal places for word similartiy.
+    log_ << fixed << setprecision(3);
+
+    // Word similarity with wordsim353.txt.
+    size_t num_instances_wordsim353;
+    size_t num_handled_wordsim353;
+    double corr_wordsim353;
+    EvaluateWordSimilarity(wordsim353_path, &num_instances_wordsim353,
+			   &num_handled_wordsim353, &corr_wordsim353);
+    log_ << "   wordsim353: " << corr_wordsim353 << " ("
+	 << num_handled_wordsim353 << "/" << num_instances_wordsim353
+	 << " evaluated)" << endl;
+
+    // Word similarity with men.txt.
+    size_t num_instances_men;
+    size_t num_handled_men;
+    double corr_men;
+    EvaluateWordSimilarity(men_path, &num_instances_men,
+			   &num_handled_men, &corr_men);
+    log_ << "   MEN:        " << corr_men << " (" << num_handled_men << "/"
+	 << num_instances_men << " evaluated)" << endl;
+    log_ << fixed << setprecision(2);
+
+    // Word analogy with syntactic_analogies.txt.
+    size_t num_instances_syn;
+    size_t num_handled_syn;
+    double acc_syn;
+    EvaluateWordAnalogy(syn_path, &num_instances_syn, &num_handled_syn,
+			&acc_syn);
+    log_ << "   Syntactic analogies: " << acc_syn << "% (" << num_handled_syn
+	 << "/" << num_instances_syn << " evaluated)" << endl;
+
+    // Word analogy with mixed_analogies.txt.
+    size_t num_instances_mixed;
+    size_t num_handled_mixed;
+    double acc_mixed;
+    EvaluateWordAnalogy(mixed_path, &num_instances_mixed, &num_handled_mixed,
+			&acc_mixed);
+    log_ << "   Mixed analogies:     " << acc_mixed << "% ("
+	 << num_handled_mixed << "/" << num_instances_mixed << " evaluated)"
+	 << endl;
+}
+
+void WordRep::EvaluateWordSimilarity(const string &file_path,
+				     size_t *num_instances, size_t *num_handled,
+				     double *correlation) {
+    ifstream similarity_file(file_path, ios::in);
+    ASSERT(similarity_file.is_open(), "Cannot open file: " << file_path);
+    StringManipulator string_manipulator;
+    string line;
+    vector<string> tokens;
     vector<double> human_scores;
     vector<double> cosine_scores;
-    size_t num_instances = 0;
-    size_t num_handled = 0;
-    while (men_file.good()) {
-	getline(men_file, line);
+    *num_instances = 0;
+    *num_handled = 0;
+    while (similarity_file.good()) {
+	getline(similarity_file, line);
 	if (line == "") { continue; }
-	++num_instances;
+	++(*num_instances);
 	string_manipulator.split(line, " ", &tokens);
+	ASSERT(tokens.size() == 3, "Wrong format for word similarity!");
 	string word1 = tokens[0];
 	string word2 = tokens[1];
 	double human_score = stod(tokens[2]);
@@ -606,78 +611,95 @@ void WordRep::TestMEN() {
 	    double cosine_score = wordvectors_[word1].dot(wordvectors_[word2]);
 	    human_scores.push_back(human_score);
 	    cosine_scores.push_back(cosine_score);
-	    ++num_handled;
+	    ++(*num_handled);
 	}
     }
     Stat stat;
-    double spearman_corr = stat.ComputeSpearman(human_scores, cosine_scores);
-    log_ << "   MEN: " << spearman_corr << "(answered " << num_handled
-	 << " out of " << num_instances << " questions)" << endl;
+    *correlation = stat.ComputeSpearman(human_scores, cosine_scores);
 }
 
-void WordRep::TestSyntacticAnalogy() {
+void WordRep::EvaluateWordAnalogy(const string &file_path,
+				  size_t *num_instances, size_t *num_handled,
+				  double *accuracy) {
+    // Read analogy questions and their vocabulary.
+    ifstream analogy_file(file_path, ios::in);
+    ASSERT(analogy_file.is_open(), "Cannot open file: " << file_path);
     StringManipulator string_manipulator;
     string line;
     vector<string> tokens;
-    string syn_path = "third_party/public_datasets/syntactic_analogies.txt";
-    FileManipulator file_manipulator;
-    if (!file_manipulator.exists(syn_path)) {
-	syn_path = "../" + syn_path;
-    }
-    ASSERT(file_manipulator.exists(syn_path), "Failed to find "
-	   "syntactic_analogies.txt");
-
-    // Read analogy questions and their vocabulary.
-    ifstream syn_file(syn_path, ios::in);
-    ASSERT(syn_file.is_open(), "Cannot open file: " << syn_path);
-    unordered_map<string, tuple<string, string, string, string> > analogies;
+    vector<tuple<string, string, string, string> > analogies;
     unordered_map<string, bool> vocab;
-    while (syn_file.good()) {
-	getline(syn_file, line);
+    while (analogy_file.good()) {
+	getline(analogy_file, line);
 	if (line == "") { continue; }
-	++num_instances;
 	string_manipulator.split(line, " ", &tokens);
-	string analogy_type = tokens[0];
+	ASSERT(tokens.size() == 5, "Wrong format for word analogy!");
+	// Ignore the analogy category: only compute the overall accuracy.
 	string w1 = tokens[1];
 	string w2 = tokens[2];
 	string v1 = tokens[3];
 	string v2 = tokens[4];
-	analogies[analogy_type][make_tuple(w1, w2, v1, v2)];
-	vocab[w1] = true;
-	vocab[w2] = true;
-	vocab[v1] = true;
-	vocab[v2] = true;
+	analogies.push_back(make_tuple(w1, w2, v1, v2));
+	if (wordvectors_.find(w1) != wordvectors_.end()) { vocab[w1] = true; }
+	if (wordvectors_.find(w2) != wordvectors_.end()) { vocab[w2] = true; }
+	if (wordvectors_.find(v1) != wordvectors_.end()) { vocab[v1] = true; }
+	if (wordvectors_.find(v2) != wordvectors_.end()) { vocab[v2] = true; }
     }
 
     // For each analogy question "w1:w2 as in v1:v2" such that we have vector
-    // representations for word types w1, w2, v1, v2, compute the accuracy of
-    // v2 prediction.
-    size_t num_instances = 0;
-    size_t num_handled = 0;
+    // representations for word types w1, w2, v1, v2, predict v2.
+    *num_instances = 0;
+    *num_handled = 0;
     size_t num_correct = 0;
-    for (const auto &type_pair : analogies) {
-	string analogy_type = type_pair.first;
-	for (const auto &word_quadruple : type_pair.second) {
-	    ++num_instances;
-	    string w1 = get<0>(word_quadruple);
-	    string w2 = get<1>(word_quadruple);
-	    string v1 = get<2>(word_quadruple);
-	    string v2 = get<3>(word_quadruple);
-	    if (wordvectors_.find(w1) != wordvectors_.end() &&
-		wordvectors_.find(w2) != wordvectors_.end() &&
-		wordvectors_.find(v1) != wordvectors_.end() &&
-		wordvectors_.find(v2) != wordvectors_.end()) {
-		++num_handled;
-		++num_handled_pertype[analogy_type];
-		string predicted_v2 = AnswerAnalogyQuestion(w1, w2, v1, vocab);
-		if (predicted_v2 == v2) { ++num_correct; }
-	    }
+    for (const auto &word_quadruple : analogies) {
+	++(*num_instances);
+	string w1 = get<0>(word_quadruple);
+	string w2 = get<1>(word_quadruple);
+	string v1 = get<2>(word_quadruple);
+	string v2 = get<3>(word_quadruple);
+	if (wordvectors_.find(w1) != wordvectors_.end() &&
+	    wordvectors_.find(w2) != wordvectors_.end() &&
+	    wordvectors_.find(v1) != wordvectors_.end() &&
+	    wordvectors_.find(v2) != wordvectors_.end()) {
+	    ++(*num_handled);
+	    string predicted_v2 = AnswerAnalogyQuestion(w1, w2, v1, vocab);
+	    if (predicted_v2 == v2) { ++num_correct; }
 	}
     }
+    *accuracy = ((double) num_correct) / (*num_handled) * 100.0;
+}
 
-    double accuracy = ((double) num_correct) / num_handled;
-    log_ << "   Syntactic analogy: " << accuracy "% (" << num_correct << "/"
-	 << num_handled << " out of " << num_instances << " questions)" << endl;
+string WordRep::AnswerAnalogyQuestion(
+    string w1, string w2, string v1,
+    const unordered_map<string, bool> &vocab) {
+    ASSERT(wordvectors_.find(w1) != wordvectors_.end(), "No vector for " << w1);
+    ASSERT(wordvectors_.find(w2) != wordvectors_.end(), "No vector for " << w2);
+    ASSERT(wordvectors_.find(v1) != wordvectors_.end(), "No vector for " << v1);
+    Eigen::VectorXd w1_embedding = wordvectors_[w1];
+    Eigen::VectorXd w2_embedding = wordvectors_[w2];
+    Eigen::VectorXd v1_embedding = wordvectors_[v1];
+    string predicted_v2 = "";
+    double max_score = -numeric_limits<double>::max();
+    for (const auto &word_pair : vocab) {
+	string word = word_pair.first;
+	if (word == w1 || word == w2 || word == v1) { continue; }
+	Eigen::VectorXd word_embedding = wordvectors_[word];
+	double shifted_cos_w1 =
+	    (word_embedding.dot(w1_embedding) + 1.0) / 2.0;
+	double shifted_cos_w2 =
+	    (word_embedding.dot(w2_embedding) + 1.0) / 2.0;
+	double shifted_cos_v1 =
+	    (word_embedding.dot(v1_embedding) + 1.0) / 2.0;
+	double score =
+	    shifted_cos_w2 * shifted_cos_v1 / (shifted_cos_w1 + 0.001);
+	if (score > max_score) {
+	    max_score = score;
+	    predicted_v2 = word;
+	}
+    }
+    ASSERT(!predicted_v2.empty(), "No answer for \"" << w1 << ":" << w2
+	   << " as in " << v1 << ":" << "?\"");
+    return predicted_v2;
 }
 
 void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {

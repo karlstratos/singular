@@ -134,22 +134,19 @@ private:
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
 
-    // Checks the word similairity performance on the wordsim353 dataset.
-    void TestWordsim353();
+    // Evaluate word vectors on a word similarity dataset.
+    void EvaluateWordSimilarity(const string &file_path,
+				size_t *num_instances, size_t *num_handled,
+				double *correlation);
 
-    // Checks the word similairity performance on the MEN dataset.
-    void TestMEN();
+    // Evaluate word vectors on a word analogy dataset.
+    void EvaluateWordAnalogy(const string &file_path,
+			     size_t *num_instances, size_t *num_handled,
+			     double *accuracy);
 
-    // Checks the word analogy performance on the syntactic analogy dataset.
-    void TestSyntacticAnalogy();
-
-    // Checks the word analogy performance on the mixed analogy dataset.
-    void TestMixedAnalogy();
-
-    // Returns word v2 such that "w1 is w2 as in v1 is v2".
-    string AnswerAnalogyQuestion(
-	string w1, string w2, string v1,
-	const unordered_map<string, Eigen::VectorXd> &vocab);
+    // Returns word v2 such that "w1:w2 as in v1:v2" (in vocab - {w1, w2, v1}).
+    string AnswerAnalogyQuestion(string w1, string w2, string v1,
+				 const unordered_map<string, bool> &vocab);
 
     // Performs greedy agglomerative clustering over word vectors.
     void PerformAgglomerativeClustering(size_t num_clusters);
