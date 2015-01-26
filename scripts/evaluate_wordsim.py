@@ -15,7 +15,7 @@ from numpy import dot
 from numpy import linalg
 from scipy.stats.mstats import spearmanr
 
-def read_normalized_embeddings(embedding_path):
+def read_normalized_embeddings(embedding_path, vocab):
     """Read embeddings from the given path."""
     embedding = {}
     dim = 0
@@ -24,6 +24,8 @@ def read_normalized_embeddings(embedding_path):
             tokens = line.split()
             if len(tokens) > 0:
                 word = tokens[1]
+                if not word in vocab:  # Skip unused embeddings.
+                    continue
                 values = []
                 for i in range(2, len(tokens)):
                     values.append(float(tokens[i]))
@@ -110,7 +112,7 @@ def evaluate_wordsim(similarity_path, embedding_path):
     # Read pairs of words and their (human) similarity scores.
     word_pairs = []
     human_scores = []
-    similarity_vocab = {}
+    vocab = {}
     with open(similarity_path, "r") as similarity_file:
         for line in similarity_file:
             tokens = line.split()
@@ -120,13 +122,14 @@ def evaluate_wordsim(similarity_path, embedding_path):
                 similarity_score = float(tokens[2])
                 word_pairs.append((word1, word2))
                 human_scores.append(similarity_score)
-                similarity_vocab[word1] = True
-                similarity_vocab[word2] = True
+                vocab[word1] = True
+                vocab[word2] = True
     print "Read {0} word pairs with similarity scores".format(len(word_pairs))
 
     # Read (and normalize) embeddings for word types we need.
-    embedding, dim = read_normalized_embeddings(embedding_path)
-    print "Read {0} embeddings of dimension {1}".format(len(embedding), dim)
+    embedding, dim = read_normalized_embeddings(embedding_path, vocab)
+    print "{0} / {1} words have embeddings (dim {2})".format(
+        len(embedding),len(vocab), dim)
 
     # Compute consine similarity scores based on the normalized embeddings.
     x = []

@@ -24,7 +24,7 @@ void WordRep::SetOutputDirectory(const string &output_directory) {
     while (NULL != (entry = readdir(directory))) {
 	string file_name = entry->d_name;
 	if (file_name.substr(0, 3) == "log") {
-	    size_t version = stoi(file_name.substr(4));
+	    size_t version = stol(file_name.substr(4));
 	    if (version > latest_version) { latest_version = version; }
 	}
     }
@@ -175,7 +175,7 @@ void WordRep::DetermineRareWords() {
 	if (line == "") { continue; }
 	string_manipulator.split(line, " ", &tokens);
 	string word_string = tokens[0];
-	size_t word_count = stoi(tokens[1]);
+	size_t word_count = stol(tokens[1]);
 	sorted_wordcount.push_back(make_pair(word_string, word_count));
 	AddWordIfUnknown(word_string);
 	num_words += word_count;
@@ -424,8 +424,8 @@ void WordRep::LoadWordDictionary() {
 	getline(word_str2num_file, line);
 	if (line == "") { continue; }
 	string_manipulator.split(line, " ", &tokens);
-	word_num2str_[stoi(tokens[1])] = tokens[0];
-	word_str2num_[tokens[0]] = stoi(tokens[1]);
+	word_num2str_[stol(tokens[1])] = tokens[0];
+	word_str2num_[tokens[0]] = stol(tokens[1]);
     }
 }
 
@@ -445,7 +445,7 @@ void WordRep::LoadSortedWordCounts() {
 	if (line == "") { continue; }
 	string_manipulator.split(line, " ", &tokens);
 	string word_string = tokens[0];
-	size_t word_count = stoi(tokens[1]);
+	size_t word_count = stol(tokens[1]);
 	if (word_str2num_.find(word_string) != word_str2num_.end()) {
 	    wordcount[word_string] = word_count;
 	} else {
@@ -476,9 +476,9 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     ifstream count_word_context_file(CountWordContextPath(), ios::in);
     getline(count_word_context_file, line);
     string_manipulator.split(line, " ", &tokens);
-    size_t dim1 = stoi(tokens[0]);
-    size_t dim2 = stoi(tokens[1]);
-    size_t num_nonzeros = stoi(tokens[2]);
+    size_t dim1 = stol(tokens[0]);
+    size_t dim2 = stol(tokens[1]);
+    size_t num_nonzeros = stol(tokens[2]);
 
     // Get the number of samples (= number of words).
     size_t num_samples = 0;
@@ -487,7 +487,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	getline(count_word_file, line);
 	if (line == "") { continue; }
 	string_manipulator.split(line, " ", &tokens);
-	num_samples += stoi(tokens[0]);
+	num_samples += stol(tokens[0]);
     }
 
     log_ << endl << "[Decomposing a matrix of scaled counts]" << endl;

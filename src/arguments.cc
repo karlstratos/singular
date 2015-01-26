@@ -13,17 +13,17 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	} else if (arg == "--recompute") {
 	    from_scratch_ = true;
 	} else if (arg == "--rare") {
-	    rare_cutoff_ = stoi(argv[++i]);
+	    rare_cutoff_ = stol(argv[++i]);
 	} else if (arg == "--window") {
-	    window_size_ = stoi(argv[++i]);
+	    window_size_ = stol(argv[++i]);
 	} else if (arg == "--bag-of-words") {
 	    bag_of_words_ = true;
 	} else if (arg == "--sentence-per-line") {
 	    sentence_per_line_ = true;
 	} else if (arg == "--dim") {
-	    dim_ = stoi(argv[++i]);
+	    dim_ = stol(argv[++i]);
 	} else if (arg == "--smooth") {
-	    smooth_value_ = stoi(argv[++i]);
+	    smooth_value_ = stol(argv[++i]);
 	} else if (arg == "--scaling") {
 	    scaling_method_ = argv[++i];
 	} else if (arg == "-h" || arg == "--help"){
