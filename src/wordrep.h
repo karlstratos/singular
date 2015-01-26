@@ -140,6 +140,17 @@ private:
     // Checks the word similairity performance on the MEN dataset.
     void TestMEN();
 
+    // Checks the word analogy performance on the syntactic analogy dataset.
+    void TestSyntacticAnalogy();
+
+    // Checks the word analogy performance on the mixed analogy dataset.
+    void TestMixedAnalogy();
+
+    // Returns word v2 such that "w1 is w2 as in v1 is v2".
+    string AnswerAnalogyQuestion(
+	string w1, string w2, string v1,
+	const unordered_map<string, Eigen::VectorXd> &vocab);
+
     // Performs greedy agglomerative clustering over word vectors.
     void PerformAgglomerativeClustering(size_t num_clusters);
 

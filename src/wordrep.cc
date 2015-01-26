@@ -530,6 +530,8 @@ void WordRep::TestQualityOfWordVectors() {
     log_ << endl << "[Quality of word vectors]" << endl;
     TestWordsim353();
     TestMEN();
+    TestSyntacticAnalogy();
+    //TestMixedAnalogy();
 }
 
 void WordRep::TestWordsim353() {
@@ -539,7 +541,7 @@ void WordRep::TestWordsim353() {
     string wordsim353_path = "third_party/public_datasets/wordsim353.txt";
     FileManipulator file_manipulator;
     if (!file_manipulator.exists(wordsim353_path)) {
-	wordsim353_path = "../third_party/public_datasets/wordsim353.txt";
+	wordsim353_path = "../" + wordsim353_path;
     }
     ASSERT(file_manipulator.exists(wordsim353_path),
 	   "Failed to find wordsim353.txt");
@@ -569,9 +571,8 @@ void WordRep::TestWordsim353() {
     }
     Stat stat;
     double spearman_corr = stat.ComputeSpearman(human_scores, cosine_scores);
-
-    log_ << "   wordsim353 (" << num_handled << " out of " << num_instances
-	 << "): " << spearman_corr << endl;
+    log_ << "   wordsim353: " << spearman_corr << "(answered " << num_handled
+	 << " out of " << num_instances << " questions)" << endl;
 }
 
 void WordRep::TestMEN() {
@@ -581,7 +582,7 @@ void WordRep::TestMEN() {
     string men_path = "third_party/public_datasets/men.txt";
     FileManipulator file_manipulator;
     if (!file_manipulator.exists(men_path)) {
-	men_path = "../third_party/public_datasets/men.txt";
+	men_path = "../" + men_path;
     }
     ASSERT(file_manipulator.exists(men_path), "Failed to find men.txt");
 
@@ -610,9 +611,73 @@ void WordRep::TestMEN() {
     }
     Stat stat;
     double spearman_corr = stat.ComputeSpearman(human_scores, cosine_scores);
+    log_ << "   MEN: " << spearman_corr << "(answered " << num_handled
+	 << " out of " << num_instances << " questions)" << endl;
+}
 
-    log_ << "   MEN (" << num_handled << " out of " << num_instances << "): "
-	 << spearman_corr << endl;
+void WordRep::TestSyntacticAnalogy() {
+    StringManipulator string_manipulator;
+    string line;
+    vector<string> tokens;
+    string syn_path = "third_party/public_datasets/syntactic_analogies.txt";
+    FileManipulator file_manipulator;
+    if (!file_manipulator.exists(syn_path)) {
+	syn_path = "../" + syn_path;
+    }
+    ASSERT(file_manipulator.exists(syn_path), "Failed to find "
+	   "syntactic_analogies.txt");
+
+    // Read analogy questions and their vocabulary.
+    ifstream syn_file(syn_path, ios::in);
+    ASSERT(syn_file.is_open(), "Cannot open file: " << syn_path);
+    unordered_map<string, tuple<string, string, string, string> > analogies;
+    unordered_map<string, bool> vocab;
+    while (syn_file.good()) {
+	getline(syn_file, line);
+	if (line == "") { continue; }
+	++num_instances;
+	string_manipulator.split(line, " ", &tokens);
+	string analogy_type = tokens[0];
+	string w1 = tokens[1];
+	string w2 = tokens[2];
+	string v1 = tokens[3];
+	string v2 = tokens[4];
+	analogies[analogy_type][make_tuple(w1, w2, v1, v2)];
+	vocab[w1] = true;
+	vocab[w2] = true;
+	vocab[v1] = true;
+	vocab[v2] = true;
+    }
+
+    // For each analogy question "w1:w2 as in v1:v2" such that we have vector
+    // representations for word types w1, w2, v1, v2, compute the accuracy of
+    // v2 prediction.
+    size_t num_instances = 0;
+    size_t num_handled = 0;
+    size_t num_correct = 0;
+    for (const auto &type_pair : analogies) {
+	string analogy_type = type_pair.first;
+	for (const auto &word_quadruple : type_pair.second) {
+	    ++num_instances;
+	    string w1 = get<0>(word_quadruple);
+	    string w2 = get<1>(word_quadruple);
+	    string v1 = get<2>(word_quadruple);
+	    string v2 = get<3>(word_quadruple);
+	    if (wordvectors_.find(w1) != wordvectors_.end() &&
+		wordvectors_.find(w2) != wordvectors_.end() &&
+		wordvectors_.find(v1) != wordvectors_.end() &&
+		wordvectors_.find(v2) != wordvectors_.end()) {
+		++num_handled;
+		++num_handled_pertype[analogy_type];
+		string predicted_v2 = AnswerAnalogyQuestion(w1, w2, v1, vocab);
+		if (predicted_v2 == v2) { ++num_correct; }
+	    }
+	}
+    }
+
+    double accuracy = ((double) num_correct) / num_handled;
+    log_ << "   Syntactic analogy: " << accuracy "% (" << num_correct << "/"
+	 << num_handled << " out of " << num_instances << " questions)" << endl;
 }
 
 void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
