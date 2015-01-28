@@ -54,13 +54,13 @@ public:
     // Sets a target dimension of word vectors.
     void set_dim(size_t dim) { dim_ = dim; }
 
-    // Sets a smoothing value.
-    void set_smooth_value(size_t smooth_value) { smooth_value_ = smooth_value; }
-
     // Sets the scaling method.
     void set_scaling_method(string scaling_method) {
 	scaling_method_ = scaling_method;
     }
+
+    // Sets a smoothing value.
+    void set_smooth_value(size_t smooth_value) { smooth_value_ = smooth_value; }
 
     // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
@@ -263,11 +263,11 @@ private:
     // Target dimension of word vectors.
     size_t dim_;
 
-    // Smoothing value.
-    size_t smooth_value_ = 5;
-
     // Scaling method.
     string scaling_method_ = "cca";
+
+    // Smoothing value.
+    size_t smooth_value_ = 5;
 };
 
 #endif  // WORDREP_H

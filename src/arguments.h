@@ -41,11 +41,11 @@ public:
     // Returns the target dimension of word vectors.
     size_t dim() { return dim_; }
 
-    // Returns the smoothing value.
-    size_t smooth_value() { return smooth_value_; }
-
     // Returns the scaling method.
     string scaling_method() { return scaling_method_; }
+
+    // Returns the smoothing value.
+    size_t smooth_value() { return smooth_value_; }
 
 private:
     // Path to a text corpus.
@@ -72,11 +72,11 @@ private:
     // Target dimension of word vectors.
     size_t dim_ = 100;
 
-    // Smoothing value.
-    size_t smooth_value_ = 5;
-
     // Scaling method.
     string scaling_method_ = "cca";
+
+    // Smoothing value.
+    size_t smooth_value_ = 5;
 };
 
 #endif  // ARGUMENTS_H_

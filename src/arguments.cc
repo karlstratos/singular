@@ -22,10 +22,10 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    sentence_per_line_ = true;
 	} else if (arg == "--dim") {
 	    dim_ = stol(argv[++i]);
-	} else if (arg == "--smooth") {
-	    smooth_value_ = stol(argv[++i]);
 	} else if (arg == "--scaling") {
 	    scaling_method_ = argv[++i];
+	} else if (arg == "--smooth") {
+	    smooth_value_ = stol(argv[++i]);
 	} else if (arg == "-h" || arg == "--help"){
 	    display_options_and_quit = true;
 	} else {
@@ -67,13 +67,13 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: " << dim_ << ")" << endl
 	     << "Target dimension of word vectors." << endl << endl;
 
-	cout << "--smooth "
-	     << "(default: " << smooth_value_ << ")" << endl
-	     << "Smoothing value." << endl << endl;
-
 	cout << "--scaling "
 	     << "(default: " << scaling_method_ << ")" << endl
 	     << "Scaling method: cca, pmi." << endl << endl;
+
+	cout << "--smooth "
+	     << "(default: " << smooth_value_ << ")" << endl
+	     << "Smoothing value." << endl << endl;
 
 	exit(0);
     }
