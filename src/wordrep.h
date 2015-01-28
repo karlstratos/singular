@@ -144,9 +144,10 @@ private:
 			     size_t *num_instances, size_t *num_handled,
 			     double *accuracy);
 
-    // Returns word v2 such that "w1:w2 as in v1:v2" (in vocab - {w1, w2, v1}).
-    string AnswerAnalogyQuestion(string w1, string w2, string v1,
-				 const unordered_map<string, bool> &vocab);
+    // Returns word v2 (not in {w1, w2, v1}) such that "w1:w2 as in v1:v2".
+    string AnswerAnalogyQuestion(
+	string w1, string w2, string v1,
+	const unordered_map<string, Eigen::VectorXd> &wordvectors_subset);
 
     // Performs greedy agglomerative clustering over word vectors.
     void PerformAgglomerativeClustering(size_t num_clusters);

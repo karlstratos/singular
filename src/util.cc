@@ -40,6 +40,14 @@ string StringManipulator::print_time(double num_seconds) {
     return time_string;
 }
 
+string StringManipulator::lowercase(const string &original_string) {
+    string lowercased_string;
+    for (const char &character : original_string) {
+	lowercased_string.push_back(tolower(character));
+    }
+    return lowercased_string;
+}
+
 bool FileManipulator::exists(const string &file_path) {
     struct stat buffer;
     return (stat(file_path.c_str(), &buffer) == 0);

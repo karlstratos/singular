@@ -19,6 +19,9 @@ public:
 
     // Q seconds => "XhYmZs" (X hours Y minutes Z seconds)
     string print_time(double num_seconds);
+
+    // Returns the lowercase transformation of the given string.
+    string lowercase(const string &original_string);
 };
 
 class FileManipulator {

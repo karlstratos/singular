@@ -604,11 +604,28 @@ void WordRep::EvaluateWordSimilarity(const string &file_path,
 	ASSERT(tokens.size() == 3, "Wrong format for word similarity!");
 	string word1 = tokens[0];
 	string word2 = tokens[1];
+	string word1_lowercase = string_manipulator.lowercase(word1);
+	string word2_lowercase = string_manipulator.lowercase(word2);
 	double human_score = stod(tokens[2]);
-	if (wordvectors_.find(word1) != wordvectors_.end() &&
-	    wordvectors_.find(word2) != wordvectors_.end()) {
+
+	// Get a vector for each word type. First, try to get a vector for the
+	// original string. If not found, try lowercasing.
+	Eigen::VectorXd vector_word1, vector_word2;
+	if (wordvectors_.find(word1) != wordvectors_.end()) {
+	    vector_word1 = wordvectors_[word1];
+	} else if (wordvectors_.find(word1_lowercase) != wordvectors_.end()) {
+	    vector_word1 = wordvectors_[word1_lowercase];
+	}
+	if (wordvectors_.find(word2) != wordvectors_.end()) {
+	    vector_word2 = wordvectors_[word2];
+	} else if (wordvectors_.find(word2_lowercase) != wordvectors_.end()) {
+	    vector_word2 = wordvectors_[word2_lowercase];
+	}
+
+	// If we have vectors for both word types, compute similarity.
+	if (vector_word1.size() > 0 && vector_word2.size() > 0) {
 	    // Assumes that word vectors already have length 1.
-	    double cosine_score = wordvectors_[word1].dot(wordvectors_[word2]);
+	    double cosine_score = vector_word1.dot(vector_word2);
 	    human_scores.push_back(human_score);
 	    cosine_scores.push_back(cosine_score);
 	    ++(*num_handled);
@@ -628,7 +645,7 @@ void WordRep::EvaluateWordAnalogy(const string &file_path,
     string line;
     vector<string> tokens;
     vector<tuple<string, string, string, string> > analogies;
-    unordered_map<string, bool> vocab;
+    unordered_map<string, Eigen::VectorXd> wordvectors_subset;
     while (analogy_file.good()) {
 	getline(analogy_file, line);
 	if (line == "") { continue; }
@@ -636,14 +653,37 @@ void WordRep::EvaluateWordAnalogy(const string &file_path,
 	ASSERT(tokens.size() == 5, "Wrong format for word analogy!");
 	// Ignore the analogy category: only compute the overall accuracy.
 	string w1 = tokens[1];
+	string w1_lowercase = string_manipulator.lowercase(w1);
 	string w2 = tokens[2];
+	string w2_lowercase = string_manipulator.lowercase(w2);
 	string v1 = tokens[3];
+	string v1_lowercase = string_manipulator.lowercase(v1);
 	string v2 = tokens[4];
+	string v2_lowercase = string_manipulator.lowercase(v2);
 	analogies.push_back(make_tuple(w1, w2, v1, v2));
-	if (wordvectors_.find(w1) != wordvectors_.end()) { vocab[w1] = true; }
-	if (wordvectors_.find(w2) != wordvectors_.end()) { vocab[w2] = true; }
-	if (wordvectors_.find(v1) != wordvectors_.end()) { vocab[v1] = true; }
-	if (wordvectors_.find(v2) != wordvectors_.end()) { vocab[v2] = true; }
+
+	// Get a vector for each word type. First, try to get a vector for the
+	// original string. If not found, try lowercasing.
+	if (wordvectors_.find(w1) != wordvectors_.end()) {
+	    wordvectors_subset[w1] = wordvectors_[w1];
+	} else if (wordvectors_.find(w1_lowercase) != wordvectors_.end()) {
+	    wordvectors_subset[w1] = wordvectors_[w1_lowercase];
+	}
+	if (wordvectors_.find(w2) != wordvectors_.end()) {
+	    wordvectors_subset[w2] = wordvectors_[w2];
+	} else if (wordvectors_.find(w2_lowercase) != wordvectors_.end()) {
+	    wordvectors_subset[w2] = wordvectors_[w2_lowercase];
+	}
+	if (wordvectors_.find(v1) != wordvectors_.end()) {
+	    wordvectors_subset[v1] = wordvectors_[v1];
+	} else if (wordvectors_.find(v1_lowercase) != wordvectors_.end()) {
+	    wordvectors_subset[v1] = wordvectors_[v1_lowercase];
+	}
+	if (wordvectors_.find(v2) != wordvectors_.end()) {
+	    wordvectors_subset[v2] = wordvectors_[v2];
+	} else if (wordvectors_.find(v2_lowercase) != wordvectors_.end()) {
+	    wordvectors_subset[v2] = wordvectors_[v2_lowercase];
+	}
     }
 
     // For each analogy question "w1:w2 as in v1:v2" such that we have vector
@@ -657,12 +697,13 @@ void WordRep::EvaluateWordAnalogy(const string &file_path,
 	string w2 = get<1>(word_quadruple);
 	string v1 = get<2>(word_quadruple);
 	string v2 = get<3>(word_quadruple);
-	if (wordvectors_.find(w1) != wordvectors_.end() &&
-	    wordvectors_.find(w2) != wordvectors_.end() &&
-	    wordvectors_.find(v1) != wordvectors_.end() &&
-	    wordvectors_.find(v2) != wordvectors_.end()) {
+	if (wordvectors_subset.find(w1) != wordvectors_subset.end() &&
+	    wordvectors_subset.find(w2) != wordvectors_subset.end() &&
+	    wordvectors_subset.find(v1) != wordvectors_subset.end() &&
+	    wordvectors_subset.find(v2) != wordvectors_subset.end()) {
 	    ++(*num_handled);
-	    string predicted_v2 = AnswerAnalogyQuestion(w1, w2, v1, vocab);
+	    string predicted_v2 = AnswerAnalogyQuestion(w1, w2, v1,
+							wordvectors_subset);
 	    if (predicted_v2 == v2) { ++num_correct; }
 	}
     }
@@ -671,19 +712,23 @@ void WordRep::EvaluateWordAnalogy(const string &file_path,
 
 string WordRep::AnswerAnalogyQuestion(
     string w1, string w2, string v1,
-    const unordered_map<string, bool> &vocab) {
-    ASSERT(wordvectors_.find(w1) != wordvectors_.end(), "No vector for " << w1);
-    ASSERT(wordvectors_.find(w2) != wordvectors_.end(), "No vector for " << w2);
-    ASSERT(wordvectors_.find(v1) != wordvectors_.end(), "No vector for " << v1);
-    Eigen::VectorXd w1_embedding = wordvectors_[w1];
-    Eigen::VectorXd w2_embedding = wordvectors_[w2];
-    Eigen::VectorXd v1_embedding = wordvectors_[v1];
+    const unordered_map<string, Eigen::VectorXd> &wordvectors_subset) {
+    ASSERT(wordvectors_subset.find(w1) != wordvectors_subset.end(),
+	   "No vector for " << w1);
+    ASSERT(wordvectors_subset.find(w2) != wordvectors_subset.end(),
+	   "No vector for " << w2);
+    ASSERT(wordvectors_subset.find(v1) != wordvectors_subset.end(),
+	   "No vector for " << v1);
+    // Assumes vectors are already normalized to have length 1.
+    Eigen::VectorXd w1_embedding = wordvectors_subset.at(w1);
+    Eigen::VectorXd w2_embedding = wordvectors_subset.at(w2);
+    Eigen::VectorXd v1_embedding = wordvectors_subset.at(v1);
     string predicted_v2 = "";
     double max_score = -numeric_limits<double>::max();
-    for (const auto &word_pair : vocab) {
-	string word = word_pair.first;
+    for (const auto &word_vector_pair : wordvectors_subset) {
+	string word = word_vector_pair.first;
 	if (word == w1 || word == w2 || word == v1) { continue; }
-	Eigen::VectorXd word_embedding = wordvectors_[word];
+	Eigen::VectorXd word_embedding = word_vector_pair.second;
 	double shifted_cos_w1 =
 	    (word_embedding.dot(w1_embedding) + 1.0) / 2.0;
 	double shifted_cos_w2 =
