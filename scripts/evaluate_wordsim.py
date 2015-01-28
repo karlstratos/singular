@@ -15,8 +15,8 @@ from numpy import dot
 from numpy import linalg
 from scipy.stats.mstats import spearmanr
 
-def read_normalized_embeddings(embedding_path, vocab):
-    """Read embeddings from the given path."""
+def read_normalized_embeddings(embedding_path):
+    """Read normalized embeddings."""
     embedding = {}
     dim = 0
     with open(embedding_path, "r") as embedding_file:
@@ -24,8 +24,6 @@ def read_normalized_embeddings(embedding_path, vocab):
             tokens = line.split()
             if len(tokens) > 0:
                 word = tokens[1]
-                if not word in vocab:  # Skip unused embeddings.
-                    continue
                 values = []
                 for i in range(2, len(tokens)):
                     values.append(float(tokens[i]))
@@ -34,7 +32,7 @@ def read_normalized_embeddings(embedding_path, vocab):
                 else:
                     dim = len(values)
                 embedding[word] = array(values)
-                embedding[word] /= linalg.norm(embedding[word])
+                embedding[word] /= linalg.norm(embedding[word])  # Make norm 1.
     return embedding, dim
 
 def spearmans_correlation(x, y):
@@ -109,6 +107,10 @@ def evaluate_wordsim(similarity_path, embedding_path):
     correlation coefficient coefficient (linear) and Spearman's rank correlation
     coefficient (not necessarily linear).
     """
+    # Read normalized embeddings.
+    embedding, dim = read_normalized_embeddings(embedding_path)
+    print "Read {0} {1}-dimensional embeddings".format(len(embedding), dim)
+
     # Read pairs of words and their (human) similarity scores.
     word_pairs = []
     human_scores = []
@@ -126,19 +128,23 @@ def evaluate_wordsim(similarity_path, embedding_path):
                 vocab[word2] = True
     print "Read {0} word pairs with similarity scores".format(len(word_pairs))
 
-    # Read (and normalize) embeddings for word types we need.
-    embedding, dim = read_normalized_embeddings(embedding_path, vocab)
-    print "{0} / {1} words have embeddings (dim {2})".format(
-        len(embedding),len(vocab), dim)
+    embedding2 = {}
+    for word in vocab:
+        if word in embedding:
+            embedding2[word] = embedding[word]
+        elif word.lower() in embedding:
+            embedding2[word] = embedding[word.lower()]
+    print "{0} out of {1} word types have corresponding embeddings".format(
+        len(embedding2), len(vocab))
 
     # Compute consine similarity scores based on the normalized embeddings.
     x = []
     y = []
     num_skipped = 0
     for i, (word1, word2) in enumerate(word_pairs):
-        if word1 in embedding and word2 in embedding:
+        if word1 in embedding2 and word2 in embedding2:
             x.append(human_scores[i])
-            y.append(dot(embedding[word1], embedding[word2]))
+            y.append(dot(embedding2[word1], embedding2[word2]))
         else:
             num_skipped += 1
     print "Skipped {0} pairs out of {1} that lack embeddings".format(
