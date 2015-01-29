@@ -133,9 +133,9 @@ double Decomposer::ScaleJointValue(double joint_value,
     if (scaling_method_ == "cca") {
 	scaled_joint_value /= sqrt(value1 + smooth_value_);
 	scaled_joint_value /= sqrt(value2 + smooth_value_);
-    } else if (scaling_method_ == "pmi") {
-	if (scaling_method_ == "pmi") {
-	    ASSERT(num_samples_ > 0, "Need the number of samples for PMI");
+    } else if (scaling_method_ == "ppmi") {
+	if (scaling_method_ == "ppmi") {
+	    ASSERT(num_samples_ > 0, "Need the number of samples for PPMI");
 	}
 	scaled_joint_value = log(scaled_joint_value);
 	scaled_joint_value += log(num_samples_);
@@ -188,27 +188,25 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
     // TODO: Compute weighted decomposition here.
 
     // Post-SVD singular vector scaling.
-    double scale = 0;
     for (size_t row = 0; row < dim_; ++row) {
 	for (size_t col = 0; col < dim1; ++col) {  // Left singular vectors.
 	    if (scaling_method_ == "cca") {
-		scale = sqrt(values1.at(col) + smooth_value_);
-	    } else if (scaling_method_ == "pmi") {
-		scale = sqrt(singular_values_(row));
+		left_matrix_(row, col) /= sqrt(values1.at(col) + smooth_value_);
+	    } else if (scaling_method_ == "ppmi") {
+		left_matrix_(row, col) *= sqrt(singular_values_(row));
 	    } else {
 		ASSERT(false, "Unknown scaling method: " << scaling_method_);
 	    }
-	    left_matrix_(row, col) /= scale;
 	}
 	for (size_t col = 0; col < dim2; ++col) {  // Right singular vectors.
 	    if (scaling_method_ == "cca") {
-		scale = sqrt(values2.at(col) + smooth_value_);
-	    } else if (scaling_method_ == "pmi") {
-		scale = sqrt(singular_values_(row));
+		right_matrix_(row, col) /= sqrt(values2.at(col) +
+						smooth_value_);
+	    } else if (scaling_method_ == "ppmi") {
+		right_matrix_(row, col) *= sqrt(singular_values_(row));
 	    } else {
 		ASSERT(false, "Unknown scaling method: " << scaling_method_);
 	    }
-	    right_matrix_(row, col) /= scale;
 	}
     }
 }

@@ -892,8 +892,8 @@ string WordRep::Signature(size_t version) {
 	if (scaling_method_ == "cca") {
 	    signature += "_cca";
 	    signature += "_smooth" + to_string(smooth_value_);
-	} else if (scaling_method_ == "pmi") {
-	    signature += "_pmi";
+	} else if (scaling_method_ == "ppmi") {
+	    signature += "_ppmi";
 	} else {
 	    ASSERT(false, "Unknown scaling method: " << scaling_method_);
 	}
