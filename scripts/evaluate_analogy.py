@@ -44,12 +44,16 @@ def predict(w1, w2, v1, embedding, method):
 
     if method == "add":
         # argmax_{x in V \ {w1, w2, v1}} cos(x, w2 - w1 + v1)
-        target_embedding = w1_embedding - w2_embedding + v1_embedding
+        target_embedding = w2_embedding - w1_embedding + v1_embedding
+        target_embedding /= linalg.norm(target_embedding)
+    elif method == "add-simple":
+        # argmax_{x in V \ {w1, w2, v1}} cos(x, w2 + v1)
+        target_embedding = w2_embedding  + v1_embedding
         target_embedding /= linalg.norm(target_embedding)
     elif method == "raw":
         # argmax_{x in V \ {w1, w2, v1}} cos(x, v1)
         target_embedding = v1_embedding
-    elif method == "mult":
+    elif method == "mult" or method == "mult-simple":
         # argmax_{x in V \ {w1, w2, v1}}
         #    scos(x, v1) * scos(c, w2) / (scos(x, w1) + 0.001)
         # where scos(x, y) := (cos(x, y) + 1) / 2
@@ -74,6 +78,13 @@ def predict(w1, w2, v1, embedding, method):
 
             # Multiply these shifted cosine similarities.
             score = cos_v1 * cos_w2 / (cos_w1 + 0.001)
+        elif method == "mult-simple":
+            # Compute cosine similarities and put them in [0,1].
+            cos_v1 = (dot(v1_embedding, v_embedding) + 1) / 2
+            cos_w2 = (dot(w2_embedding, v_embedding) + 1) / 2
+
+            # Multiply these shifted cosine similarities.
+            score = cos_v1 * cos_w2
         else:
             # Compute cosine similarity with the target embedding.
             score = dot(target_embedding, v_embedding)
