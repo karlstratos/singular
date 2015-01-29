@@ -131,9 +131,14 @@ double Decomposer::ScaleJointValue(double joint_value,
 				   double value1, double value2) {
     double scaled_joint_value = joint_value;
     if (scaling_method_ == "cca") {
+	// Canonical correlation analysis (CCA) scaling.
 	scaled_joint_value /= sqrt(value1 + smooth_value_);
 	scaled_joint_value /= sqrt(value2 + smooth_value_);
+    } else if (scaling_method_ == "rreg") {
+	// Ridge regression (RREG) scaling.
+	scaled_joint_value /= value1 + smooth_value_;
     } else if (scaling_method_ == "ppmi") {
+	// Positive pointwise mutual information (PPMI) scaling.
 	if (scaling_method_ == "ppmi") {
 	    ASSERT(num_samples_ > 0, "Need the number of samples for PPMI");
 	}
@@ -192,6 +197,8 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 	for (size_t col = 0; col < dim1; ++col) {  // Left singular vectors.
 	    if (scaling_method_ == "cca") {
 		left_matrix_(row, col) /= sqrt(values1.at(col) + smooth_value_);
+	    } else if (scaling_method_ == "rreg") {
+		left_matrix_(row, col) *= singular_values_(row);
 	    } else if (scaling_method_ == "ppmi") {
 		left_matrix_(row, col) *= sqrt(singular_values_(row));
 	    } else {
@@ -202,6 +209,8 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 	    if (scaling_method_ == "cca") {
 		right_matrix_(row, col) /= sqrt(values2.at(col) +
 						smooth_value_);
+	    } else if (scaling_method_ == "rreg") {
+		right_matrix_(row, col) *= singular_values_(row);
 	    } else if (scaling_method_ == "ppmi") {
 		right_matrix_(row, col) *= sqrt(singular_values_(row));
 	    } else {
