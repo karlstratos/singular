@@ -495,7 +495,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	 << " nonzeros)" << endl;
     log_ << "   Rank of SVD: " << dim_ << endl;
     log_ << "   Scaling method: " << scaling_method_ << endl;
-    if (scaling_method_ == "cca") {
+    if (scaling_method_ == "cca" || scaling_method_ == "rreg") {
 	log_ << "   Smoothing value: " << smooth_value_ << endl << flush;
     }
 
@@ -894,6 +894,7 @@ string WordRep::Signature(size_t version) {
 	    signature += "_smooth" + to_string(smooth_value_);
 	} else if (scaling_method_ == "rreg") {
 	    signature += "_rreg";
+	    signature += "_smooth" + to_string(smooth_value_);
 	} else if (scaling_method_ == "ppmi") {
 	    signature += "_ppmi";
 	} else {
