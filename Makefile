@@ -29,7 +29,7 @@ files = $(subst .cc,.o,$(shell ls *.cc) $(shell ls src/*.cc))
 all: singular
 
 singular: $(files) $(SVDLIBC)/libsvd.a
-	$(CC) $(CFLAGS) $^ -o $@ $(LIBRARY)
+	$(CC) $(CFLAGS) $^ -o $@
 
 %.o: %.cc
 	$(CC) -I $(EIGEN) $(CFLAGS) -c $< -o $@

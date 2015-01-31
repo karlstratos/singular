@@ -47,7 +47,7 @@ def show_similar(embedding_path):
                     cosine = dot(embedding[word], embedding[other_word])
                     neighbors.append((cosine, other_word))
                 neighbors.sort(reverse=True)
-                for i in range(30):
+                for i in range(min(30, len(neighbors))):
                     cosine, buddy = neighbors[i]
                     print '\t\t{0:.4f}\t\t{1}'.format(cosine, buddy)
         except (KeyboardInterrupt, EOFError):
