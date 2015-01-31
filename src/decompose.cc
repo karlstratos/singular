@@ -130,15 +130,28 @@ void Decomposer::LoadScalingValues(
 double Decomposer::ScaleJointValue(double joint_value,
 				   double value1, double value2) {
     double scaled_joint_value = joint_value;
-    if (scaling_method_ == "cca") {
-	// Canonical correlation analysis (CCA) scaling.
+    if (scaling_method_ == "raw") {
+	// RAW: no scaling.
+    } else if (scaling_method_ == "sqrt") {
+	// SQRT: square-root transformation scaling.
+	scaled_joint_value = sqrt(scaled_joint_value);
+    } else if (scaling_method_ == "log") {
+	// LOG: log transformation scaling.
+	scaled_joint_value = log(1.0 + scaled_joint_value);
+    } else if (scaling_method_ == "cca") {
+	// CCA: canonical correlation analysis scaling.
 	scaled_joint_value /= sqrt(value1 + smooth_value_);
 	scaled_joint_value /= sqrt(value2 + smooth_value_);
+    } else if (scaling_method_ == "lcca") {
+	// LCCA: log transformation of the CCA scaling.
+	scaled_joint_value /= sqrt(value1 + smooth_value_);
+	scaled_joint_value /= sqrt(value2 + smooth_value_);
+	scaled_joint_value = log(1.0 + scaled_joint_value);
     } else if (scaling_method_ == "rreg") {
-	// Ridge regression (RREG) scaling.
+	// RREG: ridge regression scaling.
 	scaled_joint_value /= value1 + smooth_value_;
     } else if (scaling_method_ == "ppmi") {
-	// Positive pointwise mutual information (PPMI) scaling.
+	// PPMI: positive pointwise mutual information scaling.
 	if (scaling_method_ == "ppmi") {
 	    ASSERT(num_samples_ > 0, "Need the number of samples for PPMI");
 	}
@@ -194,28 +207,31 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 
     // Post-SVD singular vector scaling.
     for (size_t row = 0; row < dim_; ++row) {
-	for (size_t col = 0; col < dim1; ++col) {  // Left singular vectors.
-	    if (scaling_method_ == "cca") {
-		left_matrix_(row, col) /= sqrt(values1.at(col) + smooth_value_);
-	    } else if (scaling_method_ == "rreg") {
-		left_matrix_(row, col) *= singular_values_(row);
-	    } else if (scaling_method_ == "ppmi") {
-		left_matrix_(row, col) *= sqrt(singular_values_(row));
-	    } else {
-		ASSERT(false, "Unknown scaling method: " << scaling_method_);
-	    }
+	for (size_t col = 0; col < dim1; ++col) {
+	    left_matrix_(row, col) = ScaleMatrixValue(left_matrix_(row, col),
+						      singular_values_(row),
+						      values1.at(col));
 	}
-	for (size_t col = 0; col < dim2; ++col) {  // Right singular vectors.
-	    if (scaling_method_ == "cca") {
-		right_matrix_(row, col) /= sqrt(values2.at(col) +
-						smooth_value_);
-	    } else if (scaling_method_ == "rreg") {
-		right_matrix_(row, col) *= singular_values_(row);
-	    } else if (scaling_method_ == "ppmi") {
-		right_matrix_(row, col) *= sqrt(singular_values_(row));
-	    } else {
-		ASSERT(false, "Unknown scaling method: " << scaling_method_);
-	    }
+	for (size_t col = 0; col < dim2; ++col) {
+	    right_matrix_(row, col) = ScaleMatrixValue(right_matrix_(row, col),
+						       singular_values_(row),
+						       values2.at(col));
 	}
     }
+}
+
+double Decomposer::ScaleMatrixValue(double matrix_value, double row_value,
+				    double column_value) {
+    double scaled_matrix_value = matrix_value;
+    if (scaling_method_ == "cca" || scaling_method_ == "lcca") {
+	scaled_matrix_value /= sqrt(column_value + smooth_value_);
+    } else if (scaling_method_ == "raw" || scaling_method_ == "sqrt" ||
+	       scaling_method_ == "log" || scaling_method_ == "rreg") {
+	scaled_matrix_value *= row_value;
+    } else if (scaling_method_ == "ppmi") {
+	scaled_matrix_value *= sqrt(row_value);
+    } else {
+	ASSERT(false, "Unknown scaling method: " << scaling_method_);
+    }
+    return scaled_matrix_value;
 }

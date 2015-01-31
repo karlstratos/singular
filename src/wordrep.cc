@@ -495,7 +495,8 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	 << " nonzeros)" << endl;
     log_ << "   Rank of SVD: " << dim_ << endl;
     log_ << "   Scaling method: " << scaling_method_ << endl;
-    if (scaling_method_ == "cca" || scaling_method_ == "rreg") {
+    if (scaling_method_ == "cca" || scaling_method_ == "lcca" ||
+	scaling_method_ == "rreg") {
 	log_ << "   Smoothing value: " << smooth_value_ << endl << flush;
     }
 
@@ -889,16 +890,11 @@ string WordRep::Signature(size_t version) {
     }
     if (version >= 2) {
 	signature += "_dim" + to_string(dim_);
-	if (scaling_method_ == "cca") {
-	    signature += "_cca";
+	signature += "_" + scaling_method_;
+	if (scaling_method_ == "cca" || scaling_method_ == "lcca" ||
+	    scaling_method_ == "rreg") {
+	    // Record the smoothing value for these scaling methods.
 	    signature += "_smooth" + to_string(smooth_value_);
-	} else if (scaling_method_ == "rreg") {
-	    signature += "_rreg";
-	    signature += "_smooth" + to_string(smooth_value_);
-	} else if (scaling_method_ == "ppmi") {
-	    signature += "_ppmi";
-	} else {
-	    ASSERT(false, "Unknown scaling method: " << scaling_method_);
 	}
     }
     return signature;
