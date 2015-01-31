@@ -1,6 +1,6 @@
 // Author: Karl Stratos (karlstratos@gmail.com)
 //
-// Code for processing parser arguments.
+// Class for processing user-specified arguments.
 
 #ifndef ARGUMENTS_H_
 #define ARGUMENTS_H_
@@ -10,7 +10,6 @@
 
 using namespace std;
 
-// Class for processing user-specified arguments.
 class ArgumentProcessor {
 public:
     // Parse the command line strings into arguments.

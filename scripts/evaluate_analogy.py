@@ -4,9 +4,9 @@ This module is used to evaluate given word embeddings on the word analogy task.
 
 Argument 1 [input 1: each line = analogy_type w1 w2 v1 v2]
 Argument 2 [input 2: word embeddings file]
+Argument 3 [prediction method (see below)]
 """
 import sys
-from math import sqrt
 from numpy import array
 from numpy import dot
 from numpy import linalg
@@ -39,8 +39,8 @@ def predict(w1, w2, v1, embedding, method):
     w1_embedding = embedding[w1]
     w2_embedding = embedding[w2]
     v1_embedding = embedding[v1]
-    assert(len(w1_embedding) > 0 and len(w2_embedding) > 0
-           and len(v1_embedding) > 0)
+    assert len(w1_embedding) > 0 and len(w2_embedding) > 0 \
+        and len(v1_embedding) > 0
 
     if method == "add":
         # argmax_{x in V \ {w1, w2, v1}} cos(x, w2 - w1 + v1)
@@ -69,7 +69,7 @@ def predict(w1, w2, v1, embedding, method):
             # Do not consider the same words that appear in the question.
             continue
         v_embedding = embedding[word]
-        assert(len(v_embedding) > 0)
+        assert len(v_embedding) > 0
         if method == "mult":
             # Compute cosine similarities and put them in [0,1].
             cos_v1 = (dot(v1_embedding, v_embedding) + 1) / 2

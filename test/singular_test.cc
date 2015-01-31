@@ -87,7 +87,7 @@ TEST_F(IdentityMatrix, DoesNotBreakWithEigengaps) {
     // Introduce eigengaps in an identity matrix.
     size_t value = num_rows_;
     for (size_t i = 0; i < num_rows_; ++i) {
-	column_map_[i][i] = value--;
+	column_map_[i][i] = value--;  // diag(4, 3, 2, 1)
     }
 
     sparsesvd_solver_.LoadSparseMatrix(column_map_);

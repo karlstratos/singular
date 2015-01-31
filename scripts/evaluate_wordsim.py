@@ -8,15 +8,13 @@ Argument 1 [input 1: each line = word1 word2 similarity_score]
 Argument 2 [input 2: word embeddings file]
 """
 import sys
-from math import sqrt
 from numpy import array
-from numpy import argsort
 from numpy import dot
 from numpy import linalg
 from scipy.stats.mstats import spearmanr
 
 def read_normalized_embeddings(embedding_path):
-    """Read normalized embeddings."""
+    """Reads normalized embeddings."""
     embedding = {}
     dim = 0
     with open(embedding_path, "r") as embedding_file:
@@ -36,7 +34,8 @@ def read_normalized_embeddings(embedding_path):
     return embedding, dim
 
 def spearmans_correlation(x, y):
-    tol = 1e-10;
+    """Computes Spearman's rank correlation coefficient between x and y."""
+    tol = 1e-10
     assert len(x) == len(y)
 
     # Sort values in each.
@@ -96,7 +95,7 @@ def spearmans_correlation(x, y):
     for i in xrange(len(x_ranks)):
         d_sum += pow(final_x[i] - final_y[i], 2)
     n = len(x_ranks)
-    correlation = 1.0 - (6.0 * d_sum) / (n * (pow(n, 2) - 1) )
+    correlation = 1.0 - (6.0 * d_sum) / (n * (pow(n, 2) - 1))
 
     return correlation
 
