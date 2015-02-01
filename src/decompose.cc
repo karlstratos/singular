@@ -143,10 +143,10 @@ double Decomposer::ScaleJointValue(double joint_value,
 	scaled_joint_value /= sqrt(value1 + smooth_value_);
 	scaled_joint_value /= sqrt(value2 + smooth_value_);
     } else if (scaling_method_ == "lcca") {
-	// LCCA: log transformation of the CCA scaling.
-	scaled_joint_value /= sqrt(value1 + smooth_value_);
-	scaled_joint_value /= sqrt(value2 + smooth_value_);
-	scaled_joint_value = log(1.0 + scaled_joint_value);
+	// LCCA: log transformation before CCA scaling.
+	scaled_joint_value = log(scaled_joint_value);
+	scaled_joint_value /= sqrt(log(value1 + smooth_value_));
+	scaled_joint_value /= sqrt(log(value2 + smooth_value_));
     } else if (scaling_method_ == "rreg") {
 	// RREG: ridge regression scaling.
 	scaled_joint_value /= value1 + smooth_value_;
