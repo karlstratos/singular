@@ -142,11 +142,16 @@ double Decomposer::ScaleJointValue(double joint_value,
 	// CCA: canonical correlation analysis scaling.
 	scaled_joint_value /= sqrt(value1 + smooth_value_);
 	scaled_joint_value /= sqrt(value2 + smooth_value_);
+    } else if (scaling_method_ == "scca") {
+	// SCCA: square-root transformation before CCA scaling.
+	scaled_joint_value = sqrt(scaled_joint_value);
+	scaled_joint_value /= sqrt(sqrt(value1 + smooth_value_));
+	scaled_joint_value /= sqrt(sqrt(value2 + smooth_value_));
     } else if (scaling_method_ == "lcca") {
 	// LCCA: log transformation before CCA scaling.
-	scaled_joint_value = log(scaled_joint_value);
-	scaled_joint_value /= sqrt(log(value1 + smooth_value_));
-	scaled_joint_value /= sqrt(log(value2 + smooth_value_));
+	scaled_joint_value = log(1.0 + scaled_joint_value);
+	scaled_joint_value /= sqrt(log(1.0 + value1 + smooth_value_));
+	scaled_joint_value /= sqrt(log(1.0 + value2 + smooth_value_));
     } else if (scaling_method_ == "rreg") {
 	// RREG: ridge regression scaling.
 	scaled_joint_value /= value1 + smooth_value_;
@@ -223,7 +228,8 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 double Decomposer::ScaleMatrixValue(double matrix_value, double row_value,
 				    double column_value) {
     double scaled_matrix_value = matrix_value;
-    if (scaling_method_ == "cca" || scaling_method_ == "lcca") {
+    if (scaling_method_ == "cca" || scaling_method_ == "scca" ||
+	scaling_method_ == "lcca") {
 	scaled_matrix_value /= sqrt(column_value + smooth_value_);
     } else if (scaling_method_ == "raw" || scaling_method_ == "sqrt" ||
 	       scaling_method_ == "log" || scaling_method_ == "rreg") {

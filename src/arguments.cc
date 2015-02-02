@@ -69,7 +69,7 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--scaling "
 	     << "(default: " << scaling_method_ << ")" << endl
-	     << "Scaling method: raw, sqrt, log, cca, lcca, rreg, ppmi."
+	     << "Scaling method: raw, sqrt, log, cca, scca, lcca, rreg, ppmi."
 	     << endl << endl;
 
 	cout << "--smooth "
