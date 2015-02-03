@@ -31,10 +31,14 @@ public:
     //               sum_{j=1...d'} regularization_term_ * ||V_j||^2 +
     void Optimize(SMat W, SMat M, Eigen::MatrixXd *U, Eigen::MatrixXd *V);
 
-     // Get the learning rate based on the given step number.
-    double GetLearningRate(size_t step);
+     // Computes the weighted squared loss from given parameters (U, V).
+    double ComputeWSQLoss(SMat W, SMat M, const Eigen::MatrixXd &U,
+			  const Eigen::MatrixXd &V);
 
 private:
+     // Gets the learning rate based on a step number.
+    double GetLearningRate(size_t step);
+
     // Maximum number of training epochs.
     size_t max_num_epochs_ = 200;
 

@@ -46,6 +46,9 @@ public:
     // Returns the smoothing value.
     size_t smooth_value() { return smooth_value_; }
 
+    // Returns the weighting method.
+    string weighting_method() { return weighting_method_; }
+
 private:
     // Path to a text corpus.
     string corpus_path_;
@@ -76,6 +79,9 @@ private:
 
     // Smoothing value.
     size_t smooth_value_ = 5;
+
+    // Weighting method.
+    string weighting_method_;
 };
 
 #endif  // ARGUMENTS_H_

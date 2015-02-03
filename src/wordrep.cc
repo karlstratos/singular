@@ -497,14 +497,21 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     log_ << "   Scaling method: " << scaling_method_ << endl;
     if (scaling_method_ == "cca" || scaling_method_ == "scca" ||
 	scaling_method_ == "lcca" || scaling_method_ == "rreg") {
-	log_ << "   Smoothing value: " << smooth_value_ << endl << flush;
+	log_ << "   Smoothing value: " << smooth_value_ << endl;
+    }
+    if (!weighting_method_.empty()) {
+	log_ << "   Weighting method: " << weighting_method_ << endl << flush;
     }
 
     time_t begin_time_decomposition = time(NULL);
     Decomposer decomposer(dim_);
+    decomposer.set_num_samples(num_samples);
     decomposer.set_scaling_method(scaling_method_);
     decomposer.set_smooth_value(smooth_value_);
-    decomposer.set_num_samples(num_samples);
+    if (!weighting_method_.empty()) {
+	SMat weights = GetWeights(weighting_method_);
+	decomposer.set_weights(weights);
+    }
     decomposer.Decompose(CountWordContextPath(), CountWordPath(),
 			 CountContextPath());
     double time_decomposition = difftime(time(NULL), begin_time_decomposition);
@@ -525,6 +532,35 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	singular_values_file << singular_values_[i] << endl;
     }
     return *decomposer.left_matrix();
+}
+
+SMat WordRep::GetWeights(const string &weight_method) {
+    FileManipulator file_manipulator;
+    ASSERT(file_manipulator.exists(CountWordContextPath()),
+	   "Can't find word-context count matrix: " << CountWordContextPath());
+
+    // Use SparseSVDSolver to load the word-context count matrix.
+    SparseSVDSolver weight_loader(CountWordContextPath());
+    SMat weights = weight_loader.sparse_matrix();
+
+    // Scale the counts by the specified method.
+    for (size_t col = 0; col < weights->cols; ++col) {
+	size_t current_column_nonzero_index = weights->pointr[col];
+	size_t next_column_start_nonzero_index = weights->pointr[col + 1];
+	while (current_column_nonzero_index < next_column_start_nonzero_index) {
+	    double value = weights->value[current_column_nonzero_index];
+	    if (weighting_method_ == "raw") {
+		// Use raw counts as weights.
+	    } else if (weighting_method_ == "log") {
+		// Use log counts as weights.
+		weights->value[current_column_nonzero_index] = log(value);
+	    } else {
+		ASSERT(false, "Unknown weighting: " << weighting_method_);
+	    }
+	    ++current_column_nonzero_index;
+	}
+    }
+    return weights;
 }
 
 void WordRep::TestQualityOfWordVectors() {

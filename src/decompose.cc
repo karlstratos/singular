@@ -4,6 +4,8 @@
 
 #include <fstream>
 
+#include "wsqloss.h"
+
 void Decomposer::Decompose(
     unordered_map<size_t, unordered_map<size_t, double> > *joint_values,
     const unordered_map<size_t, double> &values1,
@@ -208,7 +210,23 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
     }
     svd_solver->FreeSVDResult();  // We have the SVD result: free the memory.
 
-    // TODO: Compute weighted decomposition here.
+    // If weights are given, perform weighted squared loss minimization on top
+    // of SVD.
+    if (weights_ != nullptr) {
+	WSQLossOptimizer wsq_loss_optimizer;
+	SMat values = svd_solver->sparse_matrix();
+
+	// Multiply the left singular vectors by singular values to use the
+	// singular values in the SVD decomposition.
+	for (size_t row = 0; row < dim_; ++row) {
+	    left_matrix_.row(row) *= singular_values_(row);
+	}
+
+	// Initialize the optimization process with SVD.
+	wsq_loss_optimizer.Optimize(weights_, values, &left_matrix_,
+				    &right_matrix_);
+	return;  // Don't do post-SVD scaling.
+    }
 
     // Post-SVD singular vector scaling.
     for (size_t row = 0; row < dim_; ++row) {

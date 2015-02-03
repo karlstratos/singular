@@ -26,6 +26,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    scaling_method_ = argv[++i];
 	} else if (arg == "--smooth") {
 	    smooth_value_ = stol(argv[++i]);
+	} else if (arg == "--weight") {
+	    weighting_method_ = argv[++i];
 	} else if (arg == "-h" || arg == "--help"){
 	    display_options_and_quit = true;
 	} else {
@@ -75,6 +77,11 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	cout << "--smooth "
 	     << "(default: " << smooth_value_ << ")" << endl
 	     << "Smoothing value." << endl << endl;
+
+	cout << "--weight "
+	     << "(default: no weight)" << endl
+	     << "Weighting method: raw, log."
+	     << endl << endl;
 
 	exit(0);
     }

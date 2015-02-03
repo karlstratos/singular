@@ -62,6 +62,11 @@ public:
     // Sets a smoothing value.
     void set_smooth_value(size_t smooth_value) { smooth_value_ = smooth_value; }
 
+    // Sets the weighting method.
+    void set_weighting_method(string weighting_method) {
+	weighting_method_ = weighting_method;
+    }
+
     // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
@@ -130,6 +135,9 @@ private:
 
     // Calculate a word matrix (column = word) from cached count files.
     Eigen::MatrixXd CalculateWordMatrix();
+
+    // Get an appropriately scaled weight matrix.
+    SMat GetWeights(const string &weight_method);
 
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
@@ -268,6 +276,9 @@ private:
 
     // Smoothing value.
     size_t smooth_value_ = 5;
+
+    // Weighting method.
+    string weighting_method_;
 };
 
 #endif  // WORDREP_H
