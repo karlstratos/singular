@@ -29,24 +29,36 @@ public:
     //      sum_{i=1...d, j=1...d'} W_{i,j} * (M_{i,j} - U_i' V_j)^2 +
     //               sum_{i=1...d}  regularization_term_ * ||U_i||^2 +
     //               sum_{j=1...d'} regularization_term_ * ||V_j||^2 +
-    void Optimize(SMat W, SMat M, Eigen::MatrixXd *U, Eigen::MatrixXd *V);
+    //
+    // Returns the minimized loss value.
+    double Optimize(SMat W, SMat M, Eigen::MatrixXd *U, Eigen::MatrixXd *V);
 
      // Computes the weighted squared loss from given parameters (U, V).
     double ComputeWSQLoss(SMat W, SMat M, const Eigen::MatrixXd &U,
 			  const Eigen::MatrixXd &V);
+
+    // Sets the regularization term.
+    void set_regularization_term(double regularization_term) {
+	regularization_term_ = regularization_term;
+    }
+
+    // Sets the learning rate prior.
+    void set_learning_rate_prior(double learning_rate_prior) {
+	learning_rate_prior_ = learning_rate_prior;
+    }
 
 private:
      // Gets the learning rate based on a step number.
     double GetLearningRate(size_t step);
 
     // Maximum number of training epochs.
-    size_t max_num_epochs_ = 200;
+    size_t max_num_epochs_ = 100;
 
     // Regularization term.
-    double regularization_term_ = 0.1;
+    double regularization_term_ = 1e-7;
 
     // Learning rate prior.
-    double learning_rate_prior_ = 0.1;
+    double learning_rate_prior_ = 1e-7;
 };
 
 #endif  // WSQLOSS_H

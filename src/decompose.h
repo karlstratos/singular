@@ -17,8 +17,7 @@ public:
     // Initializes with a dimension.
     Decomposer(size_t dim) : dim_(dim) { }
 
-    // Frees the used memory.
-    ~Decomposer() { svdFreeSMat(weights_); }
+    ~Decomposer() { }
 
     // Decomposes a matrix with scaling.
     void Decompose(unordered_map<size_t, unordered_map<size_t, double> >
@@ -51,6 +50,16 @@ public:
     // Sets the weight matrix.
     void set_weights(SMat weights) { weights_ = weights; }
 
+    // Sets the regularization term.
+    void set_regularization_term(double regularization_term) {
+	regularization_term_ = regularization_term;
+    }
+
+    // Sets the learning rate prior.
+    void set_learning_rate_prior(double learning_rate_prior) {
+	learning_rate_prior_ = learning_rate_prior;
+    }
+
     // Returns a matrix of scaled left singular vectors (as rows).
     Eigen::MatrixXd *left_matrix() { return &left_matrix_; }
 
@@ -75,6 +84,9 @@ public:
 
     // Returns the smoothing value.
     size_t smooth_value() { return smooth_value_; }
+
+    // Returns the weight matrix.
+    SMat weights() { return weights_; }
 
 private:
     // Loads scaling values from a file.
@@ -120,6 +132,12 @@ private:
 
     // Weight matrix.
     SMat weights_ = nullptr;
+
+    // Regularization term.
+    double regularization_term_ = 0.1;
+
+    // Learning rate prior.
+    double learning_rate_prior_ = 0.1;
 };
 
 #endif  // DECOMPOSE_H

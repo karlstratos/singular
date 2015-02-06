@@ -214,6 +214,8 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
     // of SVD.
     if (weights_ != nullptr) {
 	WSQLossOptimizer wsq_loss_optimizer;
+	wsq_loss_optimizer.set_regularization_term(regularization_term_);
+	wsq_loss_optimizer.set_learning_rate_prior(learning_rate_prior_);
 	SMat values = svd_solver->sparse_matrix();
 
 	// Multiply the left singular vectors by singular values to use the

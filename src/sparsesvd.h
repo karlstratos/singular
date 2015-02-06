@@ -27,13 +27,16 @@ public:
     // Cleans up memory at deletion.
     ~SparseSVDSolver();
 
-    // Loads a sparse matrix from a text file with the following format:
+    // Loads a sparse matrix from a text file into the class object.
+    void LoadSparseMatrix(const string &file_path);
+
+    // Reads a sparse matrix from a text file with the following format:
     //    <num_rows> <num_columns> <num_nonzeros>
     //    for each column from left to right:
     //       <num_nonzeros_in_col>
     //       for each (row_index, value) in this column:
     //          <row_index> <value>
-    void LoadSparseMatrix(const string &file_path);
+    SMat ReadSparseMatrixFromFile(const string &file_path);
 
     // Writes a sparse matrix as a file.
     void WriteSparseMatrix(

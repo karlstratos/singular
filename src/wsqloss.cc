@@ -2,8 +2,8 @@
 
 #include "wsqloss.h"
 
-void WSQLossOptimizer::Optimize(SMat W, SMat M, Eigen::MatrixXd *U,
-				Eigen::MatrixXd *V) {
+double WSQLossOptimizer::Optimize(SMat W, SMat M, Eigen::MatrixXd *U,
+				  Eigen::MatrixXd *V) {
     // Check that all dimensions match.
     string error_message = "Have W (" + to_string(W->rows) + "x" +
 	to_string(W->cols) + "), M (" + to_string(M->rows) + "x" +
@@ -21,8 +21,8 @@ void WSQLossOptimizer::Optimize(SMat W, SMat M, Eigen::MatrixXd *U,
     // For readability, we will maintain the following convention:
     //    1. Indices i denote rows of W/M    => columns of U.
     //    2. Indices j denote columns of W/M => columns of V.
+    double current_loss = numeric_limits<double>::infinity();
     for (int epoch = 0; epoch < max_num_epochs_; ++epoch) {
-	cout << "Starting epoch " << epoch + 1 << endl;
 	for (size_t j = 0; j < W->cols; ++j) {
 	    ASSERT(W->pointr[j] == M->pointr[j] &&
 		   W->pointr[j + 1] == M->pointr[j + 1], "Faulty indices");
@@ -53,9 +53,14 @@ void WSQLossOptimizer::Optimize(SMat W, SMat M, Eigen::MatrixXd *U,
 		++current_nonzero_index;
 	    }
 	}
-	double wsq_loss = ComputeWSQLoss(W, M, *U, *V);
-	cerr << "Epoch " << epoch + 1 << ": " << wsq_loss << endl;
+	double new_loss = ComputeWSQLoss(W, M, *U, *V);
+	cerr << "Epoch " << epoch + 1 << ": " << new_loss << endl;
+
+	double loss_reduction = current_loss - new_loss;
+	current_loss = new_loss;
+	if (loss_reduction < 1e-3) { break; }
     }
+    return current_loss;
 }
 
 double WSQLossOptimizer::ComputeWSQLoss(SMat W, SMat M,

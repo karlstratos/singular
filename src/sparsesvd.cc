@@ -15,11 +15,15 @@ SparseSVDSolver::~SparseSVDSolver() {
 void SparseSVDSolver::LoadSparseMatrix(const string &file_path) {
     // Free the sparse matrix variable in case it's filled.
     FreeSparseMatrix();
+    sparse_matrix_ = ReadSparseMatrixFromFile(file_path);
+}
 
+SMat SparseSVDSolver::ReadSparseMatrixFromFile(const string &file_path) {
     // Load from the sparse representation.
     vector<char> writable(file_path.begin(), file_path.end());
     writable.push_back('\0');
-    sparse_matrix_ = svdLoadSparseMatrix(&writable[0], 1);  // 1 = text format
+    SMat sparse_matrix = svdLoadSparseMatrix(&writable[0], 1);  // 1 = text
+    return sparse_matrix;
 }
 
 void SparseSVDSolver::WriteSparseMatrix(

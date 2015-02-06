@@ -19,6 +19,8 @@ int main (int argc, char* argv[]) {
     wordrep.set_scaling_method(argparser.scaling_method());
     wordrep.set_smooth_value(argparser.smooth_value());
     wordrep.set_weighting_method(argparser.weighting_method());
+    wordrep.set_regularization_term(argparser.regularization_term());
+    wordrep.set_learning_rate_prior(argparser.learning_rate_prior());
 
     // If given a corpus, extract statistics from it.
     if (!argparser.corpus_path().empty()) {

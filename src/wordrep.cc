@@ -499,8 +499,10 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	scaling_method_ == "lcca" || scaling_method_ == "rreg") {
 	log_ << "   Smoothing value: " << smooth_value_ << endl;
     }
+    SMat weights = nullptr;  // Optional weighting.
     if (!weighting_method_.empty()) {
 	log_ << "   Weighting method: " << weighting_method_ << endl << flush;
+	weights = GetWeights(weighting_method_);
     }
 
     time_t begin_time_decomposition = time(NULL);
@@ -508,10 +510,9 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     decomposer.set_num_samples(num_samples);
     decomposer.set_scaling_method(scaling_method_);
     decomposer.set_smooth_value(smooth_value_);
-    if (!weighting_method_.empty()) {
-	SMat weights = GetWeights(weighting_method_);
-	decomposer.set_weights(weights);
-    }
+    decomposer.set_weights(weights);
+    decomposer.set_regularization_term(regularization_term_);
+    decomposer.set_learning_rate_prior(learning_rate_prior_);
     decomposer.Decompose(CountWordContextPath(), CountWordPath(),
 			 CountContextPath());
     double time_decomposition = difftime(time(NULL), begin_time_decomposition);
@@ -519,6 +520,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	log_ << "   ***WARNING*** The matrix has rank "
 	     << decomposer.rank() << " < " << dim_ << "!" << endl;
     }
+    svdFreeSMat(weights); // Free the weight matrix.
 
     singular_values_ = *decomposer.singular_values();
     log_ << "   Condition number: "
@@ -540,8 +542,9 @@ SMat WordRep::GetWeights(const string &weight_method) {
 	   "Can't find word-context count matrix: " << CountWordContextPath());
 
     // Use SparseSVDSolver to load the word-context count matrix.
-    SparseSVDSolver weight_loader(CountWordContextPath());
-    SMat weights = weight_loader.sparse_matrix();
+    SparseSVDSolver sparsesvd_solver;
+    SMat weights =
+	sparsesvd_solver.ReadSparseMatrixFromFile(CountWordContextPath());
 
     // Scale the counts by the specified method.
     for (size_t col = 0; col < weights->cols; ++col) {
@@ -553,7 +556,7 @@ SMat WordRep::GetWeights(const string &weight_method) {
 		// Use raw counts as weights.
 	    } else if (weighting_method_ == "log") {
 		// Use log counts as weights.
-		weights->value[current_column_nonzero_index] = log(value);
+		weights->value[current_column_nonzero_index] = log(1.0 + value);
 	    } else {
 		ASSERT(false, "Unknown weighting: " << weighting_method_);
 	    }

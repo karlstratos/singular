@@ -36,22 +36,22 @@ public:
     // Induces lexical representations from word counts in the output directory.
     void InduceLexicalRepresentations();
 
-    // Sets a rare word cutoff value.
+    // Sets the rare word cutoff value.
     void set_rare_cutoff(size_t rare_cutoff) { rare_cutoff_ = rare_cutoff; }
 
-    // Sets a context window size.
+    // Sets the context window size.
     void set_window_size(size_t window_size) { window_size_ = window_size; }
 
-    // Sets a flag for using bag-of-words context.
+    // Sets the flag for using bag-of-words context.
     void set_bag_of_words(bool bag_of_words) { bag_of_words_ = bag_of_words; }
 
-    // Sets a flag for indicating that there is a sentence per line in the
+    // Sets the flag for indicating that there is a sentence per line in the
     // text corpus.
     void set_sentence_per_line(bool sentence_per_line) {
 	sentence_per_line_ = sentence_per_line;
     }
 
-    // Sets a target dimension of word vectors.
+    // Sets the target dimension of word vectors.
     void set_dim(size_t dim) { dim_ = dim; }
 
     // Sets the scaling method.
@@ -59,12 +59,22 @@ public:
 	scaling_method_ = scaling_method;
     }
 
-    // Sets a smoothing value.
+    // Sets the smoothing value.
     void set_smooth_value(size_t smooth_value) { smooth_value_ = smooth_value; }
 
     // Sets the weighting method.
     void set_weighting_method(string weighting_method) {
 	weighting_method_ = weighting_method;
+    }
+
+    // Sets the regularization term.
+    void set_regularization_term(double regularization_term) {
+	regularization_term_ = regularization_term;
+    }
+
+    // Sets the learning rate prior.
+    void set_learning_rate_prior(double learning_rate_prior) {
+	learning_rate_prior_ = learning_rate_prior;
     }
 
     // Returns the computed word vectors.
@@ -278,7 +288,13 @@ private:
     size_t smooth_value_ = 5;
 
     // Weighting method.
-    string weighting_method_;
+    string weighting_method_ = "";
+
+    // Regularization term.
+    double regularization_term_ = 0.1;
+
+    // Learning rate prior.
+    double learning_rate_prior_ = 0.1;
 };
 
 #endif  // WORDREP_H

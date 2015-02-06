@@ -28,6 +28,10 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    smooth_value_ = stol(argv[++i]);
 	} else if (arg == "--weight") {
 	    weighting_method_ = argv[++i];
+	} else if (arg == "--regularize") {
+	    regularization_term_ = stod(argv[++i]);
+	} else if (arg == "--learning-rate-prior") {
+	    learning_rate_prior_ = stod(argv[++i]);
 	} else if (arg == "-h" || arg == "--help"){
 	    display_options_and_quit = true;
 	} else {
@@ -82,6 +86,14 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: no weight)" << endl
 	     << "Weighting method: raw, log."
 	     << endl << endl;
+
+	cout << "--regularize "
+	     << "(default: " << regularization_term_ << ")" << endl
+	     << "Regularization term." << endl << endl;
+
+	cout << "--learning-rate-prior "
+	     << "(default: " << learning_rate_prior_ << ")" << endl
+	     << "Learning rate prior." << endl << endl;
 
 	exit(0);
     }
