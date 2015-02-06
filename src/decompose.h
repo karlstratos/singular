@@ -33,6 +33,21 @@ public:
     void Decompose(const vector<unordered_map<size_t, double> > &samples1,
 		   const vector<unordered_map<size_t, double> > &samples2);
 
+    // Set the file containing left singular vectors (as rows).
+    void set_left_singular_vectors_path(string left_singular_vectors_path) {
+	left_singular_vectors_path_ = left_singular_vectors_path;
+    }
+
+    // Set the file containing right singular vectors (as rows).
+    void set_right_singular_vectors_path(string right_singular_vectors_path) {
+	right_singular_vectors_path_ = right_singular_vectors_path;
+    }
+
+    // Set the file containing singular values.
+    void set_singular_values_path(string singular_values_path) {
+	singular_values_path_ = singular_values_path;
+    }
+
     // Sets the number of samples.
     void set_num_samples(size_t num_samples) { num_samples_ = num_samples; }
 
@@ -89,6 +104,9 @@ public:
     SMat weights() { return weights_; }
 
 private:
+    // Computes SVD with the given solver if no specified cache can be found.
+    void ComputeSVDIfNecessary(SparseSVDSolver *svd_solver);
+
     // Loads scaling values from a file.
     void LoadScalingValues(const string &scaling_values_path,
 			   unordered_map<size_t, double> *scaling_values);
@@ -113,6 +131,15 @@ private:
 
     // Singular values.
     Eigen::VectorXd singular_values_;
+
+    // File containing left singular vectors (as rows).
+    string left_singular_vectors_path_ = "";
+
+    // File containing right singular vectors (as rows).
+    string right_singular_vectors_path_ = "";
+
+    // File containing singular values.
+    string singular_values_path_ = "";
 
     // Number of samples.
     size_t num_samples_ = 0;

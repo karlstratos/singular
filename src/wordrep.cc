@@ -510,6 +510,9 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 
     time_t begin_time_decomposition = time(NULL);
     Decomposer decomposer(dim_);
+    decomposer.set_left_singular_vectors_path(LeftSingularVectorsPath());
+    decomposer.set_right_singular_vectors_path(RightSingularVectorsPath());
+    decomposer.set_singular_values_path(SingularValuesPath());
     decomposer.set_num_samples(num_samples);
     decomposer.set_scaling_method(scaling_method_);
     decomposer.set_smooth_value(smooth_value_);
@@ -531,11 +534,6 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     log_ << "   Time taken: "
 	 << string_manipulator.print_time(time_decomposition) << endl;
 
-    // Write singular values.
-    ofstream singular_values_file(SingularValuesPath(), ios::out);
-    for (size_t i = 0; i < singular_values_.size(); ++i) {
-	singular_values_file << singular_values_[i] << endl;
-    }
     return *decomposer.left_matrix();
 }
 

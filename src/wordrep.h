@@ -217,6 +217,16 @@ private:
 	return output_directory_ + "/wordvectors_pca_" + Signature(3);
     }
 
+    // Returns the path to the left singular vectors.
+    string LeftSingularVectorsPath() {
+	return output_directory_ + "/left_singular_vectors_" + Signature(2);
+    }
+
+    // Returns the path to the right singular vectors.
+    string RightSingularVectorsPath() {
+	return output_directory_ + "/right_singular_vectors_" + Signature(2);
+    }
+
     // Returns the path to the singular values.
     string SingularValuesPath() {
 	return output_directory_ + "/singular_values_" + Signature(2);

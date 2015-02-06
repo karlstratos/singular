@@ -5,6 +5,8 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <Eigen/Dense>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -28,6 +30,18 @@ class FileManipulator {
 public:
     // Checks for the existence of a file.
     bool exists(const string &file_path);
+
+    // Writes an Eigen matrix to a file.
+    void write(const Eigen::MatrixXd &m, const string &file_path);
+
+    // Writes an Eigen vector to a file.
+    void write(const Eigen::VectorXd &v, const string &file_path);
+
+    // Reads an Eigen matrix from a file.
+    void read(const string &file_path, Eigen::MatrixXd *m);
+
+    // Reads an Eigen vector from a file.
+    void read(const string &file_path, Eigen::VectorXd *v);
 };
 
 class Stat {

@@ -53,6 +53,77 @@ bool FileManipulator::exists(const string &file_path) {
     return (stat(file_path.c_str(), &buffer) == 0);
 }
 
+void FileManipulator::write(const Eigen::MatrixXd &m, const string &file_path) {
+    ofstream file(file_path, ios::out);
+    ASSERT(file.is_open(), "Cannot open file: " << file_path);
+    file << m.rows() << " " << m.cols() << endl;
+    for (size_t i = 0; i < m.rows(); ++i) {
+	for (size_t j = 0; j < m.cols(); ++j) {
+	    file << m(i, j) << endl;
+	}
+    }
+}
+
+void FileManipulator::write(const Eigen::VectorXd &v, const string &file_path) {
+    ofstream file(file_path, ios::out);
+    ASSERT(file.is_open(), "Cannot open file: " << file_path);
+    file << v.size() << endl;
+    for (size_t i = 0; i < v.size(); ++i) {
+	file << v(i) << endl;
+    }
+}
+
+void FileManipulator::read(const string &file_path, Eigen::MatrixXd *m) {
+    m->resize(0, 0);  // Clear the m.
+    ifstream file(file_path, ios::in);
+    ASSERT(file.is_open(), "Cannot open file: " << file_path);
+    StringManipulator string_manipulator;
+    string line;
+    vector<string> tokens;
+
+    // Get dimensions.
+    getline(file, line);
+    string_manipulator.split(line, " ", &tokens);
+    ASSERT(tokens.size() == 2, "Bad m format: " << line);
+    size_t dim1 = stol(tokens[0]);
+    size_t dim2 = stol(tokens[1]);
+
+    // Get entries.
+    m->resize(dim1, dim2);
+    for (size_t i = 0; i < dim1; ++i) {
+	for (size_t j = 0; j < dim2; ++j) {
+	    getline(file, line);
+	    string_manipulator.split(line, " ", &tokens);
+	    ASSERT(tokens.size() == 1, "Bad format: " << line);
+	    (*m)(i, j) = stod(tokens[0]);
+	}
+    }
+}
+
+void FileManipulator::read(const string &file_path, Eigen::VectorXd *v) {
+    v->resize(0);  // Clear the vector.
+    ifstream file(file_path, ios::in);
+    ASSERT(file.is_open(), "Cannot open file: " << file_path);
+    StringManipulator string_manipulator;
+    string line;
+    vector<string> tokens;
+
+    // Get the length.
+    getline(file, line);
+    string_manipulator.split(line, " ", &tokens);
+    ASSERT(tokens.size() == 1, "Bad matrix format: " << line);
+    size_t length = stol(tokens[0]);
+
+    // Get entries.
+    v->resize(length);
+    for (size_t i = 0; i < length; ++i) {
+	getline(file, line);
+	string_manipulator.split(line, " ", &tokens);
+	ASSERT(tokens.size() == 1, "Bad format: " << line);
+	(*v)(i) = stod(tokens[0]);
+    }
+}
+
 double Stat::ComputeSpearman(const vector<double> &x, const vector<double> &y) {
     ASSERT(x.size() == y.size(), "Given two vectors of different lengths: "
 	   << x.size() << " " << y.size());

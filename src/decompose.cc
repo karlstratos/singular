@@ -24,9 +24,7 @@ void Decomposer::Decompose(
     // Perform an SVD on the scaled joint values.
     SparseSVDSolver svd_solver;
     svd_solver.LoadSparseMatrix(*joint_values);
-    if (dim_ == 0) { dim_ = min(values1.size(), values2.size()); }
-    svd_solver.SolveSparseSVD(dim_);
-    rank_ = svd_solver.rank();
+    ComputeSVDIfNecessary(&svd_solver);
 
     // Extract scaled singular vectors from the SVD.
     ExtractFromSVD(&svd_solver, values1, values2);
@@ -67,9 +65,7 @@ void Decomposer::Decompose(const string &joint_values_path,
     }
 
     // Perform an SVD on the scaled joint values.
-    if (dim_ == 0) { dim_ = min(matrix->rows, matrix->cols); }
-    svd_solver.SolveSparseSVD(dim_);
-    rank_ = svd_solver.rank();
+    ComputeSVDIfNecessary(&svd_solver);
 
     // Extract scaled singular vectors from the SVD.
     ExtractFromSVD(&svd_solver, values1, values2);
@@ -108,6 +104,74 @@ void Decomposer::Decompose(
 
     // Decompose a matrix of joint values with scaling.
     Decompose(&joint_values, values1, values2);
+}
+
+void Decomposer::ComputeSVDIfNecessary(SparseSVDSolver *svd_solver) {
+    // Are we given a pointer to a stored SVD result?
+    bool cache_is_specified = (!left_singular_vectors_path_.empty() &&
+			       !right_singular_vectors_path_.empty() &&
+			       !singular_values_path_.empty());
+
+    // Can we actually locate that SVD result?
+    bool cache_is_found = false;
+    FileManipulator file_manipulator;
+    if (cache_is_specified) {
+	cache_is_found =
+	    (file_manipulator.exists(left_singular_vectors_path_) &&
+	     file_manipulator.exists(right_singular_vectors_path_) &&
+	     file_manipulator.exists(singular_values_path_));
+    }
+
+    if (!cache_is_found) {  // We cannot locate a cache.
+	size_t dim1 = svd_solver->sparse_matrix()->rows;
+	size_t dim2 = svd_solver->sparse_matrix()->cols;
+	if (dim_ == 0) { dim_ = min(dim1, dim2); }
+	svd_solver->SolveSparseSVD(dim_);  // Computing SVD here!
+	rank_ = svd_solver->rank();
+
+	// Load a matrix of left singular vectors as rows.
+	left_matrix_.resize(dim_, dim1);
+	for (size_t row = 0; row < dim_; ++row) {
+	    for (size_t col = 0; col < dim1; ++col) {
+		left_matrix_(row, col) =
+		    svd_solver->left_singular_vectors()->value[row][col];
+	    }
+	}
+
+	// Load a matrix of right singular vectors as rows.
+	right_matrix_.resize(dim_, dim2);
+	for (size_t row = 0; row < dim_; ++row) {
+	    for (size_t col = 0; col < dim2; ++col) {
+		right_matrix_(row, col) =
+		    svd_solver->right_singular_vectors()->value[row][col];
+	    }
+	}
+
+	// Load singular values.
+	singular_values_.resize(dim_);
+	for (size_t i = 0; i < dim_; ++i) {
+	    singular_values_(i) = *(svd_solver->singular_values() + i);
+	}
+	svd_solver->FreeSVDResult();  // Free memory.
+
+	if (cache_is_specified) {
+	    // Store this result to a specified location.
+	    file_manipulator.write(left_matrix_, left_singular_vectors_path_);
+	    file_manipulator.write(right_matrix_, right_singular_vectors_path_);
+	    file_manipulator.write(singular_values_, singular_values_path_);
+	}
+    } else {  // We have located a cache, just read this SVD result.
+	file_manipulator.read(left_singular_vectors_path_, &left_matrix_);
+	file_manipulator.read(right_singular_vectors_path_, &right_matrix_);
+	file_manipulator.read(singular_values_path_, &singular_values_);
+	ASSERT(left_matrix_.rows() == right_matrix_.rows() &&
+	       right_matrix_.rows() == singular_values_.size(),
+	       "Loaded SVD result has faulty dimensions");
+	rank_ = 0;
+	for (size_t i = 0; i < singular_values_.size(); ++i) {
+	    if (singular_values_(i) > 0) { ++rank_; }
+	}
+    }
 }
 
 void Decomposer::LoadScalingValues(
@@ -176,42 +240,20 @@ double Decomposer::ScaleJointValue(double joint_value,
 void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 				const unordered_map<size_t, double> &values1,
 				const unordered_map<size_t, double> &values2) {
+    // Ensure that we have loaded the SVD result.
+    ASSERT(left_matrix_.rows() > 0 && left_matrix_.cols() > 0 &&
+	   right_matrix_.rows() > 0 && right_matrix_.cols() > 0 &&
+	   singular_values_.size() > 0, "No SVD result for extraction.");
+
+    // Check that dimensions match for scaling.
     size_t dim1 = values1.size();
     size_t dim2 = values2.size();
-    ASSERT(svd_solver->HasSVDResult(), "No SVD result for extraction.");
-    ASSERT(svd_solver->left_singular_vectors()->rows == dim_ &&
-	   svd_solver->left_singular_vectors()->cols == dim1 &&
-	   svd_solver->right_singular_vectors()->rows == dim_ &&
-	   svd_solver->right_singular_vectors()->cols == dim2,
+    ASSERT(left_matrix_.rows() == dim_ && left_matrix_.cols() == dim1 &&
+	   right_matrix_.rows() == dim_ && right_matrix_.cols() == dim2,
 	   "Dimensions don't match between the SVD result and scaling values.");
 
-    // Collect singular values.
-    singular_values_.resize(dim_);
-    for (size_t i = 0; i < dim_; ++i) {
-	singular_values_(i) = *(svd_solver->singular_values() + i);
-    }
-
-    // Collect a matrix of left singular vectors as rows.
-    left_matrix_.resize(dim_, dim1);
-    for (size_t row = 0; row < dim_; ++row) {
-	for (size_t col = 0; col < dim1; ++col) {
-	    left_matrix_(row, col) =
-		svd_solver->left_singular_vectors()->value[row][col];
-	}
-    }
-
-    // Collect a matrix of right singular vectors as rows.
-    right_matrix_.resize(dim_, dim2);
-    for (size_t row = 0; row < dim_; ++row) {
-	for (size_t col = 0; col < dim2; ++col) {
-	    right_matrix_(row, col) =
-		svd_solver->right_singular_vectors()->value[row][col];
-	}
-    }
-    svd_solver->FreeSVDResult();  // We have the SVD result: free the memory.
-
     // If weights are given, perform weighted squared loss minimization on top
-    // of SVD.
+    // of SVD and return.
     if (weights_ != nullptr) {
 	WSQLossOptimizer wsq_loss_optimizer;
 	wsq_loss_optimizer.set_regularization_term(regularization_term_);
@@ -230,7 +272,7 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 	return;  // Don't do post-SVD scaling.
     }
 
-    // Post-SVD singular vector scaling.
+    // Otherwise, do post-SVD singular vector scaling.
     for (size_t row = 0; row < dim_; ++row) {
 	for (size_t col = 0; col < dim1; ++col) {
 	    left_matrix_(row, col) = ScaleMatrixValue(left_matrix_(row, col),
