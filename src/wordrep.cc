@@ -501,7 +501,10 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     }
     SMat weights = nullptr;  // Optional weighting.
     if (!weighting_method_.empty()) {
-	log_ << "   Weighting method: " << weighting_method_ << endl << flush;
+	log_ << "   Weighting method: " << weighting_method_ << endl;
+	log_ << "      - Regularization term: " << regularization_term_ << endl;
+	log_ << "      - Learning rate prior: " << learning_rate_prior_ << endl;
+	log_ << flush;
 	weights = GetWeights(weighting_method_);
     }
 

@@ -388,8 +388,8 @@ TEST_F(WordRepSimpleExample, SVDLIBCFailsWithoutSmoothingCutoff0WindowSize2) {
     //    0.0000 0.0000 0.0000 0.0000 0.0000 1.0000
     // Its two largest singular values are close (1.0001 and 1.0000).
     Eigen::VectorXd singular_values = *wordrep.singular_values();
-    EXPECT_FALSE(fabs(1.0001 - singular_values(0)) < tol_ &&
-		 fabs(1.0000 - singular_values(1)) < tol_);
+    EXPECT_FALSE(fabs(1.0001 - singular_values(0)) < tol_ - 1e10 &&
+		 fabs(1.0000 - singular_values(1)) < tol_ - 1e10);
 
     // Note: I'm not checking them explicitly, but SVDLIBC gives rubbish
     // singular vectors.

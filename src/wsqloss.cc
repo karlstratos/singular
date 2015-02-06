@@ -1,4 +1,4 @@
-// Author: Karl Stratos (karlstratos@gmail.com)
+ // Author: Karl Stratos (karlstratos@gmail.com)
 
 #include "wsqloss.h"
 
@@ -22,7 +22,10 @@ double WSQLossOptimizer::Optimize(SMat W, SMat M, Eigen::MatrixXd *U,
     //    1. Indices i denote rows of W/M    => columns of U.
     //    2. Indices j denote columns of W/M => columns of V.
     double current_loss = numeric_limits<double>::infinity();
-    for (int epoch = 0; epoch < max_num_epochs_; ++epoch) {
+    cerr << "Gradient descent on the weighted squared loss function." << endl;
+    cerr << "   - Regularization term: " << regularization_term_ << endl;
+    cerr << "   - Learning rate prior: " << learning_rate_prior_ << endl;
+    for (int epoch = 0; epoch < kMaxNumEpochs_; ++epoch) {
 	for (size_t j = 0; j < W->cols; ++j) {
 	    ASSERT(W->pointr[j] == M->pointr[j] &&
 		   W->pointr[j + 1] == M->pointr[j + 1], "Faulty indices");
@@ -54,11 +57,12 @@ double WSQLossOptimizer::Optimize(SMat W, SMat M, Eigen::MatrixXd *U,
 	    }
 	}
 	double new_loss = ComputeWSQLoss(W, M, *U, *V);
-	cerr << "Epoch " << epoch + 1 << ": " << new_loss << endl;
-
 	double loss_reduction = current_loss - new_loss;
+	cerr << "Epoch: " << epoch + 1 << "\tloss: " << new_loss
+	     << "\treduction: " << loss_reduction << endl;
+
 	current_loss = new_loss;
-	if (loss_reduction < 1e-3) { break; }
+	if (loss_reduction < kMinimumLossImprovement_) { break; }
     }
     return current_loss;
 }
@@ -107,6 +111,16 @@ double WSQLossOptimizer::ComputeWSQLoss(SMat W, SMat M,
 }
 
 double WSQLossOptimizer::GetLearningRate(size_t step) {
+    // Example with regularization 0.1 and prior 0.5.
+    //
+    //    Steps:     1        2        3     ...   100    ...   1000
+    //
+    //    Rate:    0.482    0.466     0.450  ...  0.130   ...   0.026
+    //
+    // With power -1.0, you would get a faster decay:
+    //             0.476    0.455     0.435  ...  0.083   ...   0.010
+    // With power -0.5, you would get a slower decay (but violate stuff):
+    //             0.487    0.477     0.466  ...  0.204   ...   0.070
     double learning_rate = learning_rate_prior_ *
 	pow(1.0 + learning_rate_prior_ * regularization_term_ * step, -0.75);
     return learning_rate;

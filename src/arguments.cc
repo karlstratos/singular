@@ -30,7 +30,7 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    weighting_method_ = argv[++i];
 	} else if (arg == "--regularize") {
 	    regularization_term_ = stod(argv[++i]);
-	} else if (arg == "--learning-rate-prior") {
+	} else if (arg == "--prior") {
 	    learning_rate_prior_ = stod(argv[++i]);
 	} else if (arg == "-h" || arg == "--help"){
 	    display_options_and_quit = true;
@@ -91,7 +91,7 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: " << regularization_term_ << ")" << endl
 	     << "Regularization term." << endl << endl;
 
-	cout << "--learning-rate-prior "
+	cout << "--prior "
 	     << "(default: " << learning_rate_prior_ << ")" << endl
 	     << "Learning rate prior." << endl << endl;
 
