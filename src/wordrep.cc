@@ -918,7 +918,7 @@ void WordRep::RotateWordVectorsToPCACoordinates() {
 }
 
 string WordRep::Signature(size_t version) {
-    ASSERT(version <= 2, "Unrecognized signature version: " << version);
+    ASSERT(version <= 3, "Unrecognized signature version: " << version);
 
     string signature = "rare" + to_string(rare_cutoff_);
     if (version >= 1) {
@@ -937,6 +937,11 @@ string WordRep::Signature(size_t version) {
 	    scaling_method_ == "lcca" || scaling_method_ == "rreg") {
 	    // Record the smoothing value for these scaling methods.
 	    signature += "_smooth" + to_string(smooth_value_);
+	}
+    }
+    if (version >= 3) {
+	if (!weighting_method_.empty()) {
+	    signature += "_" + weighting_method_ + "weight";
 	}
     }
     return signature;

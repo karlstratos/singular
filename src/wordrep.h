@@ -209,12 +209,12 @@ private:
 
     // Returns the path to the word vectors.
     string WordVectorsPath() {
-	return output_directory_ + "/wordvectors_" + Signature(2);
+	return output_directory_ + "/wordvectors_" + Signature(3);
     }
 
     // Returns the path to the word vectors in a PCA basis.
     string WordVectorsPCAPath() {
-	return output_directory_ + "/wordvectors_pca_" + Signature(2);
+	return output_directory_ + "/wordvectors_pca_" + Signature(3);
     }
 
     // Returns the path to the singular values.
@@ -224,12 +224,12 @@ private:
 
     // Returns the path to the PCA variance values.
     string PCAVariancePath() {
-	return output_directory_ + "/pca_variance_" + Signature(2);
+	return output_directory_ + "/pca_variance_" + Signature(3);
     }
 
     // Returns the path to the agglomeratively clusterered word vectors.
     string AgglomerativePath() {
-	return output_directory_ + "/agglomerative_" + Signature(2);
+	return output_directory_ + "/agglomerative_" + Signature(3);
     }
 
     // Word-count pairs sorted in decreasing frequency.

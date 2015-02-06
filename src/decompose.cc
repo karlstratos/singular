@@ -61,7 +61,7 @@ void Decomposer::Decompose(const string &joint_values_path,
 	    size_t row = matrix->rowind[current_column_nonzero_index];
 	    matrix->value[current_column_nonzero_index] =
 		ScaleJointValue(matrix->value[current_column_nonzero_index],
-				 values1[row], values2[col]);
+				values1[row], values2[col]);
 	    ++current_column_nonzero_index;
 	}
     }
