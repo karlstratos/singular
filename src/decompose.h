@@ -54,6 +54,11 @@ public:
     // Sets a target dimension.
     void set_dim(size_t dim) { dim_ = dim; }
 
+    // Sets the transformation method.
+    void set_transformation_method(string transformation_method) {
+	transformation_method_ = transformation_method;
+    }
+
     // Sets the scaling method.
     void set_scaling_method(string scaling_method) {
 	scaling_method_ = scaling_method;
@@ -155,6 +160,9 @@ private:
     // Actually computed SVD rank (might be smaller than the target dimension
     // if rank(matrix) < target dimension).
     size_t rank_ = 0;
+
+    // Data transformation method.
+    string transformation_method_ = "raw";
 
     // Scaling method.
     string scaling_method_ = "cca";

@@ -506,8 +506,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	 << " nonzeros)" << endl;
     log_ << "   Rank of SVD: " << dim_ << endl;
     log_ << "   Scaling method: " << scaling_method_ << endl;
-    if (scaling_method_ == "cca" || scaling_method_ == "scca" ||
-	scaling_method_ == "lcca" || scaling_method_ == "rreg") {
+    if (scaling_method_ == "cca" || scaling_method_ == "rreg") {
 	log_ << "   Smoothing value: " << smooth_value_ << endl;
     }
     SMat weights = nullptr;  // Optional weighting.
@@ -525,6 +524,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     decomposer.set_right_singular_vectors_path(RightSingularVectorsPath());
     decomposer.set_singular_values_path(SingularValuesPath());
     decomposer.set_num_samples(num_samples);
+    decomposer.set_transformation_method(transformation_method_);
     decomposer.set_scaling_method(scaling_method_);
     decomposer.set_smooth_value(smooth_value_);
     decomposer.set_weights(weights);
@@ -963,9 +963,9 @@ string WordRep::Signature(size_t version) {
     }
     if (version >= 2) {
 	signature += "_dim" + to_string(dim_);
+	signature += "_" + transformation_method_;
 	signature += "_" + scaling_method_;
-	if (scaling_method_ == "cca" || scaling_method_ == "scca" ||
-	    scaling_method_ == "lcca" || scaling_method_ == "rreg") {
+	if (scaling_method_ == "cca" || scaling_method_ == "rreg") {
 	    // Record the smoothing value for these scaling methods.
 	    signature += "_smooth" + to_string(smooth_value_);
 	}

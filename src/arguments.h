@@ -40,6 +40,9 @@ public:
     // Returns the target dimension of word vectors.
     size_t dim() { return dim_; }
 
+    // Returns the data transformation method.
+    string transformation_method() { return transformation_method_; }
+
     // Returns the scaling method.
     string scaling_method() { return scaling_method_; }
 
@@ -82,6 +85,9 @@ private:
 
     // Target dimension of word vectors.
     size_t dim_ = 100;
+
+    // Data transformation method.
+    string transformation_method_ = "raw";
 
     // Scaling method.
     string scaling_method_ = "cca";

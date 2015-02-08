@@ -195,34 +195,37 @@ void Decomposer::LoadScalingValues(
 
 double Decomposer::ScaleJointValue(double joint_value,
 				   double value1, double value2) {
+    // Data transformation.
+    if (transformation_method_ == "raw") {  // No transformation.
+    } else if (transformation_method_ == "sqrt") {  // Take square-root.
+	joint_value = sqrt(joint_value);
+	value1 = sqrt(value1);
+	value2 = sqrt(value2);
+    } else if (transformation_method_ == "anscombe") {  // Anscombe.
+	joint_value = 2.0 * sqrt(joint_value + 0.375);
+	value1 = 2.0 * sqrt(value1 + 0.375);
+	value2 = 2.0 * sqrt(value2 + 0.375);
+    } else if (transformation_method_ == "log") {  // Take log.
+	joint_value = log(joint_value);
+	value1 = log(value1);
+	value2 = log(value2);
+    } else {
+	ASSERT(false, "Unknown data transformation method: "
+	       << transformation_method_);
+    }
+
+    // Scale the joint value by individual values (or not).
     double scaled_joint_value = joint_value;
-    if (scaling_method_ == "raw") {
-	// RAW: no scaling.
-    } else if (scaling_method_ == "sqrt") {
-	// SQRT: square-root transformation scaling.
-	scaled_joint_value = sqrt(scaled_joint_value);
-    } else if (scaling_method_ == "log") {
-	// LOG: log transformation scaling.
-	scaled_joint_value = log(1.0 + scaled_joint_value);
+    if (scaling_method_ == "raw") {  // No scaling.
     } else if (scaling_method_ == "cca") {
-	// CCA: canonical correlation analysis scaling.
+	// Canonical correlation analysis scaling.
 	scaled_joint_value /= sqrt(value1 + smooth_value_);
 	scaled_joint_value /= sqrt(value2 + smooth_value_);
-    } else if (scaling_method_ == "scca") {
-	// SCCA: square-root transformation before CCA scaling.
-	scaled_joint_value = sqrt(scaled_joint_value);
-	scaled_joint_value /= sqrt(sqrt(value1 + smooth_value_));
-	scaled_joint_value /= sqrt(sqrt(value2 + smooth_value_));
-    } else if (scaling_method_ == "lcca") {
-	// LCCA: log transformation before CCA scaling.
-	scaled_joint_value = log(1.0 + scaled_joint_value);
-	scaled_joint_value /= sqrt(log(1.0 + value1 + smooth_value_));
-	scaled_joint_value /= sqrt(log(1.0 + value2 + smooth_value_));
     } else if (scaling_method_ == "rreg") {
-	// RREG: ridge regression scaling.
+	// Ridge regression scaling.
 	scaled_joint_value /= value1 + smooth_value_;
     } else if (scaling_method_ == "ppmi") {
-	// PPMI: positive pointwise mutual information scaling.
+	// Positive pointwise mutual information scaling.
 	if (scaling_method_ == "ppmi") {
 	    ASSERT(num_samples_ > 0, "Need the number of samples for PPMI");
 	}
@@ -291,11 +294,9 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 double Decomposer::ScaleMatrixValue(double matrix_value, double row_value,
 				    double column_value) {
     double scaled_matrix_value = matrix_value;
-    if (scaling_method_ == "cca" || scaling_method_ == "scca" ||
-	scaling_method_ == "lcca") {
+    if (scaling_method_ == "cca") {
 	scaled_matrix_value /= sqrt(column_value + smooth_value_);
-    } else if (scaling_method_ == "raw" || scaling_method_ == "sqrt" ||
-	       scaling_method_ == "log" || scaling_method_ == "rreg") {
+    } else if (scaling_method_ == "raw" || scaling_method_ == "rreg") {
 	scaled_matrix_value *= row_value;
     } else if (scaling_method_ == "ppmi") {
 	scaled_matrix_value *= sqrt(row_value);

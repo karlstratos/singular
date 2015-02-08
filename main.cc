@@ -16,6 +16,7 @@ int main (int argc, char* argv[]) {
     wordrep.set_window_size(argparser.window_size());
     wordrep.set_context_definition(argparser.context_definition());
     wordrep.set_dim(argparser.dim());
+    wordrep.set_transformation_method(argparser.transformation_method());
     wordrep.set_scaling_method(argparser.scaling_method());
     wordrep.set_smooth_value(argparser.smooth_value());
     wordrep.set_weighting_method(argparser.weighting_method());

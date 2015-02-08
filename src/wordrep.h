@@ -56,6 +56,11 @@ public:
     // Sets the target dimension of word vectors.
     void set_dim(size_t dim) { dim_ = dim; }
 
+    // Sets the transformation method.
+    void set_transformation_method(string transformation_method) {
+	transformation_method_ = transformation_method;
+    }
+
     // Sets the scaling method.
     void set_scaling_method(string scaling_method) {
 	scaling_method_ = scaling_method;
@@ -190,7 +195,8 @@ private:
     // Returns a string signature of tunable parameters.
     //    version=0: rare_cutoff_
     //    version=1: 0 + sentence_per_line_, window_size_, context_defintion_
-    //    version=2: 1 + dim_, smooth_value_
+    //    version=2: 1 + dim_, smooth_value_, transformation_method_,
+    //                   scaling_method_
     //    version=3: 2 + weighting_method_
     string Signature(size_t version);
 
@@ -303,6 +309,9 @@ private:
 
     // Target dimension of word vectors.
     size_t dim_;
+
+    // Data transformation method.
+    string transformation_method_ = "raw";
 
     // Scaling method.
     string scaling_method_ = "cca";

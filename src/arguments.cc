@@ -22,7 +22,9 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    context_definition_ = argv[++i];
 	} else if (arg == "--dim") {
 	    dim_ = stol(argv[++i]);
-	} else if (arg == "--scaling") {
+	} else if (arg == "--transform") {
+	    transformation_method_ = argv[++i];
+	} else if (arg == "--scale") {
 	    scaling_method_ = argv[++i];
 	} else if (arg == "--smooth") {
 	    smooth_value_ = stol(argv[++i]);
@@ -76,9 +78,14 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: " << dim_ << ")" << endl
 	     << "Target dimension of word vectors." << endl << endl;
 
-	cout << "--scaling "
+	cout << "--transform "
+	     << "(default: " << transformation_method_ << ")" << endl
+	     << "Data transformation method: raw, sqrt, log."
+	     << endl << endl;
+
+	cout << "--scale "
 	     << "(default: " << scaling_method_ << ")" << endl
-	     << "Scaling method: raw, sqrt, log, cca, scca, lcca, rreg, ppmi."
+	     << "Scaling method: raw, cca, rreg, ppmi."
 	     << endl << endl;
 
 	cout << "--smooth "
