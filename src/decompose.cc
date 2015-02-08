@@ -256,6 +256,7 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
     // of SVD and return.
     if (weights_ != nullptr) {
 	WSQLossOptimizer wsq_loss_optimizer;
+	wsq_loss_optimizer.set_max_num_epochs(max_num_epochs_);
 	wsq_loss_optimizer.set_regularization_term(regularization_term_);
 	wsq_loss_optimizer.set_learning_rate_prior(learning_rate_prior_);
 	SMat values = svd_solver->sparse_matrix();

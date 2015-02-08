@@ -517,6 +517,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     decomposer.set_scaling_method(scaling_method_);
     decomposer.set_smooth_value(smooth_value_);
     decomposer.set_weights(weights);
+    decomposer.set_max_num_epochs(max_num_epochs_);
     decomposer.set_regularization_term(regularization_term_);
     decomposer.set_learning_rate_prior(learning_rate_prior_);
     decomposer.Decompose(CountWordContextPath(), CountWordPath(),

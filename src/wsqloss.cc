@@ -25,7 +25,7 @@ double WSQLossOptimizer::Optimize(SMat W, SMat M, Eigen::MatrixXd *U,
     cerr << "Gradient descent on the weighted squared loss function." << endl;
     cerr << "   - Regularization term: " << regularization_term_ << endl;
     cerr << "   - Learning rate prior: " << learning_rate_prior_ << endl;
-    for (int epoch = 0; epoch < kMaxNumEpochs_; ++epoch) {
+    for (int epoch = 0; epoch < max_num_epochs_; ++epoch) {
 	for (size_t j = 0; j < W->cols; ++j) {
 	    ASSERT(W->pointr[j] == M->pointr[j] &&
 		   W->pointr[j + 1] == M->pointr[j + 1], "Faulty indices");

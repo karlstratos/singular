@@ -28,6 +28,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    smooth_value_ = stol(argv[++i]);
 	} else if (arg == "--weight") {
 	    weighting_method_ = argv[++i];
+	} else if (arg == "--epochs") {
+	    max_num_epochs_ = stoi(argv[++i]);
 	} else if (arg == "--regularize") {
 	    regularization_term_ = stod(argv[++i]);
 	} else if (arg == "--prior") {
@@ -86,6 +88,10 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: no weight)" << endl
 	     << "Weighting method: anscombe, glove."
 	     << endl << endl;
+
+	cout << "--epochs "
+	     << "(default: " << max_num_epochs_ << ")" << endl
+	     << "Maximum number of training epochs." << endl << endl;
 
 	cout << "--regularize "
 	     << "(default: " << regularization_term_ << ")" << endl

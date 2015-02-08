@@ -49,6 +49,9 @@ public:
     // Returns the weighting method.
     string weighting_method() { return weighting_method_; }
 
+    // Returns the maximum number of training epochs.
+    size_t max_num_epochs() { return max_num_epochs_; }
+
     // Returns the regularization term.
     double regularization_term() { return regularization_term_; }
 
@@ -88,6 +91,9 @@ private:
 
     // Weighting method.
     string weighting_method_ = "";
+
+    // Maximum number of training epochs.
+    size_t max_num_epochs_ = 100;
 
     // Regularization term.
     double regularization_term_ = 0.1;

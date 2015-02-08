@@ -65,6 +65,11 @@ public:
     // Sets the weight matrix.
     void set_weights(SMat weights) { weights_ = weights; }
 
+    // Sets the maximum number of training epochs.
+    void set_max_num_epochs(double max_num_epochs) {
+	max_num_epochs_ = max_num_epochs;
+    }
+
     // Sets the regularization term.
     void set_regularization_term(double regularization_term) {
 	regularization_term_ = regularization_term;
@@ -159,6 +164,9 @@ private:
 
     // Weight matrix.
     SMat weights_ = nullptr;
+
+    // Maximum number of training epochs.
+    size_t max_num_epochs_ = 100;
 
     // Regularization term.
     double regularization_term_ = 0.1;

@@ -67,6 +67,11 @@ public:
 	weighting_method_ = weighting_method;
     }
 
+    // Sets the maximum number of training epochs.
+    void set_max_num_epochs(double max_num_epochs) {
+	max_num_epochs_ = max_num_epochs;
+    }
+
     // Sets the regularization term.
     void set_regularization_term(double regularization_term) {
 	regularization_term_ = regularization_term;
@@ -299,6 +304,9 @@ private:
 
     // Weighting method.
     string weighting_method_ = "";
+
+    // Maximum number of training epochs.
+    size_t max_num_epochs_ = 100;
 
     // Regularization term.
     double regularization_term_ = 0.1;
