@@ -168,7 +168,7 @@ private:
     string scaling_method_ = "cca";
 
     // Smoothing value.
-    size_t smooth_value_ = 5;
+    size_t smooth_value_ = 0;
 
     // Weight matrix.
     SMat weights_ = nullptr;

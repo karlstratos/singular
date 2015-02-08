@@ -317,7 +317,7 @@ private:
     string scaling_method_ = "cca";
 
     // Smoothing value.
-    size_t smooth_value_ = 5;
+    size_t smooth_value_ = 0;
 
     // Weighting method.
     string weighting_method_ = "";
