@@ -14,12 +14,12 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    from_scratch_ = true;
 	} else if (arg == "--rare") {
 	    rare_cutoff_ = stol(argv[++i]);
-	} else if (arg == "--window") {
-	    window_size_ = stol(argv[++i]);
-	} else if (arg == "--bag-of-words") {
-	    bag_of_words_ = true;
 	} else if (arg == "--sentence-per-line") {
 	    sentence_per_line_ = true;
+	} else if (arg == "--window") {
+	    window_size_ = stol(argv[++i]);
+	} else if (arg == "--context") {
+	    context_definition_ = argv[++i];
 	} else if (arg == "--dim") {
 	    dim_ = stol(argv[++i]);
 	} else if (arg == "--scaling") {
@@ -60,16 +60,17 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: " << rare_cutoff_ << ")" << endl
 	     << "Rare word cutoff value." << endl << endl;
 
+	cout << "--sentence-per-line " << endl
+	     << "Have a sentence per line in the text corpus?" << endl << endl;
+
 	cout << "--window "
 	     << "(default: " << window_size_ << ")" << endl
 	     << "Size of the context to compute covariance on." << endl << endl;
 
-	cout << "--bag-of-words" << endl
-	     << "Use bag-of-words context?"
+	cout << "--context "
+	     << "(default: " << context_definition_ << ")" << endl
+	     << "Context definition: bag, list, baglist."
 	     << endl << endl;
-
-	cout << "--sentence-per-line " << endl
-	     << "Have a sentence per line in the text corpus?" << endl << endl;
 
 	cout << "--dim "
 	     << "(default: " << dim_ << ")" << endl

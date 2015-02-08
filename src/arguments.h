@@ -27,15 +27,15 @@ public:
     // Returns the rare word cutoff value.
     size_t rare_cutoff() { return rare_cutoff_; }
 
-    // Returns the size of the context to compute covariance on.
-    size_t window_size() { return window_size_; }
-
-    // Returns the flag for using bag-of-words context.
-    bool bag_of_words() { return bag_of_words_; }
-
     // Returns the flag for indicating that there is a sentence per line in the
     // text corpus.
     bool sentence_per_line() { return sentence_per_line_; }
+
+    // Returns the size of the context to compute covariance on.
+    size_t window_size() { return window_size_; }
+
+    // Returns the context definition.
+    string context_definition() { return context_definition_; }
 
     // Returns the target dimension of word vectors.
     size_t dim() { return dim_; }
@@ -71,14 +71,14 @@ private:
     // Rare word cutoff.
     size_t rare_cutoff_ = 1;
 
+    // Have a sentence per line in the text corpus?
+    bool sentence_per_line_ = false;
+
     // Size of the context to compute covariance on.
     size_t window_size_ = 3;
 
-    // Use bag-of-words context?
-    bool bag_of_words_ = false;
-
-    // Have a sentence per line in the text corpus?
-    bool sentence_per_line_ = false;
+    // Context definition.
+    string context_definition_ = "bag";
 
     // Target dimension of word vectors.
     size_t dim_ = 100;

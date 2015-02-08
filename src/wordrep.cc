@@ -226,13 +226,11 @@ void WordRep::SlideWindow(const string &corpus_file) {
     StringManipulator string_manipulator;
     string line;
     vector<string> tokens;
-    string context_definition = (bag_of_words_) ? "bag-of-words" :
-	"position-sensitive";
     string corpus_format = (sentence_per_line_) ? "1 line = 1 sentence" :
 	"Whole Text = 1 sentence";
     log_ << endl << "[Sliding window]" << endl;
     log_ << "   Window size: " << window_size_ << endl;
-    log_ << "   Context: " << context_definition << endl;
+    log_ << "   Context definition: " << context_definition_ << endl;
     log_ << "   Corpus format: " <<  corpus_format << endl << flush;
 
     // Figure out the indices of the current and context words.
@@ -249,9 +247,9 @@ void WordRep::SlideWindow(const string &corpus_file) {
     }
 
     // count_word_context[j][i] = count of word i and context j coocurring
-    unordered_map<Word, unordered_map<Word, double> > count_word_context;
+    unordered_map<Context, unordered_map<Word, double> > count_word_context;
     unordered_map<Word, double> count_word;  // i-th: count of word i
-    unordered_map<Word, double> count_context;  // j-th: count of context j
+    unordered_map<Context, double> count_context;  // j-th: count of context j
 
     // Put start buffering in the window.
     deque<string> window;
@@ -277,14 +275,9 @@ void WordRep::SlideWindow(const string &corpus_file) {
 		Word word = word_str2num_[window[word_index]];
 		++count_word[word];
 		for (Word context_index : context_indices) {
-		    string context_string = window[context_index];
-		    if (!bag_of_words_) {
-			context_string =
-			    position_markers[context_index] + context_string;
-		    }
-		    Context context = AddContextIfUnknown(context_string);
-		    ++count_context[context];
-		    ++count_word_context[context][word];
+		    IncrementContextCount(
+			window[context_index], position_markers[context_index],
+			word, &count_context, &count_word_context);
 		}
 		window.pop_front();
 	    }
@@ -301,14 +294,9 @@ void WordRep::SlideWindow(const string &corpus_file) {
 		Word word = word_str2num_[window[word_index]];
 		++count_word[word];
 		for (Word context_index : context_indices) {
-		    string context_string = window[context_index];
-		    if (!bag_of_words_) {
-			context_string =
-			    position_markers[context_index] + context_string;
-		    }
-		    Context context = AddContextIfUnknown(context_string);
-		    ++count_context[context];
-		    ++count_word_context[context][word];
+		    IncrementContextCount(
+			window[context_index], position_markers[context_index],
+			word, &count_context, &count_word_context);
 		}
 		window.pop_front();
 	    }
@@ -330,14 +318,9 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	    Word word = word_str2num_[window[word_index]];
 	    ++count_word[word];
 	    for (Word context_index : context_indices) {
-		string context_string = window[context_index];
-		if (!bag_of_words_) {
-		    context_string =
-			position_markers[context_index] + context_string;
-		}
-		Context context = AddContextIfUnknown(context_string);
-		++count_context[context];
-		++count_word_context[context][word];
+		IncrementContextCount(
+		    window[context_index], position_markers[context_index],
+		    word, &count_context, &count_word_context);
 	    }
 	    window.pop_front();
 	}
@@ -364,6 +347,34 @@ void WordRep::SlideWindow(const string &corpus_file) {
     ofstream count_context_file(CountContextPath(), ios::out);
     for (Context context = 0; context < count_context.size(); ++context) {
 	count_context_file << count_context[context] << endl;
+    }
+}
+
+void WordRep::IncrementContextCount(
+    const string &context_string, const string &position_string, Word word,
+    unordered_map<Context, double> *count_context,
+    unordered_map<Context, unordered_map<Word, double> >
+    *count_word_context) {
+    if (context_definition_ == "bag") { // Bag-of-words context.
+	Context bag_context = AddContextIfUnknown(context_string);
+	++(*count_context)[bag_context];
+	++(*count_word_context)[bag_context][word];
+    } else if (context_definition_ == "list") { // List-of-words context.
+	Context list_context =
+	    AddContextIfUnknown(position_string + context_string);
+	++(*count_context)[list_context];
+	++(*count_word_context)[list_context][word];
+    } else if (context_definition_ == "baglist") {
+	// Both bag-of-words and list-of-words context.
+	Context bag_context = AddContextIfUnknown(context_string);
+	Context list_context =
+	    AddContextIfUnknown(position_string + context_string);
+	++(*count_context)[bag_context];
+	++(*count_context)[list_context];
+	++(*count_word_context)[bag_context][word];
+	++(*count_word_context)[list_context][word];
+    } else {
+	ASSERT(false, "Unknown context definition: " << context_definition_);
     }
 }
 
@@ -944,13 +955,11 @@ string WordRep::Signature(size_t version) {
 
     string signature = "rare" + to_string(rare_cutoff_);
     if (version >= 1) {
-	signature += "_window" + to_string(window_size_);
-	if (bag_of_words_) {
-	    signature += "_bow";
-	}
 	if (sentence_per_line_) {
 	    signature += "_spl";
 	}
+	signature += "_window" + to_string(window_size_);
+	signature += "_" + context_definition_;
     }
     if (version >= 2) {
 	signature += "_dim" + to_string(dim_);

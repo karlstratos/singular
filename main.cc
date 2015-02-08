@@ -12,9 +12,9 @@ int main (int argc, char* argv[]) {
 
     // Set variables.
     wordrep.set_rare_cutoff(argparser.rare_cutoff());
-    wordrep.set_window_size(argparser.window_size());
-    wordrep.set_bag_of_words(argparser.bag_of_words());
     wordrep.set_sentence_per_line(argparser.sentence_per_line());
+    wordrep.set_window_size(argparser.window_size());
+    wordrep.set_context_definition(argparser.context_definition());
     wordrep.set_dim(argparser.dim());
     wordrep.set_scaling_method(argparser.scaling_method());
     wordrep.set_smooth_value(argparser.smooth_value());

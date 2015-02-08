@@ -39,16 +39,18 @@ public:
     // Sets the rare word cutoff value.
     void set_rare_cutoff(size_t rare_cutoff) { rare_cutoff_ = rare_cutoff; }
 
-    // Sets the context window size.
-    void set_window_size(size_t window_size) { window_size_ = window_size; }
-
-    // Sets the flag for using bag-of-words context.
-    void set_bag_of_words(bool bag_of_words) { bag_of_words_ = bag_of_words; }
-
     // Sets the flag for indicating that there is a sentence per line in the
     // text corpus.
     void set_sentence_per_line(bool sentence_per_line) {
 	sentence_per_line_ = sentence_per_line;
+    }
+
+    // Sets the context window size.
+    void set_window_size(size_t window_size) { window_size_ = window_size; }
+
+    // Sets the context definition.
+    void set_context_definition(string context_definition) {
+	context_definition_ = context_definition;
     }
 
     // Sets the target dimension of word vectors.
@@ -139,6 +141,13 @@ private:
     // Slides a window across a corpus to collect statistics.
     void SlideWindow(const string &corpus_file);
 
+    // Increments context counts according to how context is defined.
+    void IncrementContextCount(
+	const string &context_string, const string &position_string, Word word,
+	unordered_map<Context, double> *count_context,
+	unordered_map<Context, unordered_map<Word, double> >
+	*count_word_context);
+
     // Induces vector representations of word types based on cached count files.
     void InduceWordVectors();
 
@@ -180,10 +189,9 @@ private:
 
     // Returns a string signature of tunable parameters.
     //    version=0: rare_cutoff_
-    //    version=1: rare_cutoff_, window_size_, bag_of_words,
-    //               sentence_per_line_
-    //    version=2: rare_cutoff_, window_size_, bag_of_words,
-    //               sentence_per_line_, dim_, smooth_value_
+    //    version=1: 0 + sentence_per_line_, window_size_, context_defintion_
+    //    version=2: 1 + dim_, smooth_value_
+    //    version=3: 2 + weighting_method_
     string Signature(size_t version);
 
     // Returns the path to the corpus information file.
@@ -283,15 +291,15 @@ private:
     // If a word type appears <= this number, treat it as a rare symbol.
     size_t rare_cutoff_ = 1;
 
+    // Have a sentence per line in the text corpus?
+    bool sentence_per_line_ = false;
+
     // Size of the context to compute covariance on. Note that it needs to be
     // odd if we want the left and right context to have the same length.
     size_t window_size_ = 3;
 
-    // Use bag-of-words (i.e., not position sensitive) context?
-    bool bag_of_words_ = false;
-
-    // Have a sentence per line in the text corpus?
-    bool sentence_per_line_ = false;
+    // Context definition.
+    string context_definition_ = "bag";
 
     // Target dimension of word vectors.
     size_t dim_;

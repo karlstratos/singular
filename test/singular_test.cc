@@ -299,7 +299,7 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(0);
     wordrep.set_window_size(2);
-    wordrep.set_bag_of_words(false);
+    wordrep.set_context_definition("list");
     wordrep.ExtractStatistics(temp_file_path_);
 
     // Check against the true counts.
@@ -373,7 +373,7 @@ TEST_F(WordRepSimpleExample, SVDLIBCFailsWithoutSmoothingCutoff0WindowSize2) {
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(0);
     wordrep.set_window_size(2);
-    wordrep.set_bag_of_words(false);
+    wordrep.set_context_definition("list");
     wordrep.set_dim(2);
     wordrep.set_scaling_method("cca");
     wordrep.set_smooth_value(0);
@@ -401,7 +401,7 @@ TEST_F(WordRepSimpleExample, SVDLIBCSucceedsWithSmoothingCutoff0WindowSize2) {
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(0);
     wordrep.set_window_size(2);
-    wordrep.set_bag_of_words(false);
+    wordrep.set_context_definition("list");
     wordrep.set_dim(2);
     wordrep.set_scaling_method("cca");
     wordrep.set_smooth_value(1);  // Add 1 to dividing counts.
@@ -427,7 +427,7 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(1);
     wordrep.set_window_size(3);
-    wordrep.set_bag_of_words(false);
+    wordrep.set_context_definition("list");
     wordrep.set_dim(2);
     wordrep.set_scaling_method("cca");
     wordrep.set_smooth_value(0);
@@ -506,7 +506,7 @@ TEST_F(WordRepSimpleExample,
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(1);
     wordrep.set_window_size(3);
-    wordrep.set_bag_of_words(false);
+    wordrep.set_context_definition("list");
     wordrep.set_sentence_per_line(true);
     wordrep.ExtractStatistics(temp_file_path_);
 
