@@ -547,17 +547,40 @@ SMat WordRep::GetWeights(const string &weight_method) {
     SMat weights =
 	sparsesvd_solver.ReadSparseMatrixFromFile(CountWordContextPath());
 
-    // Scale the counts by the specified method.
+    double max_value = 0;
+    if (weight_method == "anscombe") {
+	// Apply the Anscombe transform on counts and determine the max value.
+	for (size_t col = 0; col < weights->cols; ++col) {
+	    size_t current_column_nonzero_index = weights->pointr[col];
+	    size_t next_column_start_nonzero_index = weights->pointr[col + 1];
+	    while (current_column_nonzero_index <
+		   next_column_start_nonzero_index) {
+		weights->value[current_column_nonzero_index] = 2.0 *
+		    sqrt(weights->value[current_column_nonzero_index] + 0.375);
+		if (weights->value[current_column_nonzero_index] > max_value) {
+		    max_value = weights->value[current_column_nonzero_index];
+		}
+		++current_column_nonzero_index;
+	    }
+	}
+	ASSERT(max_value > 0, "Max count is zero!");
+    }
+
+
     for (size_t col = 0; col < weights->cols; ++col) {
 	size_t current_column_nonzero_index = weights->pointr[col];
 	size_t next_column_start_nonzero_index = weights->pointr[col + 1];
 	while (current_column_nonzero_index < next_column_start_nonzero_index) {
-	    double value = weights->value[current_column_nonzero_index];
-	    if (weighting_method_ == "raw") {
-		// Use raw counts as weights.
-	    } else if (weighting_method_ == "log") {
-		// Use log counts as weights.
-		weights->value[current_column_nonzero_index] = log(1.0 + value);
+	    if (weight_method == "anscombe") {
+		// Divide by the max value to put values in the range (0, 1].
+		weights->value[current_column_nonzero_index] /= max_value;
+	    } else if (weight_method == "glove") {
+		// Recipe provided in the GloVe paper.
+		double x_max = 100.0;
+		double alpha = 0.75;
+		double x = weights->value[current_column_nonzero_index];
+		double scaled_value = (x < x_max) ? pow(x / x_max, alpha) : 1.0;
+		weights->value[current_column_nonzero_index] = scaled_value;
 	    } else {
 		ASSERT(false, "Unknown weighting: " << weighting_method_);
 	    }

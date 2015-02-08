@@ -84,7 +84,7 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--weight "
 	     << "(default: no weight)" << endl
-	     << "Weighting method: raw, log."
+	     << "Weighting method: anscombe, glove."
 	     << endl << endl;
 
 	cout << "--regularize "

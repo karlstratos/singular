@@ -52,7 +52,7 @@ private:
     double GetLearningRate(size_t step);
 
     // Maximum number of training epochs.
-    const size_t kMaxNumEpochs_ = 1000;
+    const size_t kMaxNumEpochs_ = 100;
 
     // Minimum required loss reduction.
     const double kMinimumLossImprovement_ = 1e-1;
