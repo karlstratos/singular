@@ -206,9 +206,9 @@ double Decomposer::ScaleJointValue(double joint_value,
 	value1 = 2.0 * sqrt(value1 + 0.375);
 	value2 = 2.0 * sqrt(value2 + 0.375);
     } else if (transformation_method_ == "log") {  // Take log.
-	joint_value = log(joint_value);
-	value1 = log(value1);
-	value2 = log(value2);
+	joint_value = log(1.0 + joint_value);
+	value1 = log(1.0 + value1);
+	value2 = log(1.0 + value2);
     } else {
 	ASSERT(false, "Unknown data transformation method: "
 	       << transformation_method_);
