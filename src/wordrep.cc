@@ -505,7 +505,8 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     log_ << "   Matrix: " << dim1 << " x " << dim2 << " (" << num_nonzeros
 	 << " nonzeros)" << endl;
     log_ << "   Rank of SVD: " << dim_ << endl;
-    log_ << "   Scaling method: " << scaling_method_ << endl;
+    log_ << "   Transformation: " << transformation_method_ << endl;
+    log_ << "   Scaling: " << scaling_method_ << endl;
     if (scaling_method_ == "cca" || scaling_method_ == "rreg") {
 	log_ << "   Smoothing value: " << smooth_value_ << endl;
     }
