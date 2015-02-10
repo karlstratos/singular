@@ -48,6 +48,11 @@ public:
     // Sets the context window size.
     void set_window_size(size_t window_size) { window_size_ = window_size; }
 
+    // Sets the flag for weighting context dynamically.
+    void set_dynamic_context_weight(bool dynamic_context_weight) {
+	dynamic_context_weight_ = dynamic_context_weight;
+    }
+
     // Sets the context definition.
     void set_context_definition(string context_definition) {
 	context_definition_ = context_definition;
@@ -149,6 +154,7 @@ private:
     // Increments context counts according to how context is defined.
     void IncrementContextCount(
 	const string &context_string, const string &position_string, Word word,
+	size_t max_weight, size_t distance,
 	unordered_map<Context, double> *count_context,
 	unordered_map<Context, unordered_map<Word, double> >
 	*count_word_context);
@@ -303,6 +309,9 @@ private:
     // Size of the context to compute covariance on. Note that it needs to be
     // odd if we want the left and right context to have the same length.
     size_t window_size_ = 3;
+
+    // Weight context dynamically?
+    bool dynamic_context_weight_ = false;
 
     // Context definition.
     string context_definition_ = "bag";
