@@ -24,6 +24,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    context_definition_ = argv[++i];
 	} else if (arg == "--dim") {
 	    dim_ = stol(argv[++i]);
+	} else if (arg == "--context-smoothing") {
+	    context_smoothing_ = true;
 	} else if (arg == "--transform") {
 	    transformation_method_ = argv[++i];
 	} else if (arg == "--scale") {
@@ -77,6 +79,9 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "(default: " << context_definition_ << ")" << endl
 	     << "Context definition: bag, list, baglist."
 	     << endl << endl;
+
+	cout << "--context-smoothing " << endl
+	     << "Smooth context counts?" << endl << endl;
 
 	cout << "--dim "
 	     << "(default: " << dim_ << ")" << endl

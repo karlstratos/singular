@@ -195,6 +195,10 @@ void Decomposer::LoadScalingValues(
 
 double Decomposer::ScaleJointValue(double joint_value,
 				   double value1, double value2) {
+    if (context_smoothing_) {  // Context smoothing.
+	value2 = pow(value2, 0.75);
+    }
+
     // Data transformation.
     if (transformation_method_ == "raw") {  // No transformation.
     } else if (transformation_method_ == "sqrt") {  // Take square-root.

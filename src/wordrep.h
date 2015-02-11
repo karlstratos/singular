@@ -61,6 +61,11 @@ public:
     // Sets the target dimension of word vectors.
     void set_dim(size_t dim) { dim_ = dim; }
 
+    // Sets the flag for smoothing context counts.
+    void set_context_smoothing(bool context_smoothing) {
+	context_smoothing_ = context_smoothing;
+    }
+
     // Sets the transformation method.
     void set_transformation_method(string transformation_method) {
 	transformation_method_ = transformation_method;
@@ -318,6 +323,9 @@ private:
 
     // Target dimension of word vectors.
     size_t dim_;
+
+    // Smooth context counts?
+    bool context_smoothing_ = false;
 
     // Data transformation method.
     string transformation_method_ = "raw";

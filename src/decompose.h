@@ -54,6 +54,11 @@ public:
     // Sets a target dimension.
     void set_dim(size_t dim) { dim_ = dim; }
 
+    // Sets the flag for smoothing context counts (i.e., value 2).
+    void set_context_smoothing(bool context_smoothing) {
+	context_smoothing_ = context_smoothing;
+    }
+
     // Sets the transformation method.
     void set_transformation_method(string transformation_method) {
 	transformation_method_ = transformation_method;
@@ -160,6 +165,9 @@ private:
     // Actually computed SVD rank (might be smaller than the target dimension
     // if rank(matrix) < target dimension).
     size_t rank_ = 0;
+
+    // Smooth context counts (i.e., value 2)?
+    bool context_smoothing_ = false;
 
     // Data transformation method.
     string transformation_method_ = "raw";

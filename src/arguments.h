@@ -34,7 +34,7 @@ public:
     // Returns the size of the context window.
     size_t window_size() { return window_size_; }
 
-    // Returns the flag for weighting context dynamically?
+    // Returns the flag for weighting context dynamically.
     bool dynamic_context_weight() { return dynamic_context_weight_; }
 
     // Returns the context definition.
@@ -42,6 +42,9 @@ public:
 
     // Returns the target dimension of word vectors.
     size_t dim() { return dim_; }
+
+    // Returns the flag for smoothing context counts.
+    bool context_smoothing() { return context_smoothing_; }
 
     // Returns the data transformation method.
     string transformation_method() { return transformation_method_; }
@@ -91,6 +94,9 @@ private:
 
     // Target dimension of word vectors.
     size_t dim_ = 100;
+
+    // Smooth context counts?
+    bool context_smoothing_ = false;
 
     // Data transformation method.
     string transformation_method_ = "raw";

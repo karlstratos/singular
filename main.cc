@@ -17,6 +17,7 @@ int main (int argc, char* argv[]) {
     wordrep.set_dynamic_context_weight(argparser.dynamic_context_weight());
     wordrep.set_context_definition(argparser.context_definition());
     wordrep.set_dim(argparser.dim());
+    wordrep.set_context_smoothing(argparser.context_smoothing());
     wordrep.set_transformation_method(argparser.transformation_method());
     wordrep.set_scaling_method(argparser.scaling_method());
     wordrep.set_smooth_value(argparser.smooth_value());
