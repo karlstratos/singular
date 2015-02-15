@@ -209,6 +209,11 @@ double Decomposer::ScaleJointValue(double joint_value,
 	joint_value = 2.0 * sqrt(joint_value + 0.375);
 	value1 = 2.0 * sqrt(value1 + 0.375);
 	value2 = 2.0 * sqrt(value2 + 0.375);
+    } else if (transformation_method_ == "two-thirds") {  // Power of 2/3.
+	double power = 2.0 / 3.0;
+	joint_value = pow(joint_value, power);
+	value1 = pow(value1, power);
+	value2 = pow(value2, power);
     } else if (transformation_method_ == "log") {  // Take log.
 	joint_value = log(1.0 + joint_value);
 	value1 = log(1.0 + value1);

@@ -89,8 +89,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--transform "
 	     << "(default: " << transformation_method_ << ")" << endl
-	     << "Data transformation method: raw, sqrt, log."
-	     << endl << endl;
+	     << "Data transformation method: raw, sqrt, anscombe, two-thirds, "
+	     << "log." << endl << endl;
 
 	cout << "--scale "
 	     << "(default: " << scaling_method_ << ")" << endl
