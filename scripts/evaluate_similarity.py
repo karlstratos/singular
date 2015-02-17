@@ -10,7 +10,6 @@ import sys
 from numpy import array
 from numpy import dot
 from numpy import linalg
-from scipy.stats.mstats import spearmanr
 
 def read_normalized_embeddings(embedding_path, no_counts, ignore_line1):
     """Reads normalized embeddings."""
@@ -62,22 +61,17 @@ def read_similarity_data(similarity_path):
 def filter_embedding(embedding, vocab):
     """
     Filters the embeddings dictionary to contain only word types in the given
-    vocabulary.
+    vocabulary. CAUTION: the resulting embeddings might have keys that are no
+    longer lowercased.
     """
-    wanted_keys = []  # Figure out which keys are wanted.
+    filtered_embedding = {}
     for word in vocab:
         if word in embedding:
-            wanted_keys.append(word)
-        elif word.lower() in embedding:
-            wanted_keys.append(word.lower())
+            filtered_embedding[word] = embedding[word]
+        elif word.lower() in embedding:  # E.g., "microsoft" -> "Microsoft"
+            filtered_embedding[word] = embedding[word.lower()]
 
-    unwanted_keys = []  # Figure out which keys are unwanted.
-    for word in embedding:
-        if (not word in wanted_keys) and (not word.lower() in wanted_keys):
-            unwanted_keys.append(word)
-
-    for key in unwanted_keys:  # Remove those keys.
-        embedding.pop(key)
+    return filtered_embedding
 
 def transform_to_averaged_ranks(values):
     """Computes averaged ranks for the given values."""
@@ -155,17 +149,18 @@ def main(args):
         read_similarity_data(args.similarity_path)
     print("{0} word pairs with similarity scores.".format(len(word_pairs_all)))
 
-    filter_embedding(embedding, vocab)
-    print("{0}/{1} word types have embeddings.".format(len(embedding),
+    filtered_embedding = filter_embedding(embedding, vocab)
+    print("{0}/{1} word types have embeddings.".format(len(filtered_embedding),
                                                        len(vocab)))
 
     human_scores = []
     cosine_scores = []
     num_evaluated = 0
     for i, (word1, word2) in enumerate(word_pairs_all):
-        if word1 in embedding and word2 in embedding:
+        if word1 in filtered_embedding and word2 in filtered_embedding:
             human_scores.append(human_scores_all[i])
-            cosine_scores.append(dot(embedding[word1], embedding[word2]))
+            cosine_scores.append(dot(filtered_embedding[word1],
+                                     filtered_embedding[word2]))
             num_evaluated += 1
     spearman_score = compute_spearmans_correlation(human_scores, cosine_scores)
     print("Spearman's correlation: {0:.3f} ({1}/{2} evaluated)".format(
