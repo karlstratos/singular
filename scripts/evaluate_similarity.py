@@ -64,7 +64,7 @@ def filter_embedding(embedding, vocab):
         if word in embedding:
             wanted_keys.append(word)
         elif word.lower() in embedding:
-            wanted_keys.append(word)
+            wanted_keys.append(word.lower())
 
     unwanted_keys = []  # Figure out which keys are unwanted.
     for word in embedding:
