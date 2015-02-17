@@ -169,12 +169,12 @@ def main(args):
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("similarity_path", type=str, help="path to word "
-                           "similarity file.")
+                           "similarity file")
     argparser.add_argument("embedding_path", type=str, help="path to word "
-                           "embeddings file.")
-    argparser.add_argument("--no_counts", action="store_true", help="Embeddings"
+                           "embeddings file")
+    argparser.add_argument("--no_counts", action="store_true", help="embeddings"
                            " don't counts for the first column?")
-    argparser.add_argument("--ignore_line1", action="store_true", help="Ignore "
+    argparser.add_argument("--ignore_line1", action="store_true", help="ignore "
                            "the first line in the embeddings file?")
     parsed_args = argparser.parse_args()
     main(parsed_args)
