@@ -10,15 +10,20 @@ import sys
 from numpy import array
 from numpy import dot
 from numpy import linalg
+from scipy.stats.mstats import spearmanr
 
-def read_normalized_embeddings(embedding_path, no_counts):
+def read_normalized_embeddings(embedding_path, no_counts, ignore_line1):
     """Reads normalized embeddings."""
     embedding = {}
     dim = 0
+    line1_ignored = False
     with open(embedding_path, "r") as embedding_file:
         for line in embedding_file:
             tokens = line.split()
             if len(tokens) > 0:
+                if ignore_line1 and (not line1_ignored):
+                    line1_ignored = True
+                    continue
                 if no_counts: # <word> <values...>
                     word = tokens[0]
                     starting_index = 1
@@ -68,7 +73,7 @@ def filter_embedding(embedding, vocab):
 
     unwanted_keys = []  # Figure out which keys are unwanted.
     for word in embedding:
-        if not word in wanted_keys:
+        if (not word in wanted_keys) and (not word.lower() in wanted_keys):
             unwanted_keys.append(word)
 
     for key in unwanted_keys:  # Remove those keys.
@@ -142,7 +147,8 @@ def main(args):
     correlation coefficient.
     """
     embedding, dim = read_normalized_embeddings(args.embedding_path,
-                                                args.no_counts)
+                                                args.no_counts,
+                                                args.ignore_line1)
     print("{0} {1}-dimensional embeddings.".format(len(embedding), dim))
 
     word_pairs_all, human_scores_all, vocab = \
@@ -173,5 +179,7 @@ if __name__ == "__main__":
                            "embeddings file.")
     argparser.add_argument("--no_counts", action="store_true", help="Embeddings"
                            " don't counts for the first column?")
+    argparser.add_argument("--ignore_line1", action="store_true", help="Ignore "
+                           "the first line in the embeddings file?")
     parsed_args = argparser.parse_args()
     main(parsed_args)
