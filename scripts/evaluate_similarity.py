@@ -1,12 +1,8 @@
 # Author: Karl Stratos (karlstratos@gmail.com)
 """
 This module is used to evaluate word embeddings on the word similarity task.
-
-Argument 1 [input 1: each line = word1 word2 similarity_score]
-Argument 2 [input 2: word embeddings file]
 """
 import argparse
-import sys
 from numpy import array
 from numpy import dot
 from numpy import linalg
@@ -58,20 +54,23 @@ def read_similarity_data(similarity_path):
                 vocab[word2] = True
     return word_pairs, human_scores, vocab
 
-def filter_embedding(embedding, vocab):
+def assign_embedding(embedding, vocab):
     """
-    Filters the embeddings dictionary to contain only word types in the given
-    vocabulary. CAUTION: the resulting embeddings might have keys that are no
-    longer lowercased.
+    Assigns an embedding for each word in the vocabulary, if any.
     """
-    filtered_embedding = {}
+    assigned_embedding = {}
     for word in vocab:
         if word in embedding:
-            filtered_embedding[word] = embedding[word]
-        elif word.lower() in embedding:  # E.g., "microsoft" -> "Microsoft"
-            filtered_embedding[word] = embedding[word.lower()]
+            # If we have the exact match in embeddings, just use it.
+            assigned_embedding[word] = embedding[word]
+        elif word.lower() in embedding:
+            # If we do *not* have the exact match but a lowercased match in
+            # embeddings, we will use that instead: e.g., "Microsoft" in
+            # assigned_embedding might refers to "microsoft" in embedding.
+            # This can happen when the corpus was lowercased.
+            assigned_embedding[word] = embedding[word.lower()]
 
-    return filtered_embedding
+    return assigned_embedding
 
 def transform_to_averaged_ranks(values):
     """Computes averaged ranks for the given values."""
@@ -112,10 +111,10 @@ def transform_to_averaged_ranks(values):
     value2index = {}
     for i, value in enumerate(sorted_values):
         value2index[value] = i
-    sorted_indices = [value2index[value] for value in values]
+    rank_indices = [value2index[value] for value in values]
 
     transformed_values = []
-    for i in sorted_indices:
+    for i in rank_indices:
         transformed_values.append(averaged_ranks[i])
 
     return transformed_values
@@ -123,15 +122,16 @@ def transform_to_averaged_ranks(values):
 def compute_spearmans_correlation(values1, values2):
     """Computes Spearman's rank correlation coefficient."""
     assert(len(values1) == len(values2))
-    n = len(values1)
 
     values1_transformed = transform_to_averaged_ranks(values1)
     values2_transformed = transform_to_averaged_ranks(values2)
 
+    num_instances = len(values1)
     sum_squares = sum([pow(values1_transformed[i] - values2_transformed[i], 2)
-                       for i in range(n)])
-    correlation = 1.0 - (6.0 * sum_squares) / (n * (pow(n, 2) - 1))
-
+                       for i in range(num_instances)])
+    uncorrelatedness = 6.0 * sum_squares / \
+                       (num_instances * (pow(num_instances, 2) - 1))
+    correlation = 1.0 - uncorrelatedness
     return correlation
 
 def main(args):
@@ -149,18 +149,18 @@ def main(args):
         read_similarity_data(args.similarity_path)
     print("{0} word pairs with similarity scores.".format(len(word_pairs_all)))
 
-    filtered_embedding = filter_embedding(embedding, vocab)
-    print("{0}/{1} word types have embeddings.".format(len(filtered_embedding),
+    assigned_embedding = assign_embedding(embedding, vocab)
+    print("{0}/{1} word types have embeddings.".format(len(assigned_embedding),
                                                        len(vocab)))
 
     human_scores = []
     cosine_scores = []
     num_evaluated = 0
     for i, (word1, word2) in enumerate(word_pairs_all):
-        if word1 in filtered_embedding and word2 in filtered_embedding:
+        if word1 in assigned_embedding and word2 in assigned_embedding:
             human_scores.append(human_scores_all[i])
-            cosine_scores.append(dot(filtered_embedding[word1],
-                                     filtered_embedding[word2]))
+            cosine_scores.append(dot(assigned_embedding[word1],
+                                     assigned_embedding[word2]))
             num_evaluated += 1
     spearman_score = compute_spearmans_correlation(human_scores, cosine_scores)
     print("Spearman's correlation: {0:.3f} ({1}/{2} evaluated)".format(
