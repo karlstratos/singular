@@ -622,10 +622,10 @@ SMat WordRep::GetWeights(const string &weight_method) {
 }
 
 void WordRep::TestQualityOfWordVectors() {
-    string wordsim353_path = "third_party/public_datasets/wordsim353.txt";
-    string men_path = "third_party/public_datasets/men.txt";
-    string syn_path = "third_party/public_datasets/syntactic_analogies.txt";
-    string mixed_path = "third_party/public_datasets/mixed_analogies.txt";
+    string wordsim353_path = "third_party/public_datasets/wordsim353.dev";
+    string men_path = "third_party/public_datasets/men.dev";
+    string syn_path = "third_party/public_datasets/syntactic_analogies.dev";
+    string mixed_path = "third_party/public_datasets/mixed_analogies.dev";
     FileManipulator file_manipulator;
     if (!file_manipulator.exists(wordsim353_path) ||
 	!file_manipulator.exists(men_path) ||
@@ -639,7 +639,7 @@ void WordRep::TestQualityOfWordVectors() {
     // Use 3 decimal places for word similartiy.
     log_ << fixed << setprecision(3);
 
-    // Word similarity with wordsim353.txt.
+    // Word similarity with wordsim353.dev.
     size_t num_instances_wordsim353;
     size_t num_handled_wordsim353;
     double corr_wordsim353;
@@ -649,7 +649,7 @@ void WordRep::TestQualityOfWordVectors() {
 	 << num_handled_wordsim353 << "/" << num_instances_wordsim353
 	 << " evaluated)" << endl;
 
-    // Word similarity with men.txt.
+    // Word similarity with men.dev.
     size_t num_instances_men;
     size_t num_handled_men;
     double corr_men;
@@ -659,7 +659,7 @@ void WordRep::TestQualityOfWordVectors() {
 	 << num_instances_men << " evaluated)" << endl;
     log_ << fixed << setprecision(2);
 
-    // Word analogy with syntactic_analogies.txt.
+    // Word analogy with syntactic_analogies.dev.
     size_t num_instances_syn;
     size_t num_handled_syn;
     double acc_syn;
@@ -668,7 +668,7 @@ void WordRep::TestQualityOfWordVectors() {
     log_ << "   Syntactic analogies: " << acc_syn << "% (" << num_handled_syn
 	 << "/" << num_instances_syn << " evaluated)" << endl;
 
-    // Word analogy with mixed_analogies.txt.
+    // Word analogy with mixed_analogies.dev.
     size_t num_instances_mixed;
     size_t num_handled_mixed;
     double acc_mixed;
