@@ -62,9 +62,6 @@ void WordRep::InduceLexicalRepresentations() {
 
     // Perform greedy agglomerative clustering over word vectors.
     PerformAgglomerativeClustering(dim_);
-
-    // Rotate word vectors to PCA coordinates.
-    RotateWordVectorsToPCACoordinates();
 }
 
 Word WordRep::word_str2num(const string &word_string) {
@@ -546,10 +543,6 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     decomposer.set_transformation_method(transformation_method_);
     decomposer.set_scaling_method(scaling_method_);
     decomposer.set_smooth_value(smooth_value_);
-    decomposer.set_weights(weights);
-    decomposer.set_max_num_epochs(max_num_epochs_);
-    decomposer.set_regularization_term(regularization_term_);
-    decomposer.set_learning_rate_prior(learning_rate_prior_);
     decomposer.Decompose(CountWordContextPath(), CountWordPath(),
 			 CountContextPath());
     double time_decomposition = difftime(time(NULL), begin_time_decomposition);
@@ -892,80 +885,6 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
 	    greedo_file << bitstring << " " << word_pair.first << " "
 			<< word_pair.second << endl;
 	}
-    }
-}
-
-void WordRep::RotateWordVectorsToPCACoordinates() {
-    ASSERT(wordvectors_.size() > 0, "No word vectors to rotate!");
-    FileManipulator file_manipulator;  // Do not repeat the work.
-    if (file_manipulator.exists(WordVectorsPCAPath())) { return; }
-
-    time_t begin_time_pca = time(NULL);  // PCA time.
-    Eigen::MatrixXd word_matrix(dim_, wordvectors_.size());
-    for (size_t i = 0; i < wordvectors_.size(); ++i) {
-	string word_string = word_num2str_[i];
-	word_matrix.col(i) = wordvectors_[word_string];
-    }
-    log_ << endl << "[Change of basis to the PCA coordinates]" << endl << flush;
-    for (size_t i = 0; i < dim_; ++i) {
-	// Center each dimension (row) to have mean zero.
-	double row_mean = word_matrix.row(i).mean();
-	for (size_t j = 0; j < word_matrix.row(i).size(); ++j) {
-	    word_matrix.row(i)(j) -= row_mean;
-	}
-    }
-
-    // Do SVD on the centered word matrix and compute right singular vectors.
-    Eigen::JacobiSVD<Eigen::MatrixXd> eigen_svd(word_matrix,
-						Eigen::ComputeThinV);
-    Eigen::VectorXd singular_values = eigen_svd.singularValues();
-
-    // Compute variance in each dimension.
-    ofstream pca_variance_file(PCAVariancePath(), ios::out);
-    vector<double> variances;
-    double sum_variances = 0.0;
-    for (size_t i = 0; i < singular_values.size(); ++i) {
-	double ith_variance =
-	    pow(singular_values(i), 2) / (word_matrix.cols() - 1);
-	pca_variance_file << ith_variance << endl;
-	variances.push_back(ith_variance);
-	sum_variances += ith_variance;
-    }
-    double cumulative_variance = 0.0;
-    const double variance_percentage = 90.0;
-    for (size_t i = 0; i < variances.size(); ++i) {
-	cumulative_variance += variances[i];
-	if (cumulative_variance / sum_variances * 100 > variance_percentage) {
-	    log_ << "   Top " << i + 1 << " PCA dimensions contain > "
-		 << variance_percentage << "% of total variances" << endl;
-	    break;
-	}
-    }
-
-    // Compute word vectors in the PCA basis: right singular vectors times
-    // scaled by singular values.
-    Eigen::MatrixXd word_matrix_pca = eigen_svd.matrixV();
-    word_matrix_pca.transposeInPlace();
-    for (size_t i = 0; i < word_matrix_pca.rows(); ++i) {
-	word_matrix_pca.row(i) *= singular_values(i);
-    }
-    double time_pca = difftime(time(NULL), begin_time_pca);
-    StringManipulator string_manipulator;
-    log_ << "   Time taken: " << string_manipulator.print_time(time_pca)
-	 << endl;
-
-    // Write word vectors in a PCA basis sorted in decreasing frequency.
-    ofstream wordvectors_pca_file(WordVectorsPCAPath(), ios::out);
-    for (size_t i = 0; i < sorted_wordcount_.size(); ++i) {
-	string word_string = sorted_wordcount_[i].first;
-	Word word = word_str2num_[word_string];
-	size_t word_count = sorted_wordcount_[i].second;
-	Eigen::VectorXd pca_vector = word_matrix_pca.col(word);
-	wordvectors_pca_file << word_count << " " << word_string;
-	for (size_t j = 0; j < pca_vector.size(); ++ j) {
-	    wordvectors_pca_file << " " << pca_vector(j);
-	}
-	wordvectors_pca_file << endl;
     }
 }
 

@@ -4,8 +4,6 @@
 
 #include <fstream>
 
-#include "wsqloss.h"
-
 void Decomposer::Decompose(
     unordered_map<size_t, unordered_map<size_t, double> > *joint_values,
     const unordered_map<size_t, double> &values1,
@@ -264,28 +262,7 @@ void Decomposer::ExtractFromSVD(SparseSVDSolver *svd_solver,
 	   right_matrix_.rows() == dim_ && right_matrix_.cols() == dim2,
 	   "Dimensions don't match between the SVD result and scaling values.");
 
-    // If weights are given, perform weighted squared loss minimization on top
-    // of SVD and return.
-    if (weights_ != nullptr) {
-	WSQLossOptimizer wsq_loss_optimizer;
-	wsq_loss_optimizer.set_max_num_epochs(max_num_epochs_);
-	wsq_loss_optimizer.set_regularization_term(regularization_term_);
-	wsq_loss_optimizer.set_learning_rate_prior(learning_rate_prior_);
-	SMat values = svd_solver->sparse_matrix();
-
-	// Multiply the left singular vectors by singular values to use the
-	// singular values in the SVD decomposition.
-	for (size_t row = 0; row < dim_; ++row) {
-	    left_matrix_.row(row) *= singular_values_(row);
-	}
-
-	// Initialize the optimization process with SVD.
-	wsq_loss_optimizer.Optimize(weights_, values, &left_matrix_,
-				    &right_matrix_);
-	return;  // Don't do post-SVD scaling.
-    }
-
-    // Otherwise, do post-SVD singular vector scaling.
+    // Do post-SVD singular vector scaling.
     for (size_t row = 0; row < dim_; ++row) {
 	for (size_t col = 0; col < dim1; ++col) {
 	    left_matrix_(row, col) = ScaleMatrixValue(left_matrix_(row, col),

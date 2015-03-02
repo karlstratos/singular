@@ -32,14 +32,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    scaling_method_ = argv[++i];
 	} else if (arg == "--smooth") {
 	    smooth_value_ = stol(argv[++i]);
-	} else if (arg == "--weight") {
-	    weighting_method_ = argv[++i];
-	} else if (arg == "--epochs") {
-	    max_num_epochs_ = stoi(argv[++i]);
-	} else if (arg == "--regularize") {
-	    regularization_term_ = stod(argv[++i]);
-	} else if (arg == "--prior") {
-	    learning_rate_prior_ = stod(argv[++i]);
 	} else if (arg == "-h" || arg == "--help"){
 	    display_options_and_quit = true;
 	} else {
@@ -100,23 +92,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	cout << "--smooth "
 	     << "(default: " << smooth_value_ << ")" << endl
 	     << "Smoothing value." << endl << endl;
-
-	cout << "--weight "
-	     << "(default: no weight)" << endl
-	     << "Weighting method: anscombe, glove."
-	     << endl << endl;
-
-	cout << "--epochs "
-	     << "(default: " << max_num_epochs_ << ")" << endl
-	     << "Maximum number of training epochs." << endl << endl;
-
-	cout << "--regularize "
-	     << "(default: " << regularization_term_ << ")" << endl
-	     << "Regularization term." << endl << endl;
-
-	cout << "--prior "
-	     << "(default: " << learning_rate_prior_ << ")" << endl
-	     << "Learning rate prior." << endl << endl;
 
 	exit(0);
     }

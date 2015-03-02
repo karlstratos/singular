@@ -72,24 +72,6 @@ public:
     // Sets a smoothing value.
     void set_smooth_value(size_t smooth_value) { smooth_value_ = smooth_value; }
 
-    // Sets the weight matrix.
-    void set_weights(SMat weights) { weights_ = weights; }
-
-    // Sets the maximum number of training epochs.
-    void set_max_num_epochs(double max_num_epochs) {
-	max_num_epochs_ = max_num_epochs;
-    }
-
-    // Sets the regularization term.
-    void set_regularization_term(double regularization_term) {
-	regularization_term_ = regularization_term;
-    }
-
-    // Sets the learning rate prior.
-    void set_learning_rate_prior(double learning_rate_prior) {
-	learning_rate_prior_ = learning_rate_prior;
-    }
-
     // Returns a matrix of scaled left singular vectors (as rows).
     Eigen::MatrixXd *left_matrix() { return &left_matrix_; }
 
@@ -180,15 +162,6 @@ private:
 
     // Weight matrix.
     SMat weights_ = nullptr;
-
-    // Maximum number of training epochs.
-    size_t max_num_epochs_ = 100;
-
-    // Regularization term.
-    double regularization_term_ = 0.1;
-
-    // Learning rate prior.
-    double learning_rate_prior_ = 0.1;
 };
 
 #endif  // DECOMPOSE_H
