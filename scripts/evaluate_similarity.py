@@ -1,4 +1,4 @@
-# Author: Karl Stratos (karlstratos@gmail.com)
+# Author: Karl Stratos (stratos@cs.columbia.edu)
 """
 This module is used to evaluate word embeddings on the word similarity task.
 """

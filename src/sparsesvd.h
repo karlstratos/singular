@@ -1,4 +1,4 @@
-// Author: Karl Stratos (karlstratos@gmail.com)
+// Author: Karl Stratos (stratos@cs.columbia.edu)
 //
 // This is a wrapper around SVDLIBC that provides a clean interface for
 // performing singular value decomposition (SVD) on sparse matrices in

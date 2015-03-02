@@ -1,4 +1,4 @@
-# Author: Karl Stratos (karlstratos@gmail.com)
+# Author: Karl Stratos (stratos@cs.columbia.edu)
 """
 This module is used to split a dataset into an held-out portion (odd lines) and
 a final evaluation portion (even lines).

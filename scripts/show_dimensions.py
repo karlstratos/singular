@@ -1,4 +1,4 @@
-# Author: Karl Stratos (karlstratos@gmail.com)
+# Author: Karl Stratos (stratos@cs.columbia.edu)
 """
 This module is used to show the most prominent (in absolute magnitude) words
 per dimension.

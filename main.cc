@@ -1,4 +1,4 @@
-// Author: Karl Stratos (karlstratos@gmail.com)
+// Author: Karl Stratos (stratos@cs.columbia.edu)
 
 #include "src/arguments.h"
 #include "src/wordrep.h"

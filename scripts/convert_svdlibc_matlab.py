@@ -1,4 +1,4 @@
-# Author: Karl Stratos (karlstratos@gmail.com)
+# Author: Karl Stratos (stratos@cs.columbia.edu)
 """
 This module is used to convert a sparse matrix from the SVDLIBC format (i.e.,
 column-major) to the Matlab format ({row col val}).

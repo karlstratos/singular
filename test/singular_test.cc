@@ -1,4 +1,4 @@
-// Author: Karl Stratos (karlstratos@gmail.com)
+// Author: Karl Stratos (stratos@cs.columbia.edu)
 //
 // Check the correctness of the code in the source directory.
 
