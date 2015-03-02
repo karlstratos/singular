@@ -337,7 +337,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	}
     }
     double time_sliding = difftime(time(NULL), begin_time_sliding);
-    log_ << "   Time taken: " << string_manipulator.print_time(time_sliding)
+    log_ << "   Time taken: " << string_manipulator.time_str(time_sliding)
 	 << endl;
 
     // Write the filtered context dictionary.
@@ -556,7 +556,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     log_ << "   Condition number: "
 	 << singular_values_[0] / singular_values_[dim_ - 1] << endl;
     log_ << "   Time taken: "
-	 << string_manipulator.print_time(time_decomposition) << endl;
+	 << string_manipulator.time_str(time_decomposition) << endl;
 
     return *decomposer.left_matrix();
 }
@@ -858,7 +858,7 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
     log_ << "   Average number of tightenings: "
 	 << greedo.average_num_extra_tightening() << " (versus exhaustive "
 	 << num_clusters << ")" << endl;
-    log_ << "   Time taken: " << string_manipulator.print_time(time_greedo)
+    log_ << "   Time taken: " << string_manipulator.time_str(time_greedo)
 	 << endl;
 
     // Lexicographically sort bit strings for enhanced readability.

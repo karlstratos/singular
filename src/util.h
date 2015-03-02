@@ -13,51 +13,49 @@
 
 using namespace std;
 
+// Class for manipulating strings.
 class StringManipulator {
 public:
     // Splits the given line by delimiter into tokens.
     void split(const string &line, const string &delimiter,
 	       vector<string> *tokens);
 
-    // Q seconds => "XhYmZs" (X hours Y minutes Z seconds)
-    string print_time(double num_seconds);
+    // Returns the hour/minute/second string of seconds: 6666 => "1h51m6s".
+    string time_str(double num_seconds);
 
     // Returns the lowercase transformation of the given string.
     string lowercase(const string &original_string);
 };
 
+// Class for manipulating files.
 class FileManipulator {
 public:
-    // Checks for the existence of a file.
+    // Returns true if the file exists, false otherwise.
     bool exists(const string &file_path);
 
-    // Writes an Eigen matrix to a file.
+    // Writes an Eigen matrix to a text file.
     void write(const Eigen::MatrixXd &m, const string &file_path);
 
-    // Writes an Eigen vector to a file.
+    // Writes an Eigen vector to a text file.
     void write(const Eigen::VectorXd &v, const string &file_path);
 
-    // Reads an Eigen matrix from a file.
+    // Reads an Eigen matrix from a text file.
     void read(const string &file_path, Eigen::MatrixXd *m);
 
-    // Reads an Eigen vector from a file.
+    // Reads an Eigen vector from a text file.
     void read(const string &file_path, Eigen::VectorXd *v);
 };
 
 class Stat {
 public:
-    // Computes Spearman's rank correlation coefficient.
-    double ComputeSpearman(const vector<double> &x, const vector<double> &y);
-};
+    // Computes Spearman's rank correlation coefficient between two sequences
+    // of values.
+    double ComputeSpearman(const vector<double> &values1,
+			   const vector<double> &values2);
 
-class Sampler {
-public:
-    // [*Warning* Unchecked for correctness.]
-    // Samples the specified number of indices from a given range [0, range_cap)
-    // without replacement.
-    void sample_indices_without_replacement(size_t range_cap,
-					    size_t num_samples,
-					    vector<size_t> *samples);
+    // Computes the average-rank transformation of a sequence of values.
+    void AverageRankTransform(const vector<double> &values,
+			      vector<double> *transformed_values);
 };
 
 // Assert macro that allows adding a message to an assertion upon failure. It

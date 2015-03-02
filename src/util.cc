@@ -28,13 +28,11 @@ void StringManipulator::split(const string &line, const string &delimiter,
     }
 }
 
-string StringManipulator::print_time(double num_seconds) {
-    int num_hours = (int) floor(num_seconds / 3600.0);
-    int h_seconds = num_hours * 3600;
-    double num_seconds_minus_h = (double) (num_seconds - h_seconds);
+string StringManipulator::time_str(double num_seconds) {
+    size_t num_hours = (int) floor(num_seconds / 3600.0);
+    double num_seconds_minus_h = num_seconds - (num_hours * 3600);
     int num_minutes = (int) floor(num_seconds_minus_h / 60.0);
-    int m_seconds = num_minutes * 60;
-    int num_seconds_minus_hm = num_seconds_minus_h - m_seconds;
+    int num_seconds_minus_hm = num_seconds_minus_h - (num_minutes * 60);
     string time_string = to_string(num_hours) + "h" + to_string(num_minutes)
 	+ "m" + to_string(num_seconds_minus_hm) + "s";
     return time_string;
@@ -124,108 +122,61 @@ void FileManipulator::read(const string &file_path, Eigen::VectorXd *v) {
     }
 }
 
-double Stat::ComputeSpearman(const vector<double> &x, const vector<double> &y) {
-    ASSERT(x.size() == y.size(), "Given two vectors of different lengths: "
-	   << x.size() << " " << y.size());
-    double tol = 1e-10;
+double Stat::ComputeSpearman(const vector<double> &values1,
+			     const vector<double> &values2) {
+    ASSERT(values1.size() == values2.size(), "Different lengths: "
+	   << values1.size() << " " << values2.size());
 
-    // Variable x: sort values and compute tie-averaged ranks.
-    vector<double> x_sorted = x;
-    sort(x_sorted.begin(), x_sorted.end());
-    vector<double> x_averaged_ranks;  // List of tie-averaged ranks.
-    size_t while_index = 0;
-    while (while_index < x_sorted.size()) {
-	size_t num_ties = 1;
-	size_t sum_rank = while_index + 1;
-	while (while_index + 1 < x_sorted.size() &&
-	       fabs(x_sorted[while_index + 1] - x_sorted[while_index]) < tol) {
-	    ++while_index;
-	    ++num_ties;
-	    sum_rank += while_index + 1;
-	}
-	for (size_t j = 0; j < num_ties; ++j) {
-	    // Assign the average rank to all tied elements.
-	    x_averaged_ranks.push_back(((double) sum_rank) / num_ties);
-	}
-	++while_index;
-    }
+    vector<double> values1_transformed;
+    vector<double> values2_transformed;
+    AverageRankTransform(values1, &values1_transformed);
+    AverageRankTransform(values2, &values2_transformed);
 
-    // Sort values in variable y and record their sorted indices.
-    vector<double> y_sorted = y;
-    sort(y_sorted.begin(), y_sorted.end());
-    vector<double> y_averaged_ranks;  // List of tie-averaged ranks.
-    while_index = 0;
-    while (while_index < y_sorted.size()) {
-	size_t num_ties = 1;
-	size_t sum_rank = while_index + 1;
-	while (while_index + 1 < y_sorted.size() &&
-	       fabs(y_sorted[while_index + 1] - y_sorted[while_index]) < tol) {
-	    ++while_index;
-	    ++num_ties;
-	    sum_rank += while_index + 1;
-	}
-	for (size_t j = 0; j < num_ties; ++j) {
-	    // Assign the average rank to all tied elements.
-	    y_averaged_ranks.push_back(((double) sum_rank) / num_ties);
-	}
-	++while_index;
+    size_t num_instances = values1.size();
+    double sum_squares = 0;
+    for (size_t i = 0; i < num_instances; ++i) {
+	sum_squares += pow(values1_transformed[i] - values2_transformed[i], 2);
     }
-
-    // Prepare a final pair of tie-averaged ranks.
-    unordered_map<double, size_t> x_val2ind;
-    for (size_t index = 0; index < x_sorted.size(); ++index) {
-	// A bit of cheating:
-	// Note that if x has same values, this mapping may have duplicate,
-	// overwritten indices. But that's fine since any of such indices will
-	// point to the same tie-averaged rank.
-	x_val2ind[x_sorted[index]] = index;
-    }
-    vector<double> x_spearman;
-    for (double val : x) {
-	size_t index = x_val2ind[val];
-	x_spearman.push_back(x_averaged_ranks[index]);
-    }
-    unordered_map<double, size_t> y_val2ind;
-    for (size_t index = 0; index < y_sorted.size(); ++index) {
-	// A bit of cheating:
-	// Note that if y has same values, this mapping may have duplicate,
-	// overwritten indices. But that's fine since any of such indices will
-	// point to the same tie-averaged rank.
-	y_val2ind[y_sorted[index]] = index;
-    }
-    vector<double> y_spearman;
-    for (double val : y) {
-	size_t index = y_val2ind[val];
-	y_spearman.push_back(y_averaged_ranks[index]);
-    }
-
-    double sum_squared_diff = 0;
-    for (size_t i = 0; i < x_spearman.size(); ++i) {
-	sum_squared_diff += pow(x_spearman[i] - y_spearman[i], 2);
-    }
-    double spearman_corr = 1.0 - (6.0 * sum_squared_diff) /
-	(x.size() * (pow(x.size(), 2) - 1));
-
-    return spearman_corr;
+    double uncorrelatedness = 6.0 * sum_squares /
+	(num_instances * (pow(num_instances, 2) - 1));
+    double corrleation = 1.0 - uncorrelatedness;
+    return corrleation;
 }
 
-// [*Warning* Unchecked for correctness.]
-void Sampler::sample_indices_without_replacement(size_t range_cap,
-						 size_t num_samples,
-						 vector<size_t> *samples) {
-    size_t num_addressed = 0;  // Number of indices addressed so far.
-    size_t num_selected = 0;  // Number of indices actually selected so far.
-    (*samples).resize(num_samples);
+void Stat::AverageRankTransform(const vector<double> &values,
+				vector<double> *transformed_values) {
+    transformed_values->clear();
+    vector<double> sorted_values = values;
+    sort(sorted_values.begin(), sorted_values.end());
+    vector<double> averaged_ranks;
+    size_t index = 0;
+    while (index < sorted_values.size()) {
+	size_t num_same = 1;
+	size_t rank_sum = index + 1;
+	while (index + 1 < sorted_values.size() &&
+	       fabs(sorted_values[index + 1] - sorted_values[index]) < 1e-15) {
+	    ++index;
+	    ++num_same;
+	    rank_sum += index + 1;
+	}
 
-    while (num_selected < num_samples) {
-	random_device device;
-	default_random_engine engine(device());
-	uniform_real_distribution<double> unif(0.0, 1.0);
-	double u = unif(engine);  // u from (0, 1) uniformly at random.
+	double averaged_rank = ((double) rank_sum) / num_same;
+	for (size_t j = 0; j < num_same; ++j) {
+	    // Assign the average rank to all tied elements.
+	    averaged_ranks.push_back(averaged_rank);
+	}
+	++index;
+    }
 
-        if ( (range_cap - num_addressed) * u < num_samples - num_selected ) {
-            (*samples)[num_selected++] = num_addressed;
-        }
-	++num_addressed;
+    // Map each value to the corresponding index in averaged_ranks. A value can
+    // appear many times but it doesn't matter since it will have the same
+    // averaged rank.
+    unordered_map<double, size_t> value2index;
+    for (size_t index = 0; index < sorted_values.size(); ++index) {
+	value2index[sorted_values[index]] = index;
+    }
+    for (double value : values) {
+	size_t index = value2index[value];
+	transformed_values->push_back(averaged_ranks[index]);
     }
 }
