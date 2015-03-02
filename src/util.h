@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace std;
@@ -17,33 +18,36 @@ using namespace std;
 class StringManipulator {
 public:
     // Splits the given line by delimiter into tokens.
-    void split(const string &line, const string &delimiter,
+    void Split(const string &line, const string &delimiter,
 	       vector<string> *tokens);
 
     // Returns the hour/minute/second string of seconds: 6666 => "1h51m6s".
-    string time_str(double num_seconds);
+    string TimeString(double num_seconds);
 
     // Returns the lowercase transformation of the given string.
-    string lowercase(const string &original_string);
+    string Lowercase(const string &original_string);
 };
 
 // Class for manipulating files.
 class FileManipulator {
 public:
     // Returns true if the file exists, false otherwise.
-    bool exists(const string &file_path);
+    bool Exists(const string &file_path);
 
     // Writes an Eigen matrix to a text file.
-    void write(const Eigen::MatrixXd &m, const string &file_path);
+    void Write(const Eigen::MatrixXd &m, const string &file_path);
 
     // Writes an Eigen vector to a text file.
-    void write(const Eigen::VectorXd &v, const string &file_path);
+    void Write(const Eigen::VectorXd &v, const string &file_path);
 
     // Reads an Eigen matrix from a text file.
-    void read(const string &file_path, Eigen::MatrixXd *m);
+    void Read(const string &file_path, Eigen::MatrixXd *m);
 
     // Reads an Eigen vector from a text file.
-    void read(const string &file_path, Eigen::VectorXd *v);
+    void Read(const string &file_path, Eigen::VectorXd *v);
+
+    // Reads an index:value map from lines of values.
+    void Read(const string &values_path, unordered_map<size_t, double> *values);
 };
 
 class Stat {

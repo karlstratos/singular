@@ -51,9 +51,6 @@ public:
     // Computes a thin SVD of the loaded sparse matrix.
     void SolveSparseSVD(size_t rank);
 
-    // Returns the string form of the SVD calculation.
-    string ToString();
-
     // Does it have some matrix loaded?
     bool HasMatrix() const { return sparse_matrix_ != nullptr; }
 

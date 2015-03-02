@@ -30,8 +30,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    transformation_method_ = argv[++i];
 	} else if (arg == "--scale") {
 	    scaling_method_ = argv[++i];
-	} else if (arg == "--smooth") {
-	    smooth_value_ = stol(argv[++i]);
 	} else if (arg == "-h" || arg == "--help"){
 	    display_options_and_quit = true;
 	} else {
@@ -81,17 +79,13 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--transform "
 	     << "(default: " << transformation_method_ << ")" << endl
-	     << "Data transformation method: raw, sqrt, anscombe, two-thirds, "
+	     << "Data transformation method: raw, sqrt, two-thirds, "
 	     << "log." << endl << endl;
 
 	cout << "--scale "
 	     << "(default: " << scaling_method_ << ")" << endl
-	     << "Scaling method: raw, cca, rreg, ppmi."
+	     << "Scaling method: raw, cca, reg, ppmi."
 	     << endl << endl;
-
-	cout << "--smooth "
-	     << "(default: " << smooth_value_ << ")" << endl
-	     << "Smoothing value." << endl << endl;
 
 	exit(0);
     }

@@ -148,130 +148,6 @@ TEST_F(SparseMatrixWithEmptyColumns, WriteAndLoad) {
     EXPECT_NEAR(1.5716, fabs(*(sparsesvd_solver_.singular_values() + 1)), tol_);
 }
 
-// Test class that provides a simple example for CCA.
-class CCASimpleExample : public testing::Test {
-protected:
-    virtual void SetUp() {
-	covariance_xy_[0][0] = 3.0;
-	covariance_xy_[1][1] = 1.0;
-	covariance_xy_[2][3] = 1.0;
-	covariance_xy_[2][2] = 1.0;
-	covariance_xy_[3][1] = 1.0;
-	covariance_xy_[4][1] = 1.0;
-	covariance_xy_[5][4] = 1.0;
-
-	variance_x_[0] = 3.0;
-	variance_x_[1] = 3.0;
-	variance_x_[2] = 1.0;
-	variance_x_[3] = 1.0;
-	variance_x_[4] = 1.0;
-
-	variance_y_[0] = 3.0;
-	variance_y_[1] = 1.0;
-	variance_y_[2] = 2.0;
-	variance_y_[3] = 1.0;
-	variance_y_[4] = 1.0;
-	variance_y_[5] = 1.0;
-    }
-
-    virtual void TearDown() { }
-
-    unordered_map<size_t, unordered_map<size_t, double> > covariance_xy_;
-    unordered_map<size_t, double> variance_x_;
-    unordered_map<size_t, double> variance_y_;
-    double tol_ = 1e-3;
-};
-
-// Checks the CCA result with dimension 2 and smoothing 1.
-TEST_F(CCASimpleExample, Dimension2Smoothing1) {
-    Decomposer decomposer(2);
-    decomposer.set_scaling_method("cca");
-    decomposer.set_smooth_value(1);
-    decomposer.Decompose(&covariance_xy_, variance_x_, variance_y_);
-
-    Eigen::VectorXd singular_values = *decomposer.singular_values();
-    EXPECT_NEAR(0.7500, singular_values(0), tol_);
-    EXPECT_NEAR(0.6125, singular_values(1), tol_);
-}
-
-// Checks the CCA result with dimension 2 and smoothing 1 using samples. These
-// samples result in the same covariance and variance values as above.
-TEST_F(CCASimpleExample, SamplesDimension2Smoothing1) {
-    Decomposer decomposer(2);
-    decomposer.set_scaling_method("cca");
-    decomposer.set_smooth_value(1);
-    vector<unordered_map<size_t, double> > samples_x;
-    vector<unordered_map<size_t, double> > samples_y;
-    unordered_map<size_t, double> x;
-    unordered_map<size_t, double> y;
-    x[0] = 1.0;
-    y[0] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    x.clear();
-    y.clear();
-    x[1] = 1.0;
-    y[1] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    x.clear();
-    y.clear();
-    x[2] = 1.0;
-    y[2] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    x.clear();
-    y.clear();
-    x[0] = 1.0;
-    y[0] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    x.clear();
-    y.clear();
-    x[1] = 1.0;
-    y[3] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    x.clear();
-    y.clear();
-    x[3] = 1.0;
-    y[2] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    x.clear();
-    y.clear();
-    x[0] = 1.0;
-    y[0] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    x.clear();
-    y.clear();
-    x[1] = 1.0;
-    y[4] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    x.clear();
-    y.clear();
-    x[4] = 1.0;
-    y[5] = 1.0;
-    samples_x.push_back(x);
-    samples_y.push_back(y);
-
-    decomposer.Decompose(samples_x, samples_y);
-
-    Eigen::VectorXd singular_values = *decomposer.singular_values();
-    EXPECT_NEAR(0.7500, singular_values(0), tol_);
-    EXPECT_NEAR(0.6125, singular_values(1), tol_);
-}
-
 // Test class that provides a simple corpus for inducing word vectors.
 class WordRepSimpleExample : public testing::Test {
 protected:
@@ -332,7 +208,7 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
     int col = -1;
     while (word_context_file.good()) {
 	getline(word_context_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 1) { ++col; }
 	if (tokens_.size() == 2) {
 	    string word_string = wordrep.word_num2str(stoi(tokens_[0]));
@@ -347,7 +223,7 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
     Word word = 0;
     while (word_file.good()) {
 	getline(word_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 0) { continue; }
 	string word_string = wordrep.word_num2str(word++);
 	size_t count = stoi(tokens_[0]);
@@ -358,7 +234,7 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
     Context context = 0;
     while (context_file.good()) {
 	getline(context_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 0) { continue; }
 	string context_string = wordrep.context_num2str(context++);
 	size_t count = stoi(tokens_[0]);
@@ -367,16 +243,14 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
 }
 
 // Checks that SVDLIBC completely fails when the gap between the largest
-// singular values is small, which is the case with this example when no
-// smoothing is applied.
-TEST_F(WordRepSimpleExample, SVDLIBCFailsWithoutSmoothingCutoff0WindowSize2) {
+// singular values is small.
+TEST_F(WordRepSimpleExample, SVDLIBCFailsWithSmallSingularGap) {
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(0);
     wordrep.set_window_size(2);
     wordrep.set_context_definition("list");
     wordrep.set_dim(2);
     wordrep.set_scaling_method("cca");
-    wordrep.set_smooth_value(0);
     wordrep.ExtractStatistics(temp_file_path_);
     wordrep.InduceLexicalRepresentations();
 
@@ -395,32 +269,7 @@ TEST_F(WordRepSimpleExample, SVDLIBCFailsWithoutSmoothingCutoff0WindowSize2) {
     // singular vectors.
 }
 
-// Checks that SVDLIBC doesn't fail if some smoothing is applied to make the gap
-// between the largest singular values larger.
-TEST_F(WordRepSimpleExample, SVDLIBCSucceedsWithSmoothingCutoff0WindowSize2) {
-    WordRep wordrep(temp_output_directory_);
-    wordrep.set_rare_cutoff(0);
-    wordrep.set_window_size(2);
-    wordrep.set_context_definition("list");
-    wordrep.set_dim(2);
-    wordrep.set_scaling_method("cca");
-    wordrep.set_smooth_value(1);  // Add 1 to dividing counts.
-    wordrep.ExtractStatistics(temp_file_path_);
-    wordrep.InduceLexicalRepresentations();
-
-    // The correlation matrix is now (up to some row-permutation):
-    //    0.7500 0.0000 0.0000 0.0000 0.0000 0.0000
-    //    0.0000 0.3536 0.0000 0.3536 0.3536 0.0000
-    //    0.0000 0.0000 0.4082 0.0000 0.0000 0.0000
-    //    0.0000 0.0000 0.4082 0.0000 0.0000 0.0000
-    //    0.0000 0.0000 0.0000 0.0000 0.0000 0.5000
-    // Its two largest singular values are not as close (0.7500 and 0.6124),
-    // so SVDLIBC gives correct top 2 left singular vectors (I won't check for
-    // them explictly).
-    Eigen::VectorXd singular_values = *wordrep.singular_values();
-    EXPECT_NEAR(0.7500, singular_values(0), tol_);  // Correct.
-    EXPECT_NEAR(0.6124, singular_values(1), tol_);  // Correct.
-}
+// TODO: Check correctness with transform.
 
 // Only checks counts with cutoff 1 and window size 3.
 TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
@@ -430,7 +279,6 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
     wordrep.set_context_definition("list");
     wordrep.set_dim(2);
     wordrep.set_scaling_method("cca");
-    wordrep.set_smooth_value(0);
     wordrep.ExtractStatistics(temp_file_path_);
 
     // Check against the true counts.
@@ -465,7 +313,7 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
     int col = -1;
     while (word_context_file.good()) {
 	getline(word_context_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 1) { ++col; }
 	if (tokens_.size() == 2) {
 	    string word_string = wordrep.word_num2str(stoi(tokens_[0]));
@@ -480,7 +328,7 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
     Word word = 0;
     while (word_file.good()) {
 	getline(word_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 0) { continue; }
 	string word_string = wordrep.word_num2str(word++);
 	size_t count = stoi(tokens_[0]);
@@ -491,7 +339,7 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
     Context context = 0;
     while (context_file.good()) {
 	getline(context_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 0) { continue; }
 	string context_string = wordrep.context_num2str(context++);
 	size_t count = stoi(tokens_[0]);
@@ -540,7 +388,7 @@ TEST_F(WordRepSimpleExample,
     int col = -1;
     while (word_context_file.good()) {
 	getline(word_context_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 1) { ++col; }
 	if (tokens_.size() == 2) {
 	    string word_string = wordrep.word_num2str(stoi(tokens_[0]));
@@ -555,7 +403,7 @@ TEST_F(WordRepSimpleExample,
     Word word = 0;
     while (word_file.good()) {
 	getline(word_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 0) { continue; }
 	string word_string = wordrep.word_num2str(word);
 	size_t count = stoi(tokens_[0]);
@@ -566,7 +414,7 @@ TEST_F(WordRepSimpleExample,
     Context context = 0;
     while (context_file.good()) {
 	getline(context_file, line_);
-	string_manipulator_.split(line_, " ", &tokens_);
+	string_manipulator_.Split(line_, " ", &tokens_);
 	if (tokens_.size() == 0) { continue; }
 	string context_string = wordrep.context_num2str(context++);
 	size_t count = stoi(tokens_[0]);

@@ -1,6 +1,6 @@
 // Author: Karl Stratos (stratos@cs.columbia.edu)
 //
-// Code for scaling and decomposing matrices.
+// Code for scaling and decomposing sparse matrices.
 
 #ifndef DECOMPOSE_H
 #define DECOMPOSE_H
@@ -19,19 +19,9 @@ public:
 
     ~Decomposer() { }
 
-    // Decomposes a matrix with scaling.
-    void Decompose(unordered_map<size_t, unordered_map<size_t, double> >
-		   *joint_values,
-		   const unordered_map<size_t, double> &values1,
-		   const unordered_map<size_t, double> &values2);
-
     // Loads a matrix and scaling values from files and performs decomposition.
     void Decompose(const string &joint_values_path, const string &values1_path,
 		   const string &values2_path);
-
-    // Computes values from samples and performs decomposition.
-    void Decompose(const vector<unordered_map<size_t, double> > &samples1,
-		   const vector<unordered_map<size_t, double> > &samples2);
 
     // Set the file containing left singular vectors (as rows).
     void set_left_singular_vectors_path(string left_singular_vectors_path) {
@@ -54,7 +44,7 @@ public:
     // Sets a target dimension.
     void set_dim(size_t dim) { dim_ = dim; }
 
-    // Sets the flag for smoothing context counts (i.e., value 2).
+    // Sets the flag for smoothing context counts.
     void set_context_smoothing(bool context_smoothing) {
 	context_smoothing_ = context_smoothing;
     }
@@ -68,9 +58,6 @@ public:
     void set_scaling_method(string scaling_method) {
 	scaling_method_ = scaling_method;
     }
-
-    // Sets a smoothing value.
-    void set_smooth_value(size_t smooth_value) { smooth_value_ = smooth_value; }
 
     // Returns a matrix of scaled left singular vectors (as rows).
     Eigen::MatrixXd *left_matrix() { return &left_matrix_; }
@@ -94,27 +81,16 @@ public:
     // Returns the scaling method.
     string scaling_method() { return scaling_method_; }
 
-    // Returns the smoothing value.
-    size_t smooth_value() { return smooth_value_; }
-
-    // Returns the weight matrix.
-    SMat weights() { return weights_; }
-
 private:
-    // Computes SVD with the given solver if no specified cache can be found.
-    void ComputeSVDIfNecessary(SparseSVDSolver *svd_solver);
-
-    // Loads scaling values from a file.
-    void LoadScalingValues(const string &scaling_values_path,
-			   unordered_map<size_t, double> *scaling_values);
-
     // Scales a joint value by individual values.
     double ScaleJointValue(double joint_value, double value1, double value2);
 
-    // Extracts scaled singular vectors from an SVD solver.
-    void ExtractFromSVD(SparseSVDSolver *svd_solver,
-			const unordered_map<size_t, double> &values1,
-			const unordered_map<size_t, double> &values2);
+    // Computes SVD with the given solver if no specified cache can be found.
+    void ComputeSVDIfNecessary(SparseSVDSolver *svd_solver);
+
+    // Do post-SVD calculations.
+    void PostSVD(const unordered_map<size_t, double> &values1,
+		 const unordered_map<size_t, double> &values2);
 
     // Scales a value in a matrix by given row and column values.
     double ScaleMatrixValue(double matrix_value, double row_value,
@@ -148,20 +124,14 @@ private:
     // if rank(matrix) < target dimension).
     size_t rank_ = 0;
 
-    // Smooth context counts (i.e., value 2)?
+    // Smooth context counts?
     bool context_smoothing_ = false;
 
     // Data transformation method.
-    string transformation_method_ = "raw";
+    string transformation_method_ = "sqrt";
 
     // Scaling method.
     string scaling_method_ = "cca";
-
-    // Smoothing value.
-    size_t smooth_value_ = 0;
-
-    // Weight matrix.
-    SMat weights_ = nullptr;
 };
 
 #endif  // DECOMPOSE_H

@@ -52,9 +52,6 @@ public:
     // Returns the scaling method.
     string scaling_method() { return scaling_method_; }
 
-    // Returns the smoothing value.
-    size_t smooth_value() { return smooth_value_; }
-
 private:
     // Path to a text corpus.
     string corpus_path_;
@@ -91,9 +88,6 @@ private:
 
     // Scaling method.
     string scaling_method_ = "cca";
-
-    // Smoothing value.
-    size_t smooth_value_ = 0;
 };
 
 #endif  // ARGUMENTS_H_

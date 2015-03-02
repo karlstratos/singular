@@ -91,7 +91,7 @@ string WordRep::context_num2str(Context context) {
 
 void WordRep::CountWords(const string &corpus_file) {
     FileManipulator file_manipulator;  // Do not repeat the work.
-    if (file_manipulator.exists(SortedWordTypesPath())) { return; }
+    if (file_manipulator.Exists(SortedWordTypesPath())) { return; }
 
     ASSERT(window_size_ >= 2, "Window size less than 2: " << window_size_);
     ifstream file(corpus_file, ios::in);
@@ -104,7 +104,7 @@ void WordRep::CountWords(const string &corpus_file) {
     while (file.good()) {
 	getline(file, line);
 	if (line == "") { continue; }
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	for (const string &token : tokens) {
 	    ASSERT(token != kRareString_, "Rare symbol present: " << token);
 	    ASSERT(token != kBufferString_, "Buffer symbol present: " << token);
@@ -170,7 +170,7 @@ void WordRep::DetermineRareWords() {
     while (sorted_word_types_file.good()) {
 	getline(sorted_word_types_file, line);
 	if (line == "") { continue; }
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	string word_string = tokens[0];
 	size_t word_count = stol(tokens[1]);
 	sorted_wordcount.push_back(make_pair(word_string, word_count));
@@ -226,10 +226,10 @@ void WordRep::SlideWindow(const string &corpus_file) {
 
     // If we already have count files, do not repeat the work.
     FileManipulator file_manipulator;
-    if (file_manipulator.exists(ContextStr2NumPath()) &&
-	file_manipulator.exists(CountWordContextPath()) &&
-	file_manipulator.exists(CountWordPath()) &&
-	file_manipulator.exists(CountContextPath())) { return; }
+    if (file_manipulator.Exists(ContextStr2NumPath()) &&
+	file_manipulator.Exists(CountWordContextPath()) &&
+	file_manipulator.Exists(CountWordPath()) &&
+	file_manipulator.Exists(CountContextPath())) { return; }
 
     // Figure out the indices of the current and context words.
     size_t word_index = (window_size_ - 1) / 2;  // Right-biased
@@ -265,7 +265,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
     while (file.good()) {
 	getline(file, line);
 	if (line == "") { continue; }
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	for (const string &token : tokens) {
 	    // TODO: Switch to checking rare dictionary?
 	    string new_string =
@@ -337,7 +337,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	}
     }
     double time_sliding = difftime(time(NULL), begin_time_sliding);
-    log_ << "   Time taken: " << string_manipulator.time_str(time_sliding)
+    log_ << "   Time taken: " << string_manipulator.TimeString(time_sliding)
 	 << endl;
 
     // Write the filtered context dictionary.
@@ -392,7 +392,7 @@ void WordRep::IncrementContextCount(
 
 void WordRep::InduceWordVectors() {
     FileManipulator file_manipulator;  // Do not repeat the work.
-    if (!file_manipulator.exists(WordVectorsPath())) {
+    if (!file_manipulator.Exists(WordVectorsPath())) {
 	Eigen::MatrixXd word_matrix = CalculateWordMatrix();
 	ASSERT(word_matrix.cols() == sorted_wordcount_.size(), "Word matrix "
 	       "dimension and vocabulary size mismatch: " << word_matrix.cols()
@@ -422,7 +422,7 @@ void WordRep::InduceWordVectors() {
 	    if (line == "") { continue; }
 
 	    // line = [count] [word_string] [value_{1}] ... [value_{dim_}]
-	    string_manipulator.split(line, " ", &tokens);
+	    string_manipulator.Split(line, " ", &tokens);
 	    Eigen::VectorXd vector(tokens.size() - 2);
 	    for (size_t i = 0; i < tokens.size() - 2; ++i) {
 		vector(i) = stod(tokens[i + 2]);
@@ -434,7 +434,7 @@ void WordRep::InduceWordVectors() {
 
 void WordRep::LoadWordDictionary() {
     FileManipulator file_manipulator;
-    ASSERT(file_manipulator.exists(WordStr2NumPath()), "File not found, "
+    ASSERT(file_manipulator.Exists(WordStr2NumPath()), "File not found, "
 	   "read from the corpus: " << WordStr2NumPath());
 
     word_str2num_.clear();
@@ -446,7 +446,7 @@ void WordRep::LoadWordDictionary() {
     while (word_str2num_file.good()) {
 	getline(word_str2num_file, line);
 	if (line == "") { continue; }
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	word_num2str_[stol(tokens[1])] = tokens[0];
 	word_str2num_[tokens[0]] = stol(tokens[1]);
     }
@@ -454,7 +454,7 @@ void WordRep::LoadWordDictionary() {
 
 void WordRep::LoadSortedWordCounts() {
     FileManipulator file_manipulator;
-    ASSERT(file_manipulator.exists(SortedWordTypesPath()), "File not found, "
+    ASSERT(file_manipulator.Exists(SortedWordTypesPath()), "File not found, "
 	   "read from the corpus: " << SortedWordTypesPath());
     ASSERT(word_str2num_.size() > 0, "Word dictionary not loaded.");
 
@@ -466,7 +466,7 @@ void WordRep::LoadSortedWordCounts() {
     while (sorted_word_types_file.good()) {
 	getline(sorted_word_types_file, line);
 	if (line == "") { continue; }
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	string word_string = tokens[0];
 	size_t word_count = stol(tokens[1]);
 	if (word_str2num_.find(word_string) != word_str2num_.end()) {
@@ -485,11 +485,11 @@ void WordRep::LoadSortedWordCounts() {
 
 Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     FileManipulator file_manipulator;
-    ASSERT(file_manipulator.exists(CountWordContextPath()), "File not found, "
+    ASSERT(file_manipulator.Exists(CountWordContextPath()), "File not found, "
 	   "read from the corpus: " << CountWordContextPath());
-    ASSERT(file_manipulator.exists(CountWordPath()), "File not found, "
+    ASSERT(file_manipulator.Exists(CountWordPath()), "File not found, "
 	   "read from the corpus: " << CountWordPath());
-    ASSERT(file_manipulator.exists(CountContextPath()), "File not found, "
+    ASSERT(file_manipulator.Exists(CountContextPath()), "File not found, "
 	   "read from the corpus: " << CountContextPath());
     StringManipulator string_manipulator;
     string line;
@@ -498,7 +498,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     // Get information about the count matrix.
     ifstream count_word_context_file(CountWordContextPath(), ios::in);
     getline(count_word_context_file, line);
-    string_manipulator.split(line, " ", &tokens);
+    string_manipulator.Split(line, " ", &tokens);
     size_t dim1 = stol(tokens[0]);
     size_t dim2 = stol(tokens[1]);
     size_t num_nonzeros = stol(tokens[2]);
@@ -509,7 +509,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     while (count_word_file.good()) {
 	getline(count_word_file, line);
 	if (line == "") { continue; }
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	num_samples += stol(tokens[0]);
     }
 
@@ -521,17 +521,6 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	 << endl;
     log_ << "   Transformation: " << transformation_method_ << endl;
     log_ << "   Scaling: " << scaling_method_ << endl;
-    if (scaling_method_ == "cca" || scaling_method_ == "rreg") {
-	log_ << "   Smoothing value: " << smooth_value_ << endl;
-    }
-    SMat weights = nullptr;  // Optional weighting.
-    if (!weighting_method_.empty()) {
-	log_ << "   Weighting method: " << weighting_method_ << endl;
-	log_ << "      - Regularization term: " << regularization_term_ << endl;
-	log_ << "      - Learning rate prior: " << learning_rate_prior_ << endl;
-	log_ << flush;
-	weights = GetWeights(weighting_method_);
-    }
 
     time_t begin_time_decomposition = time(NULL);
     Decomposer decomposer(dim_);
@@ -542,7 +531,6 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     decomposer.set_context_smoothing(context_smoothing_);
     decomposer.set_transformation_method(transformation_method_);
     decomposer.set_scaling_method(scaling_method_);
-    decomposer.set_smooth_value(smooth_value_);
     decomposer.Decompose(CountWordContextPath(), CountWordPath(),
 			 CountContextPath());
     double time_decomposition = difftime(time(NULL), begin_time_decomposition);
@@ -550,68 +538,14 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 	log_ << "   ***WARNING*** The matrix has rank "
 	     << decomposer.rank() << " < " << dim_ << "!" << endl;
     }
-    svdFreeSMat(weights); // Free the weight matrix.
 
     singular_values_ = *decomposer.singular_values();
     log_ << "   Condition number: "
 	 << singular_values_[0] / singular_values_[dim_ - 1] << endl;
     log_ << "   Time taken: "
-	 << string_manipulator.time_str(time_decomposition) << endl;
+	 << string_manipulator.TimeString(time_decomposition) << endl;
 
     return *decomposer.left_matrix();
-}
-
-SMat WordRep::GetWeights(const string &weight_method) {
-    FileManipulator file_manipulator;
-    ASSERT(file_manipulator.exists(CountWordContextPath()),
-	   "Can't find word-context count matrix: " << CountWordContextPath());
-
-    // Use SparseSVDSolver to load the word-context count matrix.
-    SparseSVDSolver sparsesvd_solver;
-    SMat weights =
-	sparsesvd_solver.ReadSparseMatrixFromFile(CountWordContextPath());
-
-    double max_value = 0;
-    if (weight_method == "anscombe") {
-	// Apply the Anscombe transform on counts and determine the max value.
-	for (size_t col = 0; col < weights->cols; ++col) {
-	    size_t current_column_nonzero_index = weights->pointr[col];
-	    size_t next_column_start_nonzero_index = weights->pointr[col + 1];
-	    while (current_column_nonzero_index <
-		   next_column_start_nonzero_index) {
-		weights->value[current_column_nonzero_index] = 2.0 *
-		    sqrt(weights->value[current_column_nonzero_index] + 0.375);
-		if (weights->value[current_column_nonzero_index] > max_value) {
-		    max_value = weights->value[current_column_nonzero_index];
-		}
-		++current_column_nonzero_index;
-	    }
-	}
-	ASSERT(max_value > 0, "Max count is zero!");
-    }
-
-
-    for (size_t col = 0; col < weights->cols; ++col) {
-	size_t current_column_nonzero_index = weights->pointr[col];
-	size_t next_column_start_nonzero_index = weights->pointr[col + 1];
-	while (current_column_nonzero_index < next_column_start_nonzero_index) {
-	    if (weight_method == "anscombe") {
-		// Divide by the max value to put values in the range (0, 1].
-		weights->value[current_column_nonzero_index] /= max_value;
-	    } else if (weight_method == "glove") {
-		// Recipe provided in the GloVe paper.
-		double x_max = 100.0;
-		double alpha = 0.75;
-		double x = weights->value[current_column_nonzero_index];
-		double scaled_value = (x < x_max) ? pow(x / x_max, alpha) : 1.0;
-		weights->value[current_column_nonzero_index] = scaled_value;
-	    } else {
-		ASSERT(false, "Unknown weighting: " << weighting_method_);
-	    }
-	    ++current_column_nonzero_index;
-	}
-    }
-    return weights;
 }
 
 void WordRep::TestQualityOfWordVectors() {
@@ -620,10 +554,10 @@ void WordRep::TestQualityOfWordVectors() {
     string syn_path = "third_party/public_datasets/syntactic_analogies.dev";
     string mixed_path = "third_party/public_datasets/mixed_analogies.dev";
     FileManipulator file_manipulator;
-    if (!file_manipulator.exists(wordsim353_path) ||
-	!file_manipulator.exists(men_path) ||
-	!file_manipulator.exists(syn_path) ||
-	!file_manipulator.exists(mixed_path)) {
+    if (!file_manipulator.Exists(wordsim353_path) ||
+	!file_manipulator.Exists(men_path) ||
+	!file_manipulator.Exists(syn_path) ||
+	!file_manipulator.Exists(mixed_path)) {
 	// Skip evaluation (e.g., in unit tests) if files are not found.
 	return;
     }
@@ -688,12 +622,12 @@ void WordRep::EvaluateWordSimilarity(const string &file_path,
 	getline(similarity_file, line);
 	if (line == "") { continue; }
 	++(*num_instances);
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	ASSERT(tokens.size() == 3, "Wrong format for word similarity!");
 	string word1 = tokens[0];
 	string word2 = tokens[1];
-	string word1_lowercase = string_manipulator.lowercase(word1);
-	string word2_lowercase = string_manipulator.lowercase(word2);
+	string word1_lowercase = string_manipulator.Lowercase(word1);
+	string word2_lowercase = string_manipulator.Lowercase(word2);
 	double human_score = stod(tokens[2]);
 
 	// Get a vector for each word type. First, try to get a vector for the
@@ -737,17 +671,17 @@ void WordRep::EvaluateWordAnalogy(const string &file_path,
     while (analogy_file.good()) {
 	getline(analogy_file, line);
 	if (line == "") { continue; }
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	ASSERT(tokens.size() == 5, "Wrong format for word analogy!");
 	// Ignore the analogy category: only compute the overall accuracy.
 	string w1 = tokens[1];
-	string w1_lowercase = string_manipulator.lowercase(w1);
+	string w1_lowercase = string_manipulator.Lowercase(w1);
 	string w2 = tokens[2];
-	string w2_lowercase = string_manipulator.lowercase(w2);
+	string w2_lowercase = string_manipulator.Lowercase(w2);
 	string v1 = tokens[3];
-	string v1_lowercase = string_manipulator.lowercase(v1);
+	string v1_lowercase = string_manipulator.Lowercase(v1);
 	string v2 = tokens[4];
-	string v2_lowercase = string_manipulator.lowercase(v2);
+	string v2_lowercase = string_manipulator.Lowercase(v2);
 	analogies.push_back(make_tuple(w1, w2, v1, v2));
 
 	// Get a vector for each word type. First, try to get a vector for the
@@ -837,7 +771,7 @@ string WordRep::AnswerAnalogyQuestion(
 
 void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
     FileManipulator file_manipulator;  // Do not repeat the work.
-    if (file_manipulator.exists(AgglomerativePath())) { return; }
+    if (file_manipulator.Exists(AgglomerativePath())) { return; }
 
     // Prepare a list of word vectors sorted in decreasing frequency.
     ASSERT(wordvectors_.size() > 0, "No word vectors to cluster!");
@@ -858,7 +792,7 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
     log_ << "   Average number of tightenings: "
 	 << greedo.average_num_extra_tightening() << " (versus exhaustive "
 	 << num_clusters << ")" << endl;
-    log_ << "   Time taken: " << string_manipulator.time_str(time_greedo)
+    log_ << "   Time taken: " << string_manipulator.TimeString(time_greedo)
 	 << endl;
 
     // Lexicographically sort bit strings for enhanced readability.
@@ -889,7 +823,7 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
 }
 
 string WordRep::Signature(size_t version) {
-    ASSERT(version <= 3, "Unrecognized signature version: " << version);
+    ASSERT(version <= 2, "Unrecognized signature version: " << version);
 
     string signature = "rare" + to_string(rare_cutoff_);
     if (version >= 1) {
@@ -905,15 +839,6 @@ string WordRep::Signature(size_t version) {
 	if (context_smoothing_) { signature += "_ctxsm"; }
 	signature += "_" + transformation_method_;
 	signature += "_" + scaling_method_;
-	if (scaling_method_ == "cca" || scaling_method_ == "rreg") {
-	    // Record the smoothing value for these scaling methods.
-	    signature += "_smooth" + to_string(smooth_value_);
-	}
-    }
-    if (version >= 3) {
-	if (!weighting_method_.empty()) {
-	    signature += "_" + weighting_method_ + "weight";
-	}
     }
     return signature;
 }

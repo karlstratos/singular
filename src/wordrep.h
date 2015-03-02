@@ -1,6 +1,6 @@
 // Author: Karl Stratos (stratos@cs.columbia.edu)
 //
-// Code for inducing lexical representations.
+//  Code for inducing lexical representations.
 
 #ifndef WORDREP_H
 #define WORDREP_H
@@ -74,29 +74,6 @@ public:
     // Sets the scaling method.
     void set_scaling_method(string scaling_method) {
 	scaling_method_ = scaling_method;
-    }
-
-    // Sets the smoothing value.
-    void set_smooth_value(size_t smooth_value) { smooth_value_ = smooth_value; }
-
-    // Sets the weighting method.
-    void set_weighting_method(string weighting_method) {
-	weighting_method_ = weighting_method;
-    }
-
-    // Sets the maximum number of training epochs.
-    void set_max_num_epochs(double max_num_epochs) {
-	max_num_epochs_ = max_num_epochs;
-    }
-
-    // Sets the regularization term.
-    void set_regularization_term(double regularization_term) {
-	regularization_term_ = regularization_term;
-    }
-
-    // Sets the learning rate prior.
-    void set_learning_rate_prior(double learning_rate_prior) {
-	learning_rate_prior_ = learning_rate_prior;
     }
 
     // Returns the computed word vectors.
@@ -176,9 +153,6 @@ private:
     // Calculate a word matrix (column = word) from cached count files.
     Eigen::MatrixXd CalculateWordMatrix();
 
-    // Get an appropriately scaled weight matrix.
-    SMat GetWeights(const string &weight_method);
-
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
 
@@ -206,9 +180,7 @@ private:
     // Returns a string signature of tunable parameters.
     //    version=0: rare_cutoff_
     //    version=1: 0 + sentence_per_line_, window_size_, context_defintion_
-    //    version=2: 1 + dim_, smooth_value_, transformation_method_,
-    //                   scaling_method_
-    //    version=3: 2 + weighting_method_
+    //    version=2: 1 + dim_, transformation_method_, scaling_method_
     string Signature(size_t version);
 
     // Returns the path to the corpus information file.
@@ -239,12 +211,7 @@ private:
 
     // Returns the path to the word vectors.
     string WordVectorsPath() {
-	return output_directory_ + "/wordvectors_" + Signature(3);
-    }
-
-    // Returns the path to the word vectors in a PCA basis.
-    string WordVectorsPCAPath() {
-	return output_directory_ + "/wordvectors_pca_" + Signature(3);
+	return output_directory_ + "/wordvectors_" + Signature(2);
     }
 
     // Returns the path to the left singular vectors.
@@ -262,14 +229,9 @@ private:
 	return output_directory_ + "/singular_values_" + Signature(2);
     }
 
-    // Returns the path to the PCA variance values.
-    string PCAVariancePath() {
-	return output_directory_ + "/pca_variance_" + Signature(3);
-    }
-
     // Returns the path to the agglomeratively clusterered word vectors.
     string AgglomerativePath() {
-	return output_directory_ + "/agglomerative_" + Signature(3);
+	return output_directory_ + "/agglomerative_" + Signature(2);
     }
 
     // Word-count pairs sorted in decreasing frequency.
@@ -332,21 +294,6 @@ private:
 
     // Scaling method.
     string scaling_method_ = "cca";
-
-    // Smoothing value.
-    size_t smooth_value_ = 0;
-
-    // Weighting method.
-    string weighting_method_ = "";
-
-    // Maximum number of training epochs.
-    size_t max_num_epochs_ = 100;
-
-    // Regularization term.
-    double regularization_term_ = 0.1;
-
-    // Learning rate prior.
-    double learning_rate_prior_ = 0.1;
 };
 
 #endif  // WORDREP_H

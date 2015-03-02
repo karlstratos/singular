@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <unordered_map>
 
-void StringManipulator::split(const string &line, const string &delimiter,
+void StringManipulator::Split(const string &line, const string &delimiter,
 			      vector<string> *tokens) {
     tokens->clear();
     size_t start = 0;  // Keep track of the current position.
@@ -28,7 +28,7 @@ void StringManipulator::split(const string &line, const string &delimiter,
     }
 }
 
-string StringManipulator::time_str(double num_seconds) {
+string StringManipulator::TimeString(double num_seconds) {
     size_t num_hours = (int) floor(num_seconds / 3600.0);
     double num_seconds_minus_h = num_seconds - (num_hours * 3600);
     int num_minutes = (int) floor(num_seconds_minus_h / 60.0);
@@ -38,7 +38,7 @@ string StringManipulator::time_str(double num_seconds) {
     return time_string;
 }
 
-string StringManipulator::lowercase(const string &original_string) {
+string StringManipulator::Lowercase(const string &original_string) {
     string lowercased_string;
     for (const char &character : original_string) {
 	lowercased_string.push_back(tolower(character));
@@ -46,14 +46,15 @@ string StringManipulator::lowercase(const string &original_string) {
     return lowercased_string;
 }
 
-bool FileManipulator::exists(const string &file_path) {
+bool FileManipulator::Exists(const string &file_path) {
     struct stat buffer;
     return (stat(file_path.c_str(), &buffer) == 0);
 }
 
-void FileManipulator::write(const Eigen::MatrixXd &m, const string &file_path) {
+void FileManipulator::Write(const Eigen::MatrixXd &m, const string &file_path) {
     ofstream file(file_path, ios::out);
     ASSERT(file.is_open(), "Cannot open file: " << file_path);
+    file << m;
     file << m.rows() << " " << m.cols() << endl;
     for (size_t i = 0; i < m.rows(); ++i) {
 	for (size_t j = 0; j < m.cols(); ++j) {
@@ -62,16 +63,17 @@ void FileManipulator::write(const Eigen::MatrixXd &m, const string &file_path) {
     }
 }
 
-void FileManipulator::write(const Eigen::VectorXd &v, const string &file_path) {
+void FileManipulator::Write(const Eigen::VectorXd &v, const string &file_path) {
     ofstream file(file_path, ios::out);
     ASSERT(file.is_open(), "Cannot open file: " << file_path);
+    file << v;
     file << v.size() << endl;
     for (size_t i = 0; i < v.size(); ++i) {
 	file << v(i) << endl;
     }
 }
 
-void FileManipulator::read(const string &file_path, Eigen::MatrixXd *m) {
+void FileManipulator::Read(const string &file_path, Eigen::MatrixXd *m) {
     m->resize(0, 0);  // Clear the m.
     ifstream file(file_path, ios::in);
     ASSERT(file.is_open(), "Cannot open file: " << file_path);
@@ -81,7 +83,7 @@ void FileManipulator::read(const string &file_path, Eigen::MatrixXd *m) {
 
     // Get dimensions.
     getline(file, line);
-    string_manipulator.split(line, " ", &tokens);
+    string_manipulator.Split(line, " ", &tokens);
     ASSERT(tokens.size() == 2, "Bad m format: " << line);
     size_t dim1 = stol(tokens[0]);
     size_t dim2 = stol(tokens[1]);
@@ -91,14 +93,14 @@ void FileManipulator::read(const string &file_path, Eigen::MatrixXd *m) {
     for (size_t i = 0; i < dim1; ++i) {
 	for (size_t j = 0; j < dim2; ++j) {
 	    getline(file, line);
-	    string_manipulator.split(line, " ", &tokens);
+	    string_manipulator.Split(line, " ", &tokens);
 	    ASSERT(tokens.size() == 1, "Bad format: " << line);
 	    (*m)(i, j) = stod(tokens[0]);
 	}
     }
 }
 
-void FileManipulator::read(const string &file_path, Eigen::VectorXd *v) {
+void FileManipulator::Read(const string &file_path, Eigen::VectorXd *v) {
     v->resize(0);  // Clear the vector.
     ifstream file(file_path, ios::in);
     ASSERT(file.is_open(), "Cannot open file: " << file_path);
@@ -108,7 +110,7 @@ void FileManipulator::read(const string &file_path, Eigen::VectorXd *v) {
 
     // Get the length.
     getline(file, line);
-    string_manipulator.split(line, " ", &tokens);
+    string_manipulator.Split(line, " ", &tokens);
     ASSERT(tokens.size() == 1, "Bad matrix format: " << line);
     size_t length = stol(tokens[0]);
 
@@ -116,9 +118,27 @@ void FileManipulator::read(const string &file_path, Eigen::VectorXd *v) {
     v->resize(length);
     for (size_t i = 0; i < length; ++i) {
 	getline(file, line);
-	string_manipulator.split(line, " ", &tokens);
+	string_manipulator.Split(line, " ", &tokens);
 	ASSERT(tokens.size() == 1, "Bad format: " << line);
 	(*v)(i) = stod(tokens[0]);
+    }
+}
+
+void FileManipulator::Read(const string &values_path,
+			   unordered_map<size_t, double> *values) {
+    ifstream file(values_path, ios::in);
+    ASSERT(file.is_open(), "Cannot open file: " << values_path);
+    StringManipulator string_manipulator;
+    string line;
+    vector<string> tokens;
+    values->clear();
+    size_t index = 0;
+    while (file.good()) {
+	getline(file, line);  // Scaling value for the i-th dimension.
+	if (line == "") { continue; }
+	string_manipulator.Split(line, " ", &tokens);
+	ASSERT(tokens.size() == 1, "Bad format: " << line);
+	(*values)[index++] = stod(tokens[0]);
     }
 }
 

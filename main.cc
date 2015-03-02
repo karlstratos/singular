@@ -20,7 +20,6 @@ int main (int argc, char* argv[]) {
     wordrep.set_context_smoothing(argparser.context_smoothing());
     wordrep.set_transformation_method(argparser.transformation_method());
     wordrep.set_scaling_method(argparser.scaling_method());
-    wordrep.set_smooth_value(argparser.smooth_value());
 
     // If given a corpus, extract statistics from it.
     if (!argparser.corpus_path().empty()) {
