@@ -88,14 +88,6 @@ private:
     // Computes SVD with the given solver if no specified cache can be found.
     void ComputeSVDIfNecessary(SparseSVDSolver *svd_solver);
 
-    // Do post-SVD calculations.
-    void PostSVD(const unordered_map<size_t, double> &values1,
-		 const unordered_map<size_t, double> &values2);
-
-    // Scales a value in a matrix by given row and column values.
-    double ScaleMatrixValue(double matrix_value, double row_value,
-			    double column_value);
-
     // Matrix of scaled left singular vectors (as rows).
     Eigen::MatrixXd left_matrix_;
 

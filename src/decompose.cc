@@ -38,9 +38,6 @@ void Decomposer::Decompose(const string &joint_values_path,
 
     // Perform an SVD on the scaled joint values.
     ComputeSVDIfNecessary(&svd_solver);
-
-    // Do post-SVD calculations.
-    PostSVD(values1, values2);
 }
 
 double Decomposer::ScaleJointValue(double joint_value,
@@ -161,48 +158,4 @@ void Decomposer::ComputeSVDIfNecessary(SparseSVDSolver *svd_solver) {
 	    if (singular_values_(i) > 0) { ++rank_; }
 	}
     }
-}
-
-void Decomposer::PostSVD(const unordered_map<size_t, double> &values1,
-			 const unordered_map<size_t, double> &values2) {
-    // Ensure that we have loaded the SVD result.
-    ASSERT(left_matrix_.rows() > 0 && left_matrix_.cols() > 0 &&
-	   right_matrix_.rows() > 0 && right_matrix_.cols() > 0 &&
-	   singular_values_.size() > 0, "No SVD result.");
-
-    // Check that dimensions match for scaling.
-    size_t dim1 = values1.size();
-    size_t dim2 = values2.size();
-    ASSERT(left_matrix_.rows() == dim_ && left_matrix_.cols() == dim1 &&
-	   right_matrix_.rows() == dim_ && right_matrix_.cols() == dim2,
-	   "Dimensions don't match between the SVD result and scaling values.");
-
-    // Do post-SVD singular vector scaling.
-    for (size_t row = 0; row < dim_; ++row) {
-	for (size_t col = 0; col < dim1; ++col) {
-	    left_matrix_(row, col) = ScaleMatrixValue(left_matrix_(row, col),
-						      singular_values_(row),
-						      values1.at(col));
-	}
-	for (size_t col = 0; col < dim2; ++col) {
-	    right_matrix_(row, col) = ScaleMatrixValue(right_matrix_(row, col),
-						       singular_values_(row),
-						       values2.at(col));
-	}
-    }
-}
-
-double Decomposer::ScaleMatrixValue(double matrix_value, double row_value,
-				    double column_value) {
-    double scaled_matrix_value = matrix_value;
-    if (scaling_method_ == "cca") {
-	scaled_matrix_value /= sqrt(column_value);
-    } else if (scaling_method_ == "raw" || scaling_method_ == "reg") {
-	scaled_matrix_value *= row_value;
-    } else if (scaling_method_ == "ppmi") {
-	scaled_matrix_value *= sqrt(row_value);
-    } else {
-	ASSERT(false, "Unknown scaling method: " << scaling_method_);
-    }
-    return scaled_matrix_value;
 }
