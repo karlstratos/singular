@@ -10,25 +10,25 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    corpus_path_ = argv[++i];
 	} else if (arg == "--output") {
 	    output_directory_ = argv[++i];
-	} else if (arg == "--recompute") {
+	} else if (arg == "--force" || arg == "-f") {
 	    from_scratch_ = true;
 	} else if (arg == "--rare") {
 	    rare_cutoff_ = stol(argv[++i]);
-	} else if (arg == "--sentence-per-line") {
+	} else if (arg == "--sentences") {
 	    sentence_per_line_ = true;
 	} else if (arg == "--window") {
 	    window_size_ = stol(argv[++i]);
 	} else if (arg == "--context") {
 	    context_definition_ = argv[++i];
+	} else if (arg == "--smooth") {
+	    context_smoothing_ = true;
 	} else if (arg == "--dim") {
 	    dim_ = stol(argv[++i]);
-	} else if (arg == "--context-smoothing") {
-	    context_smoothing_ = true;
 	} else if (arg == "--transform") {
 	    transformation_method_ = argv[++i];
 	} else if (arg == "--scale") {
 	    scaling_method_ = argv[++i];
-	} else if (arg == "-h" || arg == "--help"){
+	} else if (arg == "--help" || arg == "-h"){
 	    display_options_and_quit = true;
 	} else {
 	    cerr << "Invalid argument \"" << arg << "\": run the command with "
@@ -38,49 +38,42 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
     }
 
     if (display_options_and_quit || argc == 1) {
-	cout << "ARGUMENTS:" << endl << endl;
+	cout << "--corpus [-]:       \t"
+	     << "path to a text file" << endl;
 
-	cout << "--corpus [file]" << endl
-	     << "Path to a text corpus." << endl << endl;
+	cout << "--output [-]:       \t"
+	     << "path to an output directory" << endl;
 
-	cout << "--output [directory]" << endl
-	     << "Path to the output directory." << endl << endl;
+	cout << "--force, -f:         \t"
+	     << "forcefully recompute from scratch" << endl;
 
-	cout << "--recompute" << endl
-	     << "Recompute all counts from scratch?" << endl << endl;
+	cout << "--rare [" << rare_cutoff_ << "]:     \t"
+	     << "rare word count threshold" << endl;
 
-	cout << "--rare "
-	     << "(default: " << rare_cutoff_ << ")" << endl
-	     << "Rare word cutoff value." << endl << endl;
+	cout << "--sentences:        \t"
+	     << "have a sentence per line in the corpus" << endl;
 
-	cout << "--sentence-per-line " << endl
-	     << "Have a sentence per line in the text corpus?" << endl << endl;
+	cout << "--window [" << window_size_ << "]:    \t"
+	     << "size of the sliding window" << endl;
 
-	cout << "--window "
-	     << "(default: " << window_size_ << ")" << endl
-	     << "Size of the context to compute covariance on." << endl << endl;
+	cout << "--context [" << context_definition_ << "]: \t"
+	     << "context definition: bag, list, baglist"  << endl;
 
-	cout << "--context "
-	     << "(default: " << context_definition_ << ")" << endl
-	     << "Context definition: bag, list, baglist."
-	     << endl << endl;
+	cout << "--smooth:            \t"
+	     << "smooth context counts" << endl;
 
-	cout << "--context-smoothing " << endl
-	     << "Smooth context counts?" << endl << endl;
+	cout << "--dim [" << dim_ << "]:        \t"
+	     << "dimensionality of word vectors" << endl;
 
-	cout << "--dim "
-	     << "(default: " << dim_ << ")" << endl
-	     << "Target dimension of word vectors." << endl << endl;
+	cout << "--transform [" << transformation_method_ << "]: \t"
+	     << "data transform: raw, sqrt, two-thirds, log"
+	     << endl;
 
-	cout << "--transform "
-	     << "(default: " << transformation_method_ << ")" << endl
-	     << "Data transformation method: raw, sqrt, two-thirds, "
-	     << "log." << endl << endl;
+	cout << "--scale [" << scaling_method_ << "]:    \t"
+	     << "data scaling: raw, cca, reg, ppmi" << endl;
 
-	cout << "--scale "
-	     << "(default: " << scaling_method_ << ")" << endl
-	     << "Scaling method: raw, cca, reg, ppmi."
-	     << endl << endl;
+	cout << "--help, -h:           \t"
+	     << "show options and quit" << endl;
 
 	exit(0);
     }

@@ -60,25 +60,25 @@ private:
     bool from_scratch_ = false;
 
     // Rare word cutoff.
-    size_t rare_cutoff_ = 1;
+    size_t rare_cutoff_ = 10;
 
     // Have a sentence per line in the text corpus?
     bool sentence_per_line_ = false;
 
     // Size of the context window.
-    size_t window_size_ = 3;
+    size_t window_size_ = 11;
 
     // Context definition.
     string context_definition_ = "bag";
 
     // Target dimension of word vectors.
-    size_t dim_ = 100;
+    size_t dim_ = 500;
 
     // Smooth context counts?
     bool context_smoothing_ = false;
 
     // Data transformation method.
-    string transformation_method_ = "raw";
+    string transformation_method_ = "sqrt";
 
     // Scaling method.
     string scaling_method_ = "cca";
