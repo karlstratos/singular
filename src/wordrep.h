@@ -6,9 +6,11 @@
 #define WORDREP_H
 
 #include <Eigen/Dense>
+#include <deque>
 #include <fstream>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 using namespace std;
 
@@ -50,11 +52,6 @@ public:
 
     // Sets the context window size.
     void set_window_size(size_t window_size) { window_size_ = window_size; }
-
-    // Sets the flag for weighting context dynamically.
-    void set_dynamic_context_weight(bool dynamic_context_weight) {
-	dynamic_context_weight_ = dynamic_context_weight;
-    }
 
     // Sets the context definition.
     void set_context_definition(string context_definition) {
@@ -127,22 +124,31 @@ private:
     // Adds the word to the word dictionary if not already known.
     Word AddWordIfUnknown(const string &word_string);
 
-    // Adds the context to the context dictionary if not already known.
-    Context AddContextIfUnknown(const string &context_string);
-
     // Determines rare word types.
     void DetermineRareWords();
 
     // Slides a window across a corpus to collect statistics.
     void SlideWindow(const string &corpus_file);
 
-    // Increments context counts according to how context is defined.
-    void IncrementContextCount(
-	const string &context_string, const string &position_string, Word word,
-	size_t max_weight, size_t distance,
-	unordered_map<Context, double> *count_context,
-	unordered_map<Context, unordered_map<Word, double> >
-	*count_word_context);
+    void FinishWindow(size_t word_index,
+		      const vector<string> &position_markers,
+		      deque<string> *window,
+		      unordered_map<Word, double> *count_word,
+		      unordered_map<Context, double> *count_context,
+		      unordered_map<Context, unordered_map<Word, double> >
+		      *count_word_context);
+
+    // Increments word/context counts from a window of text.
+    void ProcessWindow(const deque<string> &window,
+		       size_t word_index,
+		       const vector<string> &position_markers,
+		       unordered_map<Word, double> *count_word,
+		       unordered_map<Context, double> *count_context,
+		       unordered_map<Context, unordered_map<Word, double> >
+		       *count_word_context);
+
+    // Adds the context to the context dictionary if not already known.
+    Context AddContextIfUnknown(const string &context_string);
 
     // Induces vector representations of word types based on cached count files.
     void InduceWordVectors();
@@ -273,9 +279,6 @@ private:
     // Size of the context to compute covariance on. Note that it needs to be
     // odd if we want the left and right context to have the same length.
     size_t window_size_ = 3;
-
-    // Weight context dynamically?
-    bool dynamic_context_weight_ = false;
 
     // Context definition.
     string context_definition_ = "bag";

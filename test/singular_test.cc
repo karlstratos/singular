@@ -5,7 +5,6 @@
 #include <random>
 
 #include "gtest/gtest.h"
-#include "../src/decompose.h"
 #include "../src/sparsesvd.h"
 #include "../src/wordrep.h"
 

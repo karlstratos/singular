@@ -14,7 +14,6 @@ int main (int argc, char* argv[]) {
     wordrep.set_rare_cutoff(argparser.rare_cutoff());
     wordrep.set_sentence_per_line(argparser.sentence_per_line());
     wordrep.set_window_size(argparser.window_size());
-    wordrep.set_dynamic_context_weight(argparser.dynamic_context_weight());
     wordrep.set_context_definition(argparser.context_definition());
     wordrep.set_dim(argparser.dim());
     wordrep.set_context_smoothing(argparser.context_smoothing());

@@ -2,7 +2,6 @@
 
 #include "wordrep.h"
 
-#include <deque>
 #include <dirent.h>
 #include <iomanip>
 #include <map>
@@ -147,16 +146,6 @@ Word WordRep::AddWordIfUnknown(const string &word_string) {
     return word_str2num_[word_string];
 }
 
-Context WordRep::AddContextIfUnknown(const string &context_string) {
-    ASSERT(!context_string.empty(), "Adding an empty string for context!");
-    if (context_str2num_.find(context_string) == context_str2num_.end()) {
-	Context context = context_str2num_.size();
-	context_str2num_[context_string] = context;
-	context_num2str_[context] = context_string;
-    }
-    return context_str2num_[context_string];
-}
-
 void WordRep::DetermineRareWords() {
     StringManipulator string_manipulator;
     string line;
@@ -220,8 +209,6 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	"Whole Text = 1 sentence";
     log_ << endl << "[Sliding window]" << endl;
     log_ << "   Window size: " << window_size_ << endl;
-    log_ << "   Context weights: " << ((dynamic_context_weight_) ? "dynamic" :
-				       "constant") << endl;
     log_ << "   Context definition: " << context_definition_ << endl;
     log_ << "   Corpus format: " << corpus_format << endl << flush;
 
@@ -232,15 +219,12 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	file_manipulator.Exists(CountWordPath()) &&
 	file_manipulator.Exists(CountContextPath())) { return; }
 
-    // Figure out the indices of the current and context words.
+    // Pre-compute values we need over and over again.
     size_t word_index = (window_size_ - 1) / 2;  // Right-biased
-    size_t max_weight = floor(window_size_ / 2);  // Dynamic context weighting
-    vector<Context> context_indices;
     vector<string> position_markers(window_size_);
     for (size_t context_index = 0; context_index < window_size_;
 	 ++context_index) {
 	if (context_index != word_index) {
-	    context_indices.push_back(context_index);
 	    position_markers[context_index] = "w(" +
 		to_string(((int) context_index) - ((int) word_index)) + ")=";
 	}
@@ -257,12 +241,12 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	window.push_back(kBufferString_);
     }
 
-    StringManipulator string_manipulator;
-    string line;
-    vector<string> tokens;
     time_t begin_time_sliding = time(NULL);  // Window sliding time.
     ifstream file(corpus_file, ios::in);
     ASSERT(file.is_open(), "Cannot open file: " << corpus_file);
+    StringManipulator string_manipulator;
+    string line;
+    vector<string> tokens;
     while (file.good()) {
 	getline(file, line);
 	if (line == "") { continue; }
@@ -273,70 +257,24 @@ void WordRep::SlideWindow(const string &corpus_file) {
 		(word_str2num_.find(token) != word_str2num_.end()) ?
 		token : kRareString_;
 	    window.push_back(new_string);
-	    if (window.size() >= window_size_) {
-		// Collect statistics from the full window.
-		Word word = word_str2num_[window[word_index]];
-		count_word[word] += (dynamic_context_weight_) ? max_weight : 1;
-		for (Context context_index : context_indices) {
-		    size_t distance = fabs(((int) context_index) -
-					   ((int) word_index));
-		    IncrementContextCount(
-			window[context_index], position_markers[context_index],
-			word, max_weight, distance, &count_context,
-			&count_word_context);
-		}
+	    if (window.size() >= window_size_) {  // Full window.
+		ProcessWindow(window, word_index, position_markers,
+			      &count_word, &count_context, &count_word_context);
 		window.pop_front();
 	    }
 	}
 
-	if (sentence_per_line_) {  // End-buffer and collect counts.
-	    while (window.size() < window_size_) {
-		// But first fill up the window.
-		window.push_back(kBufferString_);
-	    }
-	    for (size_t buffering = word_index + 1; buffering < window_size_;
-		 ++buffering) {
-		window.push_back(kBufferString_);
-		Word word = word_str2num_[window[word_index]];
-		count_word[word] += (dynamic_context_weight_) ? max_weight : 1;
-		for (Context context_index : context_indices) {
-		    size_t distance = fabs(((int) context_index) -
-					   ((int) word_index));
-		    IncrementContextCount(
-			window[context_index], position_markers[context_index],
-			word, max_weight, distance, &count_context,
-			&count_word_context);
-		}
-		window.pop_front();
-	    }
-	    window.clear();
-	    for (size_t buffering = 0; buffering < word_index; ++buffering) {
-		window.push_back(kBufferString_);
-	    }
+	if (sentence_per_line_) {
+	    FinishWindow(word_index, position_markers, &window,
+			 &count_word, &count_context, &count_word_context);
 	}
     }
 
-    if (!sentence_per_line_) {  // End-buffer and collect counts.
-	while (window.size() < window_size_) {
-	    // But first fill up the window.
-	    window.push_back(kBufferString_);
-	}
-	for (size_t buffering = word_index + 1; buffering < window_size_;
-	     ++buffering) {
-	    window.push_back(kBufferString_);
-	    Word word = word_str2num_[window[word_index]];
-	    count_word[word] += (dynamic_context_weight_) ? max_weight : 1;
-	    for (Context context_index : context_indices) {
-		size_t distance = fabs(((int) context_index) -
-				       ((int) word_index));
-		IncrementContextCount(
-		    window[context_index], position_markers[context_index],
-		    word, max_weight, distance, &count_context,
-		    &count_word_context);
-	    }
-	    window.pop_front();
-	}
+    if (!sentence_per_line_) {
+	FinishWindow(word_index, position_markers, &window,
+		     &count_word, &count_context, &count_word_context);
     }
+
     double time_sliding = difftime(time(NULL), begin_time_sliding);
     log_ << "   Time taken: " << string_manipulator.TimeString(time_sliding)
 	 << endl;
@@ -362,33 +300,79 @@ void WordRep::SlideWindow(const string &corpus_file) {
     }
 }
 
-void WordRep::IncrementContextCount(
-    const string &context_string, const string &position_string, Word word,
-    size_t max_weight, size_t distance,
-    unordered_map<Context, double> *count_context,
-    unordered_map<Context, unordered_map<Word, double> > *count_word_context) {
-    size_t weight = (dynamic_context_weight_) ? max_weight - distance + 1 : 1;
-    if (context_definition_ == "bag") { // Bag-of-words context.
-	Context bag_context = AddContextIfUnknown(context_string);
-	(*count_context)[bag_context] += weight;
-	(*count_word_context)[bag_context][word] += weight;
-    } else if (context_definition_ == "list") { // List-of-words context.
-	Context list_context =
-	    AddContextIfUnknown(position_string + context_string);
-	(*count_context)[list_context] += weight;
-	(*count_word_context)[list_context][word] += weight;
-    } else if (context_definition_ == "baglist") {
-	// Both bag-of-words and list-of-words context.
-	Context bag_context = AddContextIfUnknown(context_string);
-	Context list_context =
-	    AddContextIfUnknown(position_string + context_string);
-	(*count_context)[bag_context] += weight;
-	(*count_context)[list_context] += weight;
-	(*count_word_context)[bag_context][word] += weight;
-	(*count_word_context)[list_context][word] += weight;
-    } else {
-	ASSERT(false, "Unknown context definition: " << context_definition_);
+void WordRep::FinishWindow(size_t word_index,
+			   const vector<string> &position_markers,
+			   deque<string> *window,
+			   unordered_map<Word, double> *count_word,
+			   unordered_map<Context, double> *count_context,
+			   unordered_map<Context, unordered_map<Word, double> >
+			   *count_word_context) {
+    size_t original_window_size = window->size();
+    while (window->size() < window_size_) {
+	// First fill up the window in case the sentence was short.
+	(*window).push_back(kBufferString_);  //   [<!> a] -> [<!> a <!> ]
     }
+    for (size_t buffering = word_index; buffering < original_window_size;
+	 ++buffering) {
+	ProcessWindow(*window, word_index, position_markers,
+		      count_word, count_context, count_word_context);
+	(*window).pop_front();
+	(*window).push_back(kBufferString_);
+    }
+    (*window).clear();
+    for (size_t buffering = 0; buffering < word_index; ++buffering) {
+	(*window).push_back(kBufferString_);
+    }
+}
+
+void WordRep::ProcessWindow(const deque<string> &window,
+			    size_t word_index,
+			    const vector<string> &position_markers,
+			    unordered_map<Word, double> *count_word,
+			    unordered_map<Context, double> *count_context,
+			    unordered_map<Context, unordered_map<Word, double> >
+			    *count_word_context) {
+    Word word = word_str2num_[window.at(word_index)];
+    (*count_word)[word] += 1;
+
+    for (size_t context_index = 0; context_index < window.size();
+	 ++context_index) {
+	if (context_index == word_index) { continue; }
+	string context_string = window.at(context_index);
+	if (context_definition_ == "bag") {  // Bag-of-words (BOW).
+	    Context bag_context = AddContextIfUnknown(context_string);
+	    (*count_context)[bag_context] += 1;
+	    (*count_word_context)[bag_context][word] += 1;
+	} else if (context_definition_ == "list") {  // List-of-words (LOW)
+	    Context list_context =
+		AddContextIfUnknown(position_markers.at(context_index) +
+				    context_string);
+	    (*count_context)[list_context] += 1;
+	    (*count_word_context)[list_context][word] += 1;
+	} else if (context_definition_ == "baglist") {  // BOW+LOW
+	    Context bag_context = AddContextIfUnknown(context_string);
+	    Context list_context =
+		AddContextIfUnknown(position_markers.at(context_index) +
+				    context_string);
+	    (*count_context)[bag_context] += 1;
+	    (*count_context)[list_context] += 1;
+	    (*count_word_context)[bag_context][word] += 1;
+	    (*count_word_context)[list_context][word] += 1;
+	} else {
+	    ASSERT(false, "Unknown context definition: " <<
+		   context_definition_);
+	}
+    }
+}
+
+Context WordRep::AddContextIfUnknown(const string &context_string) {
+    ASSERT(!context_string.empty(), "Adding an empty string for context!");
+    if (context_str2num_.find(context_string) == context_str2num_.end()) {
+	Context context = context_str2num_.size();
+	context_str2num_[context_string] = context;
+	context_num2str_[context] = context_string;
+    }
+    return context_str2num_[context_string];
 }
 
 void WordRep::InduceWordVectors() {
@@ -921,7 +905,6 @@ string WordRep::Signature(size_t version) {
 	    signature += "_spl";
 	}
 	signature += "_window" + to_string(window_size_);
-	if (dynamic_context_weight_) { signature += "_dyn"; }
 	signature += "_" + context_definition_;
     }
     if (version >= 2) {

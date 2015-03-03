@@ -18,8 +18,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    sentence_per_line_ = true;
 	} else if (arg == "--window") {
 	    window_size_ = stol(argv[++i]);
-	} else if (arg == "--dynamic") {
-	    dynamic_context_weight_ = true;
 	} else if (arg == "--context") {
 	    context_definition_ = argv[++i];
 	} else if (arg == "--dim") {
@@ -61,9 +59,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	cout << "--window "
 	     << "(default: " << window_size_ << ")" << endl
 	     << "Size of the context to compute covariance on." << endl << endl;
-
-	cout << "--dynamic " << endl
-	     << "Weight context dynamically?" << endl << endl;
 
 	cout << "--context "
 	     << "(default: " << context_definition_ << ")" << endl

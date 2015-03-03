@@ -34,9 +34,6 @@ public:
     // Returns the size of the context window.
     size_t window_size() { return window_size_; }
 
-    // Returns the flag for weighting context dynamically.
-    bool dynamic_context_weight() { return dynamic_context_weight_; }
-
     // Returns the context definition.
     string context_definition() { return context_definition_; }
 
@@ -70,9 +67,6 @@ private:
 
     // Size of the context window.
     size_t window_size_ = 3;
-
-    // Weight context dynamically?
-    bool dynamic_context_weight_ = false;
 
     // Context definition.
     string context_definition_ = "bag";
