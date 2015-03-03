@@ -32,13 +32,13 @@ public:
     // Sets the output directory.
     void SetOutputDirectory(const string &output_directory);
 
-    // Removes the content in the output directory.
+    // Resets the content in the output directory.
     void ResetOutputDirectory();
 
-    // Extracts statistics from a corpus with preprocessing.
+    // Extracts statistics from a corpus.
     void ExtractStatistics(const string &corpus_file);
 
-    // Induces lexical representations from word counts in the output directory.
+    // Induces lexical representations from cached word counts.
     void InduceLexicalRepresentations();
 
     // Sets the rare word cutoff value.

@@ -168,8 +168,8 @@ void WordRep::DetermineRareWords() {
 	num_words += word_count;
     }
     log_ << "[Corpus]" << endl;
-    log_ << "   " << num_words << " words" << endl;
-    log_ << "   Cutoff " << rare_cutoff_ << ": " << word_str2num_.size()
+    log_ << "   Number of words: " << num_words << endl;
+    log_ << "   Cutoff: " << rare_cutoff_ << ", " << word_str2num_.size()
 	 << " => ";
 
     // Filter the dictionary by grouping rare types into a single type.
@@ -217,7 +217,10 @@ void WordRep::SlideWindow(const string &corpus_file) {
     if (file_manipulator.Exists(ContextStr2NumPath()) &&
 	file_manipulator.Exists(CountWordContextPath()) &&
 	file_manipulator.Exists(CountWordPath()) &&
-	file_manipulator.Exists(CountContextPath())) { return; }
+	file_manipulator.Exists(CountContextPath())) {
+	log_ << "   Counts already exist" << endl;
+	return;
+    }
 
     // Pre-compute values we need over and over again.
     size_t word_index = (window_size_ - 1) / 2;  // Right-biased
@@ -502,8 +505,6 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     log_ << "   Matrix: " << dim1 << " x " << dim2 << " (" << num_nonzeros
 	 << " nonzeros)" << endl;
     log_ << "   Rank of SVD: " << dim_ << endl;
-    log_ << "   Context smoothing: " << ((context_smoothing_) ? "on" : "off")
-	 << endl;
     log_ << "   Transformation: " << transformation_method_ << endl;
     log_ << "   Scaling: " << scaling_method_ << endl;
 
@@ -575,9 +576,7 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
 
 double WordRep::ScaleJointValue(double joint_value, double value1,
 				double value2, size_t num_samples) {
-    if (context_smoothing_) {  // Context smoothing.
-	value2 = pow(value2, 0.75);
-    }
+    value2 = pow(value2, 0.75);  // Context smoothing.
 
     // Data transformation.
     if (transformation_method_ == "raw") {  // No transformation.
@@ -635,7 +634,7 @@ void WordRep::TestQualityOfWordVectors() {
 	// Skip evaluation (e.g., in unit tests) if files are not found.
 	return;
     }
-    log_ << endl << "[Quality of word vectors]" << endl;
+    log_ << endl << "[Dev performance]" << endl;
 
     // Use 3 decimal places for word similartiy.
     log_ << fixed << setprecision(3);
@@ -646,7 +645,7 @@ void WordRep::TestQualityOfWordVectors() {
     double corr_wordsim353;
     EvaluateWordSimilarity(wordsim353_path, &num_instances_wordsim353,
 			   &num_handled_wordsim353, &corr_wordsim353);
-    log_ << "   wordsim353: " << corr_wordsim353 << " ("
+    log_ << "   WS353: \t" << corr_wordsim353 << " ("
 	 << num_handled_wordsim353 << "/" << num_instances_wordsim353
 	 << " evaluated)" << endl;
 
@@ -656,7 +655,7 @@ void WordRep::TestQualityOfWordVectors() {
     double corr_men;
     EvaluateWordSimilarity(men_path, &num_instances_men,
 			   &num_handled_men, &corr_men);
-    log_ << "   MEN:        " << corr_men << " (" << num_handled_men << "/"
+    log_ << "   MEN: \t" << corr_men << " (" << num_handled_men << "/"
 	 << num_instances_men << " evaluated)" << endl;
     log_ << fixed << setprecision(2);
 
@@ -666,7 +665,7 @@ void WordRep::TestQualityOfWordVectors() {
     double acc_syn;
     EvaluateWordAnalogy(syn_path, &num_instances_syn, &num_handled_syn,
 			&acc_syn);
-    log_ << "   Syntactic analogies: " << acc_syn << "% (" << num_handled_syn
+    log_ << "   SYN: \t" << acc_syn << " (" << num_handled_syn
 	 << "/" << num_instances_syn << " evaluated)" << endl;
 
     // Word analogy with mixed_analogies.dev.
@@ -675,9 +674,8 @@ void WordRep::TestQualityOfWordVectors() {
     double acc_mixed;
     EvaluateWordAnalogy(mixed_path, &num_instances_mixed, &num_handled_mixed,
 			&acc_mixed);
-    log_ << "   Mixed analogies:     " << acc_mixed << "% ("
-	 << num_handled_mixed << "/" << num_instances_mixed << " evaluated)"
-	 << endl;
+    log_ << "   MIXED: \t" << acc_mixed << " (" << num_handled_mixed << "/"
+	 << num_instances_mixed << " evaluated)" << endl;
 }
 
 void WordRep::EvaluateWordSimilarity(const string &file_path,
@@ -857,8 +855,8 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
 
     // Do agglomerative clustering over the sorted word vectors.
     time_t begin_time_greedo = time(NULL);
-    log_ << endl << "[Agglomerative clustering with " << num_clusters
-	 << " clusters]" << endl;
+    log_ << endl << "[Agglomerative clustering]" << endl;
+    log_ << "   Number of clusters: " << num_clusters << endl;
     Greedo greedo;
     greedo.Cluster(sorted_vectors, num_clusters);
     double time_greedo = difftime(time(NULL), begin_time_greedo);
@@ -909,7 +907,6 @@ string WordRep::Signature(size_t version) {
     }
     if (version >= 2) {
 	signature += "_dim" + to_string(dim_);
-	if (context_smoothing_) { signature += "_ctxsm"; }
 	signature += "_" + transformation_method_;
 	signature += "_" + scaling_method_;
     }
