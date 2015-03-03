@@ -8,6 +8,7 @@
 #include <map>
 
 #include "cluster.h"
+#include "sparsesvd.h"
 
 void WordRep::SetOutputDirectory(const string &output_directory) {
     ASSERT(!output_directory.empty(), "Empty output directory.");
@@ -523,29 +524,118 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     log_ << "   Scaling: " << scaling_method_ << endl;
 
     time_t begin_time_decomposition = time(NULL);
-    Decomposer decomposer(dim_);
-    decomposer.set_left_singular_vectors_path(LeftSingularVectorsPath());
-    decomposer.set_right_singular_vectors_path(RightSingularVectorsPath());
-    decomposer.set_singular_values_path(SingularValuesPath());
-    decomposer.set_num_samples(num_samples);
-    decomposer.set_context_smoothing(context_smoothing_);
-    decomposer.set_transformation_method(transformation_method_);
-    decomposer.set_scaling_method(scaling_method_);
-    decomposer.Decompose(CountWordContextPath(), CountWordPath(),
-			 CountContextPath());
-    double time_decomposition = difftime(time(NULL), begin_time_decomposition);
-    if (decomposer.rank() < dim_) {
-	log_ << "   ***WARNING*** The matrix has rank "
-	     << decomposer.rank() << " < " << dim_ << "!" << endl;
+
+    // Load a sparse matrix of joint values directly into an SVD solver.
+    SparseSVDSolver svd_solver(CountWordContextPath());
+    SMat matrix = svd_solver.sparse_matrix();
+
+    // Load individual scaling values.
+    unordered_map<size_t, double> values1;
+    unordered_map<size_t, double> values2;
+    file_manipulator.Read(CountWordPath(), &values1);
+    file_manipulator.Read(CountContextPath(), &values2);
+    ASSERT(dim1 == values1.size() && dim2 == values2.size(),
+	   "Dimensions don't match, need: " << dim1 << " = " << values1.size()
+	   << " && " << dim2 << " = " << values2.size());
+
+    // Scale the joint values by individual values.
+    for (size_t col = 0; col < dim2; ++col) {
+	size_t current_column_nonzero_index = matrix->pointr[col];
+	size_t next_column_start_nonzero_index = matrix->pointr[col + 1];
+	while (current_column_nonzero_index < next_column_start_nonzero_index) {
+	    size_t row = matrix->rowind[current_column_nonzero_index];
+	    matrix->value[current_column_nonzero_index] =
+		ScaleJointValue(matrix->value[current_column_nonzero_index],
+				values1[row], values2[col], num_samples);
+	    ++current_column_nonzero_index;
+	}
     }
 
-    singular_values_ = *decomposer.singular_values();
+    // Perform an SVD on the loaded scaled values.
+    svd_solver.SolveSparseSVD(dim_);
+    size_t actual_rank = svd_solver.rank();
+
+    // Save a matrix of left singular vectors as rows.
+    Eigen::MatrixXd word_matrix(dim_, dim1);
+    for (size_t row = 0; row < dim_; ++row) {
+	for (size_t col = 0; col < dim1; ++col) {
+	    word_matrix(row, col) =
+		svd_solver.left_singular_vectors()->value[row][col];
+	}
+    }
+
+    // Save singular values.
+    singular_values_.resize(dim_);
+    for (size_t i = 0; i < dim_; ++i) {
+	singular_values_(i) = *(svd_solver.singular_values() + i);
+    }
+    file_manipulator.Write(singular_values_, SingularValuesPath());
+
+    // Free memory.
+    svd_solver.FreeSparseMatrix();
+    svd_solver.FreeSVDResult();
+
+    double time_decomposition = difftime(time(NULL), begin_time_decomposition);
+    if (actual_rank < dim_) {
+	log_ << "   ***WARNING*** The matrix has defficient rank "
+	     << actual_rank << " < " << dim_ << "!" << endl;
+    }
+
     log_ << "   Condition number: "
 	 << singular_values_[0] / singular_values_[dim_ - 1] << endl;
     log_ << "   Time taken: "
 	 << string_manipulator.TimeString(time_decomposition) << endl;
 
-    return *decomposer.left_matrix();
+    return word_matrix;
+}
+
+double WordRep::ScaleJointValue(double joint_value, double value1,
+				double value2, size_t num_samples) {
+    if (context_smoothing_) {  // Context smoothing.
+	value2 = pow(value2, 0.75);
+    }
+
+    // Data transformation.
+    if (transformation_method_ == "raw") {  // No transformation.
+    } else if (transformation_method_ == "sqrt") {  // Take square-root.
+	joint_value = sqrt(joint_value);
+	value1 = sqrt(value1);
+	value2 = sqrt(value2);
+    } else if (transformation_method_ == "two-thirds") {  // Power of 2/3.
+	double power = 2.0 / 3.0;
+	joint_value = pow(joint_value, power);
+	value1 = pow(value1, power);
+	value2 = pow(value2, power);
+    } else if (transformation_method_ == "log") {  // Take log.
+	joint_value = log(1.0 + joint_value);
+	value1 = log(1.0 + value1);
+	value2 = log(1.0 + value2);
+    } else {
+	ASSERT(false, "Unknown data transformation method: "
+	       << transformation_method_);
+    }
+
+    // Scale the joint value by individual values (or not).
+    double scaled_joint_value = joint_value;
+    if (scaling_method_ == "raw") {  // No scaling.
+    } else if (scaling_method_ == "cca") {
+	// Canonical correlation analysis scaling.
+	scaled_joint_value /= sqrt(value1);
+	scaled_joint_value /= sqrt(value2);
+    } else if (scaling_method_ == "reg") {
+	// Ridge regression scaling.
+	scaled_joint_value /= value1;
+    } else if (scaling_method_ == "ppmi") {
+	// Positive pointwise mutual information scaling.
+	scaled_joint_value = log(scaled_joint_value);
+	scaled_joint_value += log(num_samples);
+	scaled_joint_value -= log(value1);
+	scaled_joint_value -= log(value2);
+	scaled_joint_value = max(scaled_joint_value, 0.0);
+    } else {
+	ASSERT(false, "Unknown scaling method: " << scaling_method_);
+    }
+    return scaled_joint_value;
 }
 
 void WordRep::TestQualityOfWordVectors() {

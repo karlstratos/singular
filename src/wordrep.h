@@ -5,9 +5,12 @@
 #ifndef WORDREP_H
 #define WORDREP_H
 
+#include <Eigen/Dense>
 #include <fstream>
+#include <string>
+#include <unordered_map>
 
-#include "decompose.h"
+using namespace std;
 
 typedef size_t Word;
 typedef size_t Context;
@@ -153,6 +156,10 @@ private:
     // Calculate a word matrix (column = word) from cached count files.
     Eigen::MatrixXd CalculateWordMatrix();
 
+    // Scales a joint value by individual values.
+    double ScaleJointValue(double joint_value, double value1, double value2,
+			   size_t num_samples);
+
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
 
@@ -212,16 +219,6 @@ private:
     // Returns the path to the word vectors.
     string WordVectorsPath() {
 	return output_directory_ + "/wordvectors_" + Signature(2);
-    }
-
-    // Returns the path to the left singular vectors.
-    string LeftSingularVectorsPath() {
-	return output_directory_ + "/left_singular_vectors_" + Signature(2);
-    }
-
-    // Returns the path to the right singular vectors.
-    string RightSingularVectorsPath() {
-	return output_directory_ + "/right_singular_vectors_" + Signature(2);
     }
 
     // Returns the path to the singular values.

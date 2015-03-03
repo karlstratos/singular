@@ -54,7 +54,6 @@ bool FileManipulator::Exists(const string &file_path) {
 void FileManipulator::Write(const Eigen::MatrixXd &m, const string &file_path) {
     ofstream file(file_path, ios::out);
     ASSERT(file.is_open(), "Cannot open file: " << file_path);
-    file << m;
     file << m.rows() << " " << m.cols() << endl;
     for (size_t i = 0; i < m.rows(); ++i) {
 	for (size_t j = 0; j < m.cols(); ++j) {
@@ -66,8 +65,6 @@ void FileManipulator::Write(const Eigen::MatrixXd &m, const string &file_path) {
 void FileManipulator::Write(const Eigen::VectorXd &v, const string &file_path) {
     ofstream file(file_path, ios::out);
     ASSERT(file.is_open(), "Cannot open file: " << file_path);
-    file << v;
-    file << v.size() << endl;
     for (size_t i = 0; i < v.size(); ++i) {
 	file << v(i) << endl;
     }
@@ -102,25 +99,15 @@ void FileManipulator::Read(const string &file_path, Eigen::MatrixXd *m) {
 
 void FileManipulator::Read(const string &file_path, Eigen::VectorXd *v) {
     v->resize(0);  // Clear the vector.
-    ifstream file(file_path, ios::in);
-    ASSERT(file.is_open(), "Cannot open file: " << file_path);
-    StringManipulator string_manipulator;
-    string line;
-    vector<string> tokens;
 
-    // Get the length.
-    getline(file, line);
-    string_manipulator.Split(line, " ", &tokens);
-    ASSERT(tokens.size() == 1, "Bad matrix format: " << line);
-    size_t length = stol(tokens[0]);
+    // Get values as a map.
+    unordered_map<size_t, double> values;
+    Read(file_path, &values);
 
-    // Get entries.
-    v->resize(length);
-    for (size_t i = 0; i < length; ++i) {
-	getline(file, line);
-	string_manipulator.Split(line, " ", &tokens);
-	ASSERT(tokens.size() == 1, "Bad format: " << line);
-	(*v)(i) = stod(tokens[0]);
+    // Fill the vector.
+    v->resize(values.size());
+    for (size_t i = 0; i < values.size(); ++i) {
+	(*v)(i) = values[i];
     }
 }
 
