@@ -34,7 +34,7 @@ protected:
 };
 
 // Tests a full SVD a random (full-rank) matrix.
-TEST_F(DenseRandomMatrix, DecomposeFully) {
+TEST_F(DenseRandomMatrix, CheckFullRank) {
     sparsesvd_solver_.LoadSparseMatrix(column_map_);
     sparsesvd_solver_.SolveSparseSVD(full_rank_);  // Full SVD.
     EXPECT_EQ(full_rank_, sparsesvd_solver_.rank());
@@ -64,15 +64,15 @@ protected:
     SparseSVDSolver sparsesvd_solver_;
 };
 
-// Confirms that SVDLIBC breaks without eigengaps (e.g., an identity matrix).
-TEST_F(IdentityMatrix, BreaksWithoutEigengaps) {
+// Demonstrates that SVDLIBC breaks without eigengaps.
+TEST_F(IdentityMatrix, CheckSVDLIBCBreaksWithoutEigengap) {
     sparsesvd_solver_.LoadSparseMatrix(column_map_);
     sparsesvd_solver_.SolveSparseSVD(full_rank_);
     EXPECT_NE(full_rank_, sparsesvd_solver_.rank());
 }
 
-// Confirms that SVDLIBC breaks even with a nonzero eigengap if small.
-TEST_F(IdentityMatrix, BreaksEvenWithANonzeroEigengap) {
+// Demonstrates that SVDLIBC breaks even with a nonzero eigengap if small.
+TEST_F(IdentityMatrix, CheckSVDLIBCBreaksWithTrivialEigengap) {
     // Introduce a nonzero eigengap in an identity matrix.
     column_map_[0][0] = 1.0000001;
 
@@ -81,8 +81,8 @@ TEST_F(IdentityMatrix, BreaksEvenWithANonzeroEigengap) {
     EXPECT_NE(full_rank_, sparsesvd_solver_.rank());
 }
 
-// Confirms that SVDLIBC works correctly with some eigengaps.
-TEST_F(IdentityMatrix, DoesNotBreakWithEigengaps) {
+// Demonstrates that SVDLIBC works correctly with a not-so-small eigengap.
+TEST_F(IdentityMatrix, ChecksSVDLIBCWorksWithNontrivialEigengap) {
     // Introduce eigengaps in an identity matrix.
     size_t value = num_rows_;
     for (size_t i = 0; i < num_rows_; ++i) {
@@ -122,8 +122,8 @@ protected:
     double tol_ = 1e-4;
 };
 
-// Confirms that SVDLIBC works correctly on the matrix.
-TEST_F(SparseMatrixWithEmptyColumns, CorrectnessOfSVDLIBC) {
+// Confirms that SVDLIBC works correctly on this matrix.
+TEST_F(SparseMatrixWithEmptyColumns, CheckCorrect) {
     sparsesvd_solver_.LoadSparseMatrix(column_map_);
     sparsesvd_solver_.SolveSparseSVD(2);
     EXPECT_EQ(2, sparsesvd_solver_.rank());
@@ -132,7 +132,7 @@ TEST_F(SparseMatrixWithEmptyColumns, CorrectnessOfSVDLIBC) {
 }
 
 // Confirms that writing and loading this sparse matrix is correct.
-TEST_F(SparseMatrixWithEmptyColumns, WriteAndLoad) {
+TEST_F(SparseMatrixWithEmptyColumns, CheckWritingAndLoading) {
     // Write the matrix to a temporary file.
     string temp_file_path = tmpnam(nullptr);
     sparsesvd_solver_.WriteSparseMatrix(column_map_, temp_file_path);
@@ -169,12 +169,12 @@ protected:
     double tol_ = 1e-4;
 };
 
-// Only checks counts with cutoff 0 and window size 2.
-TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
+// Checks counts with cutoff 0, bag size 2.
+TEST_F(WordRepSimpleExample, CheckCountsCutoff0BagSize2) {
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(0);
     wordrep.set_window_size(2);
-    wordrep.set_context_definition("list");
+    wordrep.set_context_definition("bag");
     wordrep.ExtractStatistics(temp_file_path_);
 
     // Check against the true counts.
@@ -183,25 +183,25 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
     unordered_map<string, size_t> true_count_word;
     unordered_map<string, size_t> true_count_context;
 
-    // a b c a b d a b e
-    true_count_word_context["w(1)=b"]["a"] = 3;
-    true_count_word_context["w(1)=c"]["b"] = 1;
-    true_count_word_context["w(1)=a"]["c"] = 1;
-    true_count_word_context["w(1)=d"]["b"] = 1;
-    true_count_word_context["w(1)=a"]["d"] = 1;
-    true_count_word_context["w(1)=e"]["b"] = 1;
-    true_count_word_context["w(1)=" + wordrep.kBufferString()]["e"] = 1;
+    // a b c a b d a b e <!>
+    true_count_word_context["b"]["a"] = 3;
+    true_count_word_context["c"]["b"] = 1;
+    true_count_word_context["a"]["c"] = 1;
+    true_count_word_context["d"]["b"] = 1;
+    true_count_word_context["a"]["d"] = 1;
+    true_count_word_context["e"]["b"] = 1;
+    true_count_word_context[wordrep.kBufferString()]["e"] = 1;
     true_count_word["a"] = 3;
     true_count_word["b"] = 3;
     true_count_word["c"] = 1;
     true_count_word["d"] = 1;
     true_count_word["e"] = 1;
-    true_count_context["w(1)=b"] = 3;
-    true_count_context["w(1)=c"] = 1;
-    true_count_context["w(1)=a"] = 2;
-    true_count_context["w(1)=d"] = 1;
-    true_count_context["w(1)=e"] = 1;
-    true_count_context["w(1)=" + wordrep.kBufferString()] = 1;
+    true_count_context["b"] = 3;
+    true_count_context["c"] = 1;
+    true_count_context["a"] = 2;
+    true_count_context["d"] = 1;
+    true_count_context["e"] = 1;
+    true_count_context[wordrep.kBufferString()] = 1;
 
     ifstream word_context_file(wordrep.CountWordContextPath(), ios::in);
     int col = -1;
@@ -241,37 +241,8 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff0WindowSize2) {
     }
 }
 
-// Checks that SVDLIBC completely fails when the gap between the largest
-// singular values is small.
-TEST_F(WordRepSimpleExample, SVDLIBCFailsWithSmallSingularGap) {
-    WordRep wordrep(temp_output_directory_);
-    wordrep.set_rare_cutoff(0);
-    wordrep.set_window_size(2);
-    wordrep.set_context_definition("list");
-    wordrep.set_dim(2);
-    wordrep.set_scaling_method("cca");
-    wordrep.ExtractStatistics(temp_file_path_);
-    wordrep.InduceLexicalRepresentations();
-
-    // The correlation matrix is (up to some row-permutation):
-    //    1.0000 0.0000 0.0000 0.0000 0.0000 0.0000
-    //    0.0000 0.5774 0.0000 0.5774 0.5774 0.0000
-    //    0.0000 0.0000 0.7071 0.0000 0.0000 0.0000
-    //    0.0000 0.0000 0.7071 0.0000 0.0000 0.0000
-    //    0.0000 0.0000 0.0000 0.0000 0.0000 1.0000
-    // Its two largest singular values are close (1.0001 and 1.0000).
-    Eigen::VectorXd singular_values = *wordrep.singular_values();
-    EXPECT_FALSE(fabs(1.0001 - singular_values(0)) < tol_ - 1e10 &&
-		 fabs(1.0000 - singular_values(1)) < tol_ - 1e10);
-
-    // Note: I'm not checking them explicitly, but SVDLIBC gives rubbish
-    // singular vectors.
-}
-
-// TODO: Check correctness with transform.
-
-// Only checks counts with cutoff 1 and window size 3.
-TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
+// Only checks counts with cutoff 1 and list size 3.
+TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1ListSize3) {
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(1);
     wordrep.set_window_size(3);
@@ -346,10 +317,8 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1WindowSize3) {
     }
 }
 
-// Only checks counts with cutoff 1 and window size 3: use the sentence-per-line
-// mode.
-TEST_F(WordRepSimpleExample,
-       OnlyCheckCountsCutoff1WindowSize3SentencePerLine) {
+// Only checks counts with cutoff 1 and list size 3: use sentence-per-line.
+TEST_F(WordRepSimpleExample, CheckCountsCutoff1ListSize3SentencePerLine) {
     WordRep wordrep(temp_output_directory_);
     wordrep.set_rare_cutoff(1);
     wordrep.set_window_size(3);
