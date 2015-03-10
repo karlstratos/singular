@@ -78,7 +78,7 @@ public:
 #endif
 
 // Template for a struct used to sort a vector of pairs by value. Use it like:
-//    sort(v.begin(), v.end(), sort_pairs_second<int, int>());
+//    sort(v.begin(), v.end(), sort_pairs_second<int, int>());<
 //    sort(v.begin(), v.end(), sort_pairs_second<int, int, greater<int> >());
 template <class T1, class T2, class Predicate = less<T2> >
 struct sort_pairs_second {

@@ -4,10 +4,12 @@
 
 #include <dirent.h>
 #include <iomanip>
+#include <limits>
 #include <map>
 
 #include "cluster.h"
 #include "sparsesvd.h"
+#include "wsqloss.h"
 
 void WordRep::SetOutputDirectory(const string &output_directory) {
     ASSERT(!output_directory.empty(), "Empty output directory.");
@@ -541,6 +543,12 @@ void WordRep::CalculateSVD() {
     svd_solver.SolveSparseSVD(dim_);
     size_t actual_rank = svd_solver.rank();
 
+    // Save singular values.
+    singular_values_.resize(dim_);
+    for (size_t i = 0; i < dim_; ++i) {
+	singular_values_(i) = *(svd_solver.singular_values() + i);
+    }
+
     // Save a matrix of left singular vectors as columns.
     word_matrix_.resize(dim1, dim_);
     for (size_t row = 0; row < dim1; ++row) {
@@ -550,19 +558,15 @@ void WordRep::CalculateSVD() {
 	}
     }
 
-    // Save a matrix of right singular vectors as columns.
+    // Save a matrix of right singular vectors, scaled by singular values, as
+    // columns.
     context_matrix_.resize(dim2, dim_);
     for (size_t row = 0; row < dim2; ++row) {
 	for (size_t col = 0; col < dim_; ++col) {
 	    context_matrix_(row, col) =
-		svd_solver.right_singular_vectors()->value[col][row];
+		svd_solver.right_singular_vectors()->value[col][row] *
+		singular_values_(col);
 	}
-    }
-
-    // Save singular values.
-    singular_values_.resize(dim_);
-    for (size_t i = 0; i < dim_; ++i) {
-	singular_values_(i) = *(svd_solver.singular_values() + i);
     }
 
     // Free memory.
@@ -632,14 +636,72 @@ double WordRep::ScaleJointValue(double joint_value, double value1,
 }
 
 void WordRep::CalculateWeightedLeastSquares() {
-    // Prepare the column-major format.
-    unordered_map<size_t, vector<tuple<size_t, double, double> > > col2row;
-
+    // Load scaling values.
+    FileManipulator file_manipulator;
     unordered_map<size_t, double> values1;
     unordered_map<size_t, double> values2;
-    FileManipulator file_manipulator;
     file_manipulator.Read(CountWordPath(), &values1);
     file_manipulator.Read(CountContextPath(), &values2);
+
+    // Get the number of samples (= number of words).
+    StringManipulator string_manipulator;
+    string line;
+    vector<string> tokens;
+
+    size_t num_samples = 0;
+    ifstream count_word_file(CountWordPath(), ios::in);
+    while (count_word_file.good()) {
+	getline(count_word_file, line);
+	if (line == "") { continue; }
+	string_manipulator.Split(line, " ", &tokens);
+	num_samples += stol(tokens[0]);
+    }
+
+    // Prepare the column-major format.
+    unordered_map<size_t, vector<tuple<size_t, double, double> > > col2row;
+    ifstream count_word_context_file(CountWordContextPath(), ios::in);
+    getline(count_word_context_file, line);
+    string_manipulator.Split(line, " ", &tokens);
+    size_t num_columns = stol(tokens[1]);
+
+    double max_weight_value = -numeric_limits<double>::infinity();
+    double min_weight_value = numeric_limits<double>::infinity();
+    for (size_t col = 0; col < num_columns; ++col) {
+	getline(count_word_context_file, line);  // Number of nonzero rows.
+	string_manipulator.Split(line, " ", &tokens);
+	size_t num_nonzero_rows = stol(tokens[0]);
+	for (size_t nonzero_row = 0; nonzero_row < num_nonzero_rows;
+	     ++nonzero_row) {
+	    getline(count_word_context_file, line);  // <row> <value>
+	    string_manipulator.Split(line, " ", &tokens);
+	    size_t row = stol(tokens[0]);
+	    double joint_value = stod(tokens[1]);
+	    double matrix_value = ScaleJointValue(joint_value, values1[row],
+						  values2[col], num_samples);
+	    double weight_value = double(values1[row]) * double(values2[col]) /
+		double(joint_value);
+	    if (weight_value > max_weight_value) {
+		max_weight_value = weight_value;
+	    }
+	    if (weight_value < min_weight_value) {
+		min_weight_value = weight_value;
+	    }
+	    col2row[col].emplace_back(row, matrix_value, weight_value);
+	}
+    }
+
+    // Normalize weights.
+    double new_min_weight_value = 0.001 * max_weight_value;
+    for (const auto &col_pair: col2row) {
+	size_t col = col_pair.first;
+	for (size_t i = 0; i < col_pair.second.size(); ++i) {
+	    double weight = get<2>(col2row[col][i]);
+	    if (weight < new_min_weight_value) {
+		get<2>(col2row[col][i]) = new_min_weight_value;
+	    }
+	    get<2>(col2row[col][i]) /= max_weight_value;
+	}
+    }
 
     // Prepare the row-major format (flip the column-major format).
     unordered_map<size_t, vector<tuple<size_t, double, double> > > row2col;
@@ -652,6 +714,10 @@ void WordRep::CalculateWeightedLeastSquares() {
 	    row2col[row].emplace_back(col, value, weight);
 	}
     }
+
+    WSQLossOptimizer wsqloss_optimizer;
+    wsqloss_optimizer.Optimize(col2row, row2col, &word_matrix_,
+			       &context_matrix_);
 }
 
 void WordRep::TestQualityOfWordVectors() {
