@@ -10,50 +10,6 @@
 
 using namespace std;
 
-class CountArgumentProcessor {
-public:
-    // Parse the command line strings into arguments.
-    void ParseArguments(int argc, char* argv[]);
-
-    // Returns the path to a text corpus.
-    string corpus_path() { return corpus_path_; }
-
-    // Returns the output directory.
-    string output_directory() { return output_directory_; }
-
-    // Returns the rare word cutoff value.
-    size_t rare_cutoff() { return rare_cutoff_; }
-
-    // Returns the flag for indicating that there is a sentence per line in the
-    // text corpus.
-    bool sentence_per_line() { return sentence_per_line_; }
-
-    // Returns the size of the context window.
-    size_t window_size() { return window_size_; }
-
-    // Returns the context definition.
-    string context_definition() { return context_definition_; }
-
-private:
-    // Path to a text corpus.
-    string corpus_path_;
-
-    // Output directory.
-    string output_directory_;
-
-    // Rare word cutoff.
-    size_t rare_cutoff_ = 10;
-
-    // Have a sentence per line in the text corpus?
-    bool sentence_per_line_ = false;
-
-    // Size of the context window.
-    size_t window_size_ = 11;
-
-    // Context definition.
-    string context_definition_ = "bag";
-};
-
 class ArgumentProcessor {
 public:
     // Parse the command line strings into arguments.
