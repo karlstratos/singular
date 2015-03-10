@@ -9,6 +9,9 @@ WARN = -Wall
 # Optimization level.
 OPT = -O3
 
+# Where to find the source files.
+SRC = src
+
 # Where to find the SVDLIBC package.
 SVDLIBC = third_party/SVDLIBC
 
@@ -24,9 +27,12 @@ ifeq ($(UNAME), Darwin)
 endif
 
 # Extract object filenames by substituting ".cc" to ".o" in source filenames.
-files = $(subst .cc,.o,$(shell ls *.cc) $(shell ls src/*.cc))
+srcfiles = $(subst .cc,.o,$(shell ls src/*.cc))
 
-all: singular
+all: count #svd als cluster
+
+count: count.o $(srcfiles) $(SVDLIBC)/libsvd.a
+	$(CC) $(CFLAGS) $^ -o $@
 
 singular: $(files) $(SVDLIBC)/libsvd.a
 	$(CC) $(CFLAGS) $^ -o $@
