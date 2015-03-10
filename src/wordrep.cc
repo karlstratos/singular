@@ -381,9 +381,10 @@ Context WordRep::AddContextIfUnknown(const string &context_string) {
 void WordRep::InduceWordVectors() {
     FileManipulator file_manipulator;  // Do not repeat the work.
     if (!file_manipulator.Exists(WordVectorsPath())) {
-	Eigen::MatrixXd word_matrix = CalculateWordMatrix();
-	ASSERT(word_matrix.cols() == sorted_wordcount_.size(), "Word matrix "
-	       "dimension and vocabulary size mismatch: " << word_matrix.cols()
+	CalculateSVD();
+	if (weighting_method_ != "") { CalculateWeightedLeastSquares(); }
+	ASSERT(word_matrix_.rows() == sorted_wordcount_.size(), "Word matrix "
+	       "dimension and vocabulary size mismatch: " << word_matrix_.rows()
 	       << " vs " << sorted_wordcount_.size());
 
 	ofstream wordvectors_file(WordVectorsPath(), ios::out);
@@ -391,8 +392,8 @@ void WordRep::InduceWordVectors() {
 	    string word_string = sorted_wordcount_[i].first;
 	    size_t word_count = sorted_wordcount_[i].second;
 	    Word word = word_str2num_[word_string];
-	    word_matrix.col(word).normalize();  // Normalize columns (words).
-	    wordvectors_[word_string] = word_matrix.col(word);
+	    word_matrix_.row(word).normalize();  // Normalize word vectors.
+	    wordvectors_[word_string] = word_matrix_.row(word);
 	    wordvectors_file << word_count << " " << word_string;
 	    for (size_t j = 0; j < wordvectors_[word_string].size(); ++ j) {
 		wordvectors_file << " " << wordvectors_[word_string](j);
@@ -471,7 +472,7 @@ void WordRep::LoadSortedWordCounts() {
 	 sort_pairs_second<string, size_t, greater<size_t> >());
 }
 
-Eigen::MatrixXd WordRep::CalculateWordMatrix() {
+void WordRep::CalculateSVD() {
     FileManipulator file_manipulator;
     ASSERT(file_manipulator.Exists(CountWordContextPath()), "File not found, "
 	   "read from the corpus: " << CountWordContextPath());
@@ -540,12 +541,21 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     svd_solver.SolveSparseSVD(dim_);
     size_t actual_rank = svd_solver.rank();
 
-    // Save a matrix of left singular vectors as rows.
-    Eigen::MatrixXd word_matrix(dim_, dim1);
-    for (size_t row = 0; row < dim_; ++row) {
-	for (size_t col = 0; col < dim1; ++col) {
-	    word_matrix(row, col) =
-		svd_solver.left_singular_vectors()->value[row][col];
+    // Save a matrix of left singular vectors as columns.
+    word_matrix_.resize(dim1, dim_);
+    for (size_t row = 0; row < dim1; ++row) {
+	for (size_t col = 0; col < dim_; ++col) {
+	    word_matrix_(row, col) =
+		svd_solver.left_singular_vectors()->value[col][row];
+	}
+    }
+
+    // Save a matrix of right singular vectors as columns.
+    context_matrix_.resize(dim2, dim_);
+    for (size_t row = 0; row < dim2; ++row) {
+	for (size_t col = 0; col < dim_; ++col) {
+	    context_matrix_(row, col) =
+		svd_solver.right_singular_vectors()->value[col][row];
 	}
     }
 
@@ -554,7 +564,6 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     for (size_t i = 0; i < dim_; ++i) {
 	singular_values_(i) = *(svd_solver.singular_values() + i);
     }
-    file_manipulator.Write(singular_values_, SingularValuesPath());
 
     // Free memory.
     svd_solver.FreeSparseMatrix();
@@ -571,7 +580,8 @@ Eigen::MatrixXd WordRep::CalculateWordMatrix() {
     log_ << "   Time taken: "
 	 << string_manipulator.TimeString(time_decomposition) << endl;
 
-    return word_matrix;
+    // Write singular values.
+    file_manipulator.Write(singular_values_, SingularValuesPath());
 }
 
 double WordRep::ScaleJointValue(double joint_value, double value1,
@@ -619,6 +629,29 @@ double WordRep::ScaleJointValue(double joint_value, double value1,
 	ASSERT(false, "Unknown scaling method: " << scaling_method_);
     }
     return scaled_joint_value;
+}
+
+void WordRep::CalculateWeightedLeastSquares() {
+    // Prepare the column-major format.
+    unordered_map<size_t, vector<tuple<size_t, double, double> > > col2row;
+
+    unordered_map<size_t, double> values1;
+    unordered_map<size_t, double> values2;
+    FileManipulator file_manipulator;
+    file_manipulator.Read(CountWordPath(), &values1);
+    file_manipulator.Read(CountContextPath(), &values2);
+
+    // Prepare the row-major format (flip the column-major format).
+    unordered_map<size_t, vector<tuple<size_t, double, double> > > row2col;
+    for (const auto &col_pair: col2row) {
+	size_t col = col_pair.first;
+	for (const auto &row_tuple: col_pair.second) {
+	    size_t row = get<0>(row_tuple);
+	    double value = get<1>(row_tuple);
+	    double weight = get<2>(row_tuple);
+	    row2col[row].emplace_back(col, value, weight);
+	}
+    }
 }
 
 void WordRep::TestQualityOfWordVectors() {

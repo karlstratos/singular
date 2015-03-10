@@ -159,12 +159,15 @@ private:
     // Load a sorted list of word-count pairs from a cached file.
     void LoadSortedWordCounts();
 
-    // Calculate a word matrix (column = word) from cached count files.
-    Eigen::MatrixXd CalculateWordMatrix();
+    // Calculate SVD of cached count files.
+    void CalculateSVD();
 
     // Scales a joint value by individual values.
     double ScaleJointValue(double joint_value, double value1, double value2,
 			   size_t num_samples);
+
+    // Calculate weighted least squares of cached count files.
+    void CalculateWeightedLeastSquares();
 
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
@@ -264,6 +267,12 @@ private:
     // Computed word vectors.
     unordered_map<string, Eigen::VectorXd> wordvectors_;
 
+    // Matrix of word vectors (as rows).
+    Eigen::MatrixXd word_matrix_;
+
+    // Matrix of context vectors (as rows).
+    Eigen::MatrixXd context_matrix_;
+
     // Singular values of the correlation matrix.
     Eigen::VectorXd singular_values_;
 
@@ -294,6 +303,9 @@ private:
 
     // Scaling method.
     string scaling_method_ = "cca";
+
+    // Weighting method.
+    string weighting_method_ = "var";
 };
 
 #endif  // WORDREP_H
