@@ -647,7 +647,6 @@ void WordRep::CalculateWeightedLeastSquares() {
     StringManipulator string_manipulator;
     string line;
     vector<string> tokens;
-
     size_t num_samples = 0;
     ifstream count_word_file(CountWordPath(), ios::in);
     while (count_word_file.good()) {
@@ -664,8 +663,8 @@ void WordRep::CalculateWeightedLeastSquares() {
     string_manipulator.Split(line, " ", &tokens);
     size_t num_columns = stol(tokens[1]);
 
-    double max_weight_value = -numeric_limits<double>::infinity();
-    double min_weight_value = numeric_limits<double>::infinity();
+    double max_weight = -numeric_limits<double>::infinity();
+    double min_weight = numeric_limits<double>::infinity();
     for (size_t col = 0; col < num_columns; ++col) {
 	getline(count_word_context_file, line);  // Number of nonzero rows.
 	string_manipulator.Split(line, " ", &tokens);
@@ -675,37 +674,33 @@ void WordRep::CalculateWeightedLeastSquares() {
 	    getline(count_word_context_file, line);  // <row> <value>
 	    string_manipulator.Split(line, " ", &tokens);
 	    size_t row = stol(tokens[0]);
-	    double joint_value = stod(tokens[1]);
-	    double matrix_value = ScaleJointValue(joint_value, values1[row],
-						  values2[col], num_samples);
-	    double weight_value = double(sqrt(values1[row])) *
-		double(sqrt(values2[col])) / double(sqrt(joint_value));
-	    if (weight_value > max_weight_value) {
-		max_weight_value = weight_value;
-	    }
-	    if (weight_value < min_weight_value) {
-		min_weight_value = weight_value;
-	    }
-	    col2row[col].emplace_back(row, matrix_value, weight_value);
+	    size_t cocount = stod(tokens[1]);
+	    double value = ScaleJointValue(cocount, values1[row],
+					   values2[col], num_samples);
+	    double weight = sqrt(values1[row]) * sqrt(values2[col]) /
+		sqrt(cocount);
+	    if (weight > max_weight) { max_weight = weight; }
+	    if (weight < min_weight) { min_weight = weight; }
+	    col2row[col].emplace_back(row, value, weight);
 	}
     }
 
-    //cout << max_weight_value << endl;
-    //cout << min_weight_value << endl;
+    //cout << max_weight << endl;
+    //cout << min_weight << endl;
     // Normalize weights.
-    double new_min_weight_value = 0.1 * max_weight_value;
-    double new_max_weight_value = 0.8 * max_weight_value;
+    double new_min_weight = 0.01 * max_weight;
+    double new_max_weight = 0.8 * max_weight;
     vector<pair<pair<string, string>, double> > temp;
     for (const auto &col_pair: col2row) {
 	size_t col = col_pair.first;
 	for (size_t i = 0; i < col_pair.second.size(); ++i) {
 	    double weight = get<2>(col2row[col][i]);
-	    if (weight < new_min_weight_value) {
-		get<2>(col2row[col][i]) = new_min_weight_value;
-	    } else if (weight > new_max_weight_value) {
-		get<2>(col2row[col][i]) = new_max_weight_value;
+	    if (weight < new_min_weight) {
+		get<2>(col2row[col][i]) = new_min_weight;
+	    } else if (weight > new_max_weight) {
+		get<2>(col2row[col][i]) = new_max_weight;
 	    }
-	    get<2>(col2row[col][i]) /= new_max_weight_value;
+	    get<2>(col2row[col][i]) /= new_max_weight;
 	    string wordstr = word_num2str_[get<0>(col2row[col][i])];
 	    string contextstr = context_num2str_[col];
 	    temp.push_back(make_pair(make_pair(wordstr, contextstr),
@@ -732,41 +727,6 @@ void WordRep::CalculateWeightedLeastSquares() {
 	    row2col[row].emplace_back(col, value, weight);
 	}
     }
-
-
-    /*
-    col2row.clear();
-    col2row[0].emplace_back(0, 0.4509, 0.7802);
-    col2row[0].emplace_back(1, 0.5470, 0.0811);
-    col2row[0].emplace_back(2, 0.2963, 0.9294);
-    col2row[1].emplace_back(0, 0.7447, 0.7757);
-    col2row[1].emplace_back(1, 0.1890, 0.4868);
-    col2row[1].emplace_back(2, 0.6868, 0.4359);
-    col2row[2].emplace_back(0, 0.1835, 0.4468);
-    col2row[2].emplace_back(1, 0.3685, 0.3063);
-    col2row[2].emplace_back(2, 0.6256, 0.5085);
-
-    row2col.clear();
-    row2col[0].emplace_back(0, 0.4509, 0.7802);
-    row2col[0].emplace_back(1, 0.7447, 0.7757);
-    row2col[0].emplace_back(2, 0.1835, 0.4468);
-    row2col[1].emplace_back(0, 0.5470, 0.0811);
-    row2col[1].emplace_back(1, 0.1890, 0.4868);
-    row2col[1].emplace_back(2, 0.3685, 0.3063);
-    row2col[2].emplace_back(0, 0.2963, 0.9294);
-    row2col[2].emplace_back(1, 0.6868, 0.4359);
-    row2col[2].emplace_back(2, 0.6256, 0.5085);
-
-    word_matrix_.resize(3,2);
-    word_matrix_ << -0.6047, 0.4489,
-	-0.4222, -0.8811,
-	-0.6753, 0.1489;
-
-    context_matrix_.resize(3,2);
-    context_matrix_ << -0.7037, -0.2354,
-	-0.9939, 0.2701,
-	-0.6890, -0.1491;
-    */
 
     WSQLossOptimizer wsqloss_optimizer;
     wsqloss_optimizer.Optimize(col2row, row2col, &word_matrix_,
