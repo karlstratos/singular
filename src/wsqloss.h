@@ -27,7 +27,8 @@ public:
 		  Eigen::MatrixXd *U, Eigen::MatrixXd *V);
 
 
-    double ComputeLoss(const WSQMap &col2row, const Eigen::MatrixXd &U,
+    double ComputeLoss(const WSQMap &col2row, const WSQMap &row2col,
+		       const Eigen::MatrixXd &U,
 		       const Eigen::MatrixXd &V);
 
 private:
