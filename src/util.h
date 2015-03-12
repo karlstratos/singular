@@ -50,6 +50,13 @@ public:
     void Read(const string &values_path, unordered_map<size_t, double> *values);
 };
 
+// Class for linear algebraic operations not already supported.
+class LinearAlgebra {
+public:
+    // Computes the Moore–Penrose pseudo-inverse of a given matrix.
+    Eigen::MatrixXd ComputePinv(const Eigen::MatrixXd &M);
+};
+
 class Stat {
 public:
     // Computes Spearman's rank correlation coefficient between two sequences

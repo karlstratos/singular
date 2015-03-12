@@ -15,9 +15,6 @@ using namespace std;
 
 typedef unordered_map<size_t, vector<tuple<size_t, double, double> > > WSQMap;
 
-// Computes the Moore–Penrose pseudo-inverse of a given matrix.
-Eigen::MatrixXd compute_pinv(const Eigen::MatrixXd &M);
-
 // Solves a particular block of rows in V using fixed U.
 void solve_rows(const Eigen::MatrixXd &U, size_t num_threads, size_t thread_num,
 		const WSQMap &mapping, Eigen::MatrixXd *V);

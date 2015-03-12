@@ -129,6 +129,22 @@ void FileManipulator::Read(const string &values_path,
     }
 }
 
+Eigen::MatrixXd LinearAlgebra::ComputePinv(const Eigen::MatrixXd &M) {
+    double tol = 1e-6;
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(M, Eigen::ComputeThinU |
+					  Eigen::ComputeThinV);
+    Eigen::VectorXd inverse_singular_values(svd.singularValues().size());
+    for (size_t i = 0; i < svd.singularValues().size(); ++i) {
+	if (svd.singularValues()(i) > tol) {
+	    inverse_singular_values(i) = 1.0 / svd.singularValues()(i);
+	} else {
+	    inverse_singular_values(i) = 0.0;
+	}
+    }
+    return svd.matrixV() * inverse_singular_values.asDiagonal() *
+	svd.matrixU().transpose();
+}
+
 double Stat::ComputeSpearman(const vector<double> &values1,
 			     const vector<double> &values2) {
     ASSERT(values1.size() == values2.size(), "Different lengths: "
