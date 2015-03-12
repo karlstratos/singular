@@ -16,7 +16,7 @@ SVDLIBC = third_party/SVDLIBC
 EIGEN = third_party/eigen-eigen-36fd1ba04c12
 
 # Compiler flags
-CFLAGS = $(WARN) $(OPT) -std=c++11
+CFLAGS = $(WARN) $(OPT) -pthread -std=c++11
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Tested on Apple (Darwin) clang version 4.0 (based on LLVM 3.1svn)
@@ -32,7 +32,7 @@ singular: $(files) $(SVDLIBC)/libsvd.a
 	$(CC) $(CFLAGS) $^ -o $@
 
 %.o: %.cc
-	$(CC) -I $(EIGEN) $(CFLAGS) -c $< -o $@
+	$(CC) -c $< -o $@ -I $(EIGEN) $(CFLAGS)
 
 $(SVDLIBC)/libsvd.a:
 	make -C $(SVDLIBC)

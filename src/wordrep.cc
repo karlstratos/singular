@@ -636,6 +636,9 @@ double WordRep::ScaleJointValue(double joint_value, double value1,
 }
 
 void WordRep::CalculateWeightedLeastSquares() {
+    log_ << endl << "[Following SVD with weighted least squares]" << endl;
+    log_ << "   Weight: " << weighting_method_ << endl;
+
     // Load scaling values.
     FileManipulator file_manipulator;
     unordered_map<size_t, double> values1;
@@ -701,6 +704,7 @@ void WordRep::CalculateWeightedLeastSquares() {
 		get<2>(col2row[col][i]) = new_max_weight;
 	    }
 	    get<2>(col2row[col][i]) /= new_max_weight;
+
 	    string wordstr = word_num2str_[get<0>(col2row[col][i])];
 	    string contextstr = context_num2str_[col];
 	    temp.push_back(make_pair(make_pair(wordstr, contextstr),
@@ -728,9 +732,15 @@ void WordRep::CalculateWeightedLeastSquares() {
 	}
     }
 
+    // Refine the SVD solution to minimize weighted squared loss.
     WSQLossOptimizer wsqloss_optimizer;
-    wsqloss_optimizer.Optimize(col2row, row2col, &word_matrix_,
-			       &context_matrix_);
+    time_t begin_time_wsqloss = time(NULL);
+    wsqloss_optimizer.Optimize(col2row, row2col, max_num_epochs_, num_threads_,
+			       &word_matrix_, &context_matrix_);
+
+    double time_wsqloss = difftime(time(NULL), begin_time_wsqloss);
+    log_ << "   Time taken: "
+	 << string_manipulator.TimeString(time_wsqloss) << endl;
 }
 
 void WordRep::TestQualityOfWordVectors() {
@@ -1007,7 +1017,7 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
 }
 
 string WordRep::Signature(size_t version) {
-    ASSERT(version <= 2, "Unrecognized signature version: " << version);
+    ASSERT(version <= 3, "Unrecognized signature version: " << version);
 
     string signature = "rare" + to_string(rare_cutoff_);
     if (version >= 1) {
@@ -1021,6 +1031,10 @@ string WordRep::Signature(size_t version) {
 	signature += "_dim" + to_string(dim_);
 	signature += "_" + transformation_method_;
 	signature += "_" + scaling_method_;
+
+    }
+    if (version >= 3) {
+	signature += "_" + weighting_method_;
     }
     return signature;
 }

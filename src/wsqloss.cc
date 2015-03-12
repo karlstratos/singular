@@ -45,19 +45,21 @@ void solve_rows(const Eigen::MatrixXd &U, size_t num_threads, size_t thread_num,
 }
 
 void WSQLossOptimizer::Optimize(const WSQMap &col2row, const WSQMap &row2col,
+				size_t max_num_epochs, size_t num_threads,
 				Eigen::MatrixXd *U, Eigen::MatrixXd *V) {
     ASSERT(U->cols() == V->cols(), "U and V have different widths.");
     ASSERT(U->rows() == row2col.size(), "Row dimension mismatches.");
     ASSERT(V->rows() == col2row.size(), "Column dimension mismatches.");
+    ASSERT(num_threads > 0, "Number of threads needs to be at least 1.");
 
     vector<thread> threads;
     double old_loss = ComputeLoss(col2row, *U, *V);
     cerr << fixed << setprecision(3);
     if (verbose_) { cerr << "Initial: " << old_loss << endl; }
-    for (size_t epoch = 0; epoch < max_num_epochs_; ++epoch) {
+    for (size_t epoch = 0; epoch < max_num_epochs; ++epoch) {
 
-	for (int thread_num = 0; thread_num < num_threads_; ++thread_num) {
-	    threads.push_back(thread(solve_rows, *U, num_threads_, thread_num,
+	for (int thread_num = 0; thread_num < num_threads; ++thread_num) {
+	    threads.push_back(thread(solve_rows, *U, num_threads, thread_num,
 				     col2row, V));
 	}
 	for (auto &working_thread : threads){
@@ -75,8 +77,8 @@ void WSQLossOptimizer::Optimize(const WSQMap &col2row, const WSQMap &row2col,
 	if (reduction < kMinimumLossImprovement_) { break; }
 
 
-	for (int thread_num = 0; thread_num < num_threads_; ++thread_num) {
-	    threads.push_back(thread(solve_rows, *V, num_threads_, thread_num,
+	for (int thread_num = 0; thread_num < num_threads; ++thread_num) {
+	    threads.push_back(thread(solve_rows, *V, num_threads, thread_num,
 				     row2col, U));
 	}
 	for (auto &working_thread : threads){

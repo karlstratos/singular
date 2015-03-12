@@ -46,6 +46,15 @@ public:
     // Returns the scaling method.
     string scaling_method() { return scaling_method_; }
 
+    // Returns the weighting method.
+    string weighting_method() { return weighting_method_; }
+
+    // Returns the maximum number of training epochs.
+    size_t max_num_epochs() { return max_num_epochs_; }
+
+    // Returns the number of threads.
+    size_t num_threads() { return num_threads_; }
+
 private:
     // Path to a text corpus.
     string corpus_path_;
@@ -76,6 +85,15 @@ private:
 
     // Scaling method.
     string scaling_method_ = "cca";
+
+    // Weighting method.
+    string weighting_method_ = "";
+
+    // Maximum number of training epochs.
+    size_t max_num_epochs_ = 100;
+
+    // Number of threads.
+    size_t num_threads_ = 20;
 };
 
 #endif  // ARGUMENTS_H_

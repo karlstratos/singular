@@ -35,10 +35,8 @@ public:
     //    col2row: c -> {(r, A_{r,c}, W_{r,c}): A_{r,c}, W_{r,c} > 0}
     //    row2col: r -> {(c, A_{r,c}, W_{r,c}): A_{r,c}, W_{r,c} > 0}
     void Optimize(const WSQMap &col2row, const WSQMap &row2col,
+		  size_t max_num_epochs, size_t num_threads,
 		  Eigen::MatrixXd *U, Eigen::MatrixXd *V);
-
-    // Sets the number of threads.
-    void set_num_threads(size_t num_threads) { num_threads_ = num_threads; }
 
     // Sets the flag for printing reports to stderr.
     void set_verbose(bool verbose) { verbose_ = verbose; }
@@ -49,13 +47,7 @@ private:
 		       const Eigen::MatrixXd &V);
 
     // Minimum required loss reduction.
-    const double kMinimumLossImprovement_ = 0.01;
-
-    // Maximum number of training epochs.
-    size_t max_num_epochs_ = 100;
-
-    // Number of threads.
-    size_t num_threads_ = 20;
+    const double kMinimumLossImprovement_ = 0.1;
 
     // Print reports to stderr?
     bool verbose_ = true;

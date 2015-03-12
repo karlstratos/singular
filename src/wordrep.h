@@ -76,10 +76,23 @@ public:
 	scaling_method_ = scaling_method;
     }
 
+    // Sets the weighting method.
+    void set_weighting_method(string weighting_method) {
+	weighting_method_ = weighting_method;
+    }
+
     // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
     }
+
+    // Sets the maximum number of training epochs.
+    void set_max_num_epochs(size_t max_num_epochs) {
+	max_num_epochs_ = max_num_epochs;
+    }
+
+    // Sets the number of threads.
+    void set_num_threads(size_t num_threads) { num_threads_ = num_threads; }
 
     // Returns the singular values of the scaled count matrix.
     Eigen::VectorXd *singular_values() { return &singular_values_; }
@@ -225,19 +238,19 @@ private:
 	return output_directory_ + "/context_str2num_" + Signature(1);
     }
 
-    // Returns the path to the word vectors.
-    string WordVectorsPath() {
-	return output_directory_ + "/wordvectors_" + Signature(2);
-    }
-
     // Returns the path to the singular values.
     string SingularValuesPath() {
 	return output_directory_ + "/singular_values_" + Signature(2);
     }
 
+    // Returns the path to the word vectors.
+    string WordVectorsPath() {
+	return output_directory_ + "/wordvectors_" + Signature(3);
+    }
+
     // Returns the path to the agglomeratively clusterered word vectors.
     string AgglomerativePath() {
-	return output_directory_ + "/agglomerative_" + Signature(2);
+	return output_directory_ + "/agglomerative_" + Signature(3);
     }
 
     // Word-count pairs sorted in decreasing frequency.
@@ -306,6 +319,12 @@ private:
 
     // Weighting method.
     string weighting_method_ = "var";
+
+    // Maximum number of training epochs.
+    size_t max_num_epochs_ = 100;
+
+    // Number of threads.
+    size_t num_threads_ = 20;
 };
 
 #endif  // WORDREP_H
