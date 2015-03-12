@@ -50,6 +50,7 @@ void WordRep::ExtractStatistics(const string &corpus_file) {
 }
 
 void WordRep::InduceLexicalRepresentations() {
+    cout << "doing other stuff" << endl;
     // Load a filtered word dictionary from a cached file.
     LoadWordDictionary();
 
@@ -64,6 +65,7 @@ void WordRep::InduceLexicalRepresentations() {
 
     // Perform greedy agglomerative clustering over word vectors.
     PerformAgglomerativeClustering(dim_);
+    cout << "done" << endl;
 }
 
 Word WordRep::word_str2num(const string &word_string) {
@@ -207,6 +209,7 @@ void WordRep::DetermineRareWords() {
 }
 
 void WordRep::SlideWindow(const string &corpus_file) {
+    cout << "start reading" << endl;
     string corpus_format = (sentence_per_line_) ? "1 line = 1 sentence" :
 	"Whole Text = 1 sentence";
     log_ << endl << "[Sliding window]" << endl;
@@ -284,6 +287,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
     log_ << "   Time taken: " << string_manipulator.TimeString(time_sliding)
 	 << endl;
 
+    cout << "done reading, writing" << endl;
     // Write the filtered context dictionary.
     ofstream context_str2num_file(ContextStr2NumPath(), ios::out);
     for (const auto &context_pair: context_str2num_) {
@@ -303,6 +307,11 @@ void WordRep::SlideWindow(const string &corpus_file) {
     for (Context context = 0; context < count_context.size(); ++context) {
 	count_context_file << count_context[context] << endl;
     }
+    cout << "done writing, exiting" << endl;
+    word_str2num_.clear();
+    word_num2str_.clear();
+    context_str2num_.clear();
+    context_num2str_.clear();
 }
 
 void WordRep::FinishWindow(size_t word_index,
