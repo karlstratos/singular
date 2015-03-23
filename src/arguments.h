@@ -87,7 +87,7 @@ private:
     string scaling_method_ = "cca";
 
     // Weighting method.
-    string weighting_method_ = "";
+    string weighting_method_ = "unif";
 
     // Maximum number of training epochs.
     size_t max_num_epochs_ = 100;

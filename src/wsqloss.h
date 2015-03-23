@@ -27,13 +27,10 @@ public:
     ~WSQLossOptimizer() { }
 
     // Modifies given (U,V) to minimize weighted squared loss. Assumes the value
-    // matrix A and the weight matrix W to be given in both the column- and the
-    // row-major formats:
+    // matrix A and the weight matrix W to be given in column-major format:
     //    col2row: c -> {(r, A_{r,c}, W_{r,c}): A_{r,c}, W_{r,c} > 0}
-    //    row2col: r -> {(c, A_{r,c}, W_{r,c}): A_{r,c}, W_{r,c} > 0}
-    void Optimize(const WSQMap &col2row, const WSQMap &row2col,
-		  size_t max_num_epochs, size_t num_threads,
-		  Eigen::MatrixXd *U, Eigen::MatrixXd *V);
+    void Optimize(const WSQMap &col2row, size_t max_num_epochs,
+		  size_t num_threads, Eigen::MatrixXd *U, Eigen::MatrixXd *V);
 
     // Sets the flag for printing reports to stderr.
     void set_verbose(bool verbose) { verbose_ = verbose; }

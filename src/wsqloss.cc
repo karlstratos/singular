@@ -29,9 +29,20 @@ void solve_rows(const Eigen::MatrixXd &U, size_t num_threads, size_t thread_num,
     }
 }
 
-void WSQLossOptimizer::Optimize(const WSQMap &col2row, const WSQMap &row2col,
-				size_t max_num_epochs, size_t num_threads,
-				Eigen::MatrixXd *U, Eigen::MatrixXd *V) {
+void WSQLossOptimizer::Optimize(const WSQMap &col2row, size_t max_num_epochs,
+				size_t num_threads, Eigen::MatrixXd *U,
+				Eigen::MatrixXd *V) {
+    // Prepare the row-major format (flip the column-major format).
+    unordered_map<size_t, vector<tuple<size_t, double, double> > > row2col;
+    for (const auto &col_pair: col2row) {
+	size_t col = col_pair.first;
+	for (const auto &row_tuple: col_pair.second) {
+	    size_t row = get<0>(row_tuple);
+	    double value = get<1>(row_tuple);
+	    double weight = get<2>(row_tuple);
+	    row2col[row].emplace_back(col, value, weight);
+	}
+    }
     ASSERT(U->cols() == V->cols(), "U and V have different widths.");
     ASSERT(U->rows() == row2col.size(), "Row dimension mismatches.");
     ASSERT(V->rows() == col2row.size(), "Column dimension mismatches.");

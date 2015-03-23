@@ -74,7 +74,7 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "data scaling: raw, cca, reg, ppmi" << endl;
 
 	cout << "--weight [" << weighting_method_ << "]:    \t"
-	     << "weighting method: var" << endl;
+	     << "weighting method: unif, freq" << endl;
 
 	cout << "--epochs [" << max_num_epochs_ << "]:    \t"
 	     << "maximum number of training epochs" << endl;

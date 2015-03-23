@@ -50,7 +50,6 @@ void WordRep::ExtractStatistics(const string &corpus_file) {
 }
 
 void WordRep::InduceLexicalRepresentations() {
-    cout << "doing other stuff" << endl;
     // Load a filtered word dictionary from a cached file.
     LoadWordDictionary();
 
@@ -65,7 +64,6 @@ void WordRep::InduceLexicalRepresentations() {
 
     // Perform greedy agglomerative clustering over word vectors.
     PerformAgglomerativeClustering(dim_);
-    cout << "done" << endl;
 }
 
 Word WordRep::word_str2num(const string &word_string) {
@@ -209,7 +207,6 @@ void WordRep::DetermineRareWords() {
 }
 
 void WordRep::SlideWindow(const string &corpus_file) {
-    cout << "start reading" << endl;
     string corpus_format = (sentence_per_line_) ? "1 line = 1 sentence" :
 	"Whole Text = 1 sentence";
     log_ << endl << "[Sliding window]" << endl;
@@ -287,7 +284,6 @@ void WordRep::SlideWindow(const string &corpus_file) {
     log_ << "   Time taken: " << string_manipulator.TimeString(time_sliding)
 	 << endl;
 
-    cout << "done reading, writing" << endl;
     // Write the filtered context dictionary.
     ofstream context_str2num_file(ContextStr2NumPath(), ios::out);
     for (const auto &context_pair: context_str2num_) {
@@ -307,7 +303,6 @@ void WordRep::SlideWindow(const string &corpus_file) {
     for (Context context = 0; context < count_context.size(); ++context) {
 	count_context_file << count_context[context] << endl;
     }
-    cout << "done writing, exiting" << endl;
     word_str2num_.clear();
     word_num2str_.clear();
     context_str2num_.clear();
@@ -393,7 +388,7 @@ void WordRep::InduceWordVectors() {
     FileManipulator file_manipulator;  // Do not repeat the work.
     if (!file_manipulator.Exists(WordVectorsPath())) {
 	CalculateSVD();
-	if (weighting_method_ != "") { CalculateWeightedLeastSquares(); }
+	if (weighting_method_ != "unif") { CalculateWeightedLeastSquares(); }
 	ASSERT(word_matrix_.rows() == sorted_wordcount_.size(), "Word matrix "
 	       "dimension and vocabulary size mismatch: " << word_matrix_.rows()
 	       << " vs " << sorted_wordcount_.size());
@@ -674,9 +669,6 @@ void WordRep::CalculateWeightedLeastSquares() {
     getline(count_word_context_file, line);
     string_manipulator.Split(line, " ", &tokens);
     size_t num_columns = stol(tokens[1]);
-
-    double max_weight = -numeric_limits<double>::infinity();
-    double min_weight = numeric_limits<double>::infinity();
     for (size_t col = 0; col < num_columns; ++col) {
 	getline(count_word_context_file, line);  // Number of nonzero rows.
 	string_manipulator.Split(line, " ", &tokens);
@@ -689,62 +681,23 @@ void WordRep::CalculateWeightedLeastSquares() {
 	    size_t cocount = stod(tokens[1]);
 	    double value = ScaleJointValue(cocount, values1[row],
 					   values2[col], num_samples);
-	    double weight = sqrt(values1[row]) * sqrt(values2[col]) /
-		sqrt(cocount);
-	    if (weight > max_weight) { max_weight = weight; }
-	    if (weight < min_weight) { min_weight = weight; }
+	    double weight;
+	    if (weighting_method_ == "freq") {
+		weight = (cocount > 100) ? 1.0 :
+		    pow(double(cocount) / 100.0, 0.75);
+	    } else {
+		ASSERT(false, "Unknown weighting: " << weighting_method_);
+	    }
 	    col2row[col].emplace_back(row, value, weight);
 	}
     }
-
-    //cout << max_weight << endl;
-    //cout << min_weight << endl;
-    // Normalize weights.
-    double new_min_weight = 0.01 * max_weight;
-    double new_max_weight = 0.8 * max_weight;
-    vector<pair<pair<string, string>, double> > temp;
-    for (const auto &col_pair: col2row) {
-	size_t col = col_pair.first;
-	for (size_t i = 0; i < col_pair.second.size(); ++i) {
-	    double weight = get<2>(col2row[col][i]);
-	    if (weight < new_min_weight) {
-		get<2>(col2row[col][i]) = new_min_weight;
-	    } else if (weight > new_max_weight) {
-		get<2>(col2row[col][i]) = new_max_weight;
-	    }
-	    get<2>(col2row[col][i]) /= new_max_weight;
-
-	    string wordstr = word_num2str_[get<0>(col2row[col][i])];
-	    string contextstr = context_num2str_[col];
-	    temp.push_back(make_pair(make_pair(wordstr, contextstr),
-				     get<2>(col2row[col][i])));
-	}
-    }
-    /*
-    sort(temp.begin(), temp.end(),
-	 sort_pairs_second<pair<string, string>, double, greater<double> >());
-    for (size_t i = 0; i < temp.size(); ++i) {
-	cout << temp[i].first.first << " " << temp[i].first.second << " "
-	     << temp[i].second << endl;
-    }
-    */
-
-    // Prepare the row-major format (flip the column-major format).
-    unordered_map<size_t, vector<tuple<size_t, double, double> > > row2col;
-    for (const auto &col_pair: col2row) {
-	size_t col = col_pair.first;
-	for (const auto &row_tuple: col_pair.second) {
-	    size_t row = get<0>(row_tuple);
-	    double value = get<1>(row_tuple);
-	    double weight = get<2>(row_tuple);
-	    row2col[row].emplace_back(col, value, weight);
-	}
-    }
+    values1.clear();
+    values2.clear();
 
     // Refine the SVD solution to minimize weighted squared loss.
     WSQLossOptimizer wsqloss_optimizer;
     time_t begin_time_wsqloss = time(NULL);
-    wsqloss_optimizer.Optimize(col2row, row2col, max_num_epochs_, num_threads_,
+    wsqloss_optimizer.Optimize(col2row, max_num_epochs_, num_threads_,
 			       &word_matrix_, &context_matrix_);
 
     double time_wsqloss = difftime(time(NULL), begin_time_wsqloss);

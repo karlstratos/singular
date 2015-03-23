@@ -318,7 +318,7 @@ private:
     string scaling_method_ = "cca";
 
     // Weighting method.
-    string weighting_method_ = "var";
+    string weighting_method_ = "freq";
 
     // Maximum number of training epochs.
     size_t max_num_epochs_ = 100;
