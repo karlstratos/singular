@@ -43,7 +43,7 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
     if (display_options_and_quit || argc == 1) {
 	cout << "--corpus [-]:       \t"
-	     << "path to a text file" << endl;
+	     << "path to a text file or a directory of text files" << endl;
 
 	cout << "--output [-]:       \t"
 	     << "path to an output directory" << endl;

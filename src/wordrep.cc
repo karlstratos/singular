@@ -66,6 +66,46 @@ void WordRep::InduceLexicalRepresentations() {
     PerformAgglomerativeClustering(dim_);
 }
 
+void WordRep::LoadWordDictionary() {
+    FileManipulator file_manipulator;
+    ASSERT(file_manipulator.Exists(WordStr2NumPath()), "File not found, "
+	   "read from the corpus: " << WordStr2NumPath());
+
+    word_str2num_.clear();
+    word_num2str_.clear();
+    string line;
+    vector<string> tokens;
+    StringManipulator string_manipulator;
+    ifstream word_str2num_file(WordStr2NumPath(), ios::in);
+    while (word_str2num_file.good()) {
+	getline(word_str2num_file, line);
+	if (line == "") { continue; }
+	string_manipulator.Split(line, " ", &tokens);
+	word_num2str_[stol(tokens[1])] = tokens[0];
+	word_str2num_[tokens[0]] = stol(tokens[1]);
+    }
+}
+
+void WordRep::LoadContextDictionary() {
+    FileManipulator file_manipulator;
+    ASSERT(file_manipulator.Exists(ContextStr2NumPath()), "File not found, "
+	   "read from the corpus: " << ContextStr2NumPath());
+
+    context_str2num_.clear();
+    context_num2str_.clear();
+    string line;
+    vector<string> tokens;
+    StringManipulator string_manipulator;
+    ifstream context_str2num_file(ContextStr2NumPath(), ios::in);
+    while (context_str2num_file.good()) {
+	getline(context_str2num_file, line);
+	if (line == "") { continue; }
+	string_manipulator.Split(line, " ", &tokens);
+	context_num2str_[stol(tokens[1])] = tokens[0];
+	context_str2num_[tokens[0]] = stol(tokens[1]);
+    }
+}
+
 Word WordRep::word_str2num(const string &word_string) {
     ASSERT(word_str2num_.find(word_string) != word_str2num_.end(),
 	   "Requesting integer ID of an unknown word string: " << word_string);
@@ -96,23 +136,27 @@ void WordRep::CountWords(const string &corpus_file) {
     if (file_manipulator.Exists(SortedWordTypesPath())) { return; }
 
     ASSERT(window_size_ >= 2, "Window size less than 2: " << window_size_);
-    ifstream file(corpus_file, ios::in);
-    ASSERT(file.is_open(), "Cannot open file: " << corpus_file);
+    unordered_map<string, size_t> wordcount;
     string line;
     vector<string> tokens;
     StringManipulator string_manipulator;
-    unordered_map<string, size_t> wordcount;
     size_t num_words = 0;
-    while (file.good()) {
-	getline(file, line);
-	if (line == "") { continue; }
-	string_manipulator.Split(line, " ", &tokens);
-	for (const string &token : tokens) {
-	    ASSERT(token != kRareString_, "Rare symbol present: " << token);
-	    ASSERT(token != kBufferString_, "Buffer symbol present: " << token);
-	    AddWordIfUnknown(token);
-	    ++wordcount[token];
-	    ++num_words;
+    vector<string> file_list;
+    file_manipulator.ListFiles(corpus_file, &file_list);
+    for (const auto &file_path : file_list) {
+	ifstream file(file_path, ios::in);
+	ASSERT(file.is_open(), "Cannot open file: " << file_path);
+	while (file.good()) {
+	    getline(file, line);
+	    if (line == "") { continue; }
+	    string_manipulator.Split(line, " ", &tokens);
+	    for (const string &token : tokens) {
+		ASSERT(token != kRareString_, token << "symbol present");
+		ASSERT(token != kBufferString_, token << "symbol present");
+		AddWordIfUnknown(token);
+		++wordcount[token];
+		++num_words;
+	    }
 	}
     }
     ASSERT(num_words >= window_size_, "Number of words in the corpus smaller "
@@ -247,37 +291,42 @@ void WordRep::SlideWindow(const string &corpus_file) {
     }
 
     time_t begin_time_sliding = time(NULL);  // Window sliding time.
-    ifstream file(corpus_file, ios::in);
-    ASSERT(file.is_open(), "Cannot open file: " << corpus_file);
     StringManipulator string_manipulator;
     string line;
     vector<string> tokens;
-    while (file.good()) {
-	getline(file, line);
-	if (line == "") { continue; }
-	string_manipulator.Split(line, " ", &tokens);
-	for (const string &token : tokens) {
-	    // TODO: Switch to checking rare dictionary?
-	    string new_string =
-		(word_str2num_.find(token) != word_str2num_.end()) ?
-		token : kRareString_;
-	    window.push_back(new_string);
-	    if (window.size() >= window_size_) {  // Full window.
-		ProcessWindow(window, word_index, position_markers,
-			      &count_word, &count_context, &count_word_context);
-		window.pop_front();
+    vector<string> file_list;
+    file_manipulator.ListFiles(corpus_file, &file_list);
+    for (const auto &file_path : file_list) {
+	ifstream file(file_path, ios::in);
+	ASSERT(file.is_open(), "Cannot open file: " << file_path);
+	while (file.good()) {
+	    getline(file, line);
+	    if (line == "") { continue; }
+	    string_manipulator.Split(line, " ", &tokens);
+	    for (const string &token : tokens) {
+		// TODO: Switch to checking rare dictionary?
+		string new_string =
+		    (word_str2num_.find(token) != word_str2num_.end()) ?
+		    token : kRareString_;
+		window.push_back(new_string);
+		if (window.size() >= window_size_) {  // Full window.
+		    ProcessWindow(window, word_index, position_markers,
+				  &count_word, &count_context,
+				  &count_word_context);
+		    window.pop_front();
+		}
+	    }
+
+	    if (sentence_per_line_) {
+		FinishWindow(word_index, position_markers, &window,
+			     &count_word, &count_context, &count_word_context);
 	    }
 	}
 
-	if (sentence_per_line_) {
+	if (!sentence_per_line_) {
 	    FinishWindow(word_index, position_markers, &window,
 			 &count_word, &count_context, &count_word_context);
 	}
-    }
-
-    if (!sentence_per_line_) {
-	FinishWindow(word_index, position_markers, &window,
-		     &count_word, &count_context, &count_word_context);
     }
 
     double time_sliding = difftime(time(NULL), begin_time_sliding);
@@ -424,26 +473,6 @@ void WordRep::InduceWordVectors() {
 	    }
 	    wordvectors_[tokens[1]] = vector;
 	}
-    }
-}
-
-void WordRep::LoadWordDictionary() {
-    FileManipulator file_manipulator;
-    ASSERT(file_manipulator.Exists(WordStr2NumPath()), "File not found, "
-	   "read from the corpus: " << WordStr2NumPath());
-
-    word_str2num_.clear();
-    word_num2str_.clear();
-    string line;
-    vector<string> tokens;
-    StringManipulator string_manipulator;
-    ifstream word_str2num_file(WordStr2NumPath(), ios::in);
-    while (word_str2num_file.good()) {
-	getline(word_str2num_file, line);
-	if (line == "") { continue; }
-	string_manipulator.Split(line, " ", &tokens);
-	word_num2str_[stol(tokens[1])] = tokens[0];
-	word_str2num_[tokens[0]] = stol(tokens[1]);
     }
 }
 

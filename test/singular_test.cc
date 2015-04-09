@@ -176,6 +176,8 @@ TEST_F(WordRepSimpleExample, CheckCountsCutoff0BagSize2) {
     wordrep.set_window_size(2);
     wordrep.set_context_definition("bag");
     wordrep.ExtractStatistics(temp_file_path_);
+    wordrep.LoadWordDictionary();
+    wordrep.LoadContextDictionary();
 
     // Check against the true counts.
     unordered_map<string, unordered_map<string, size_t> >
@@ -250,6 +252,8 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1ListSize3) {
     wordrep.set_dim(2);
     wordrep.set_scaling_method("cca");
     wordrep.ExtractStatistics(temp_file_path_);
+    wordrep.LoadWordDictionary();
+    wordrep.LoadContextDictionary();
 
     // Check against the true counts.
     unordered_map<string, unordered_map<string, size_t> >
@@ -325,6 +329,8 @@ TEST_F(WordRepSimpleExample, CheckCountsCutoff1ListSize3SentencePerLine) {
     wordrep.set_context_definition("list");
     wordrep.set_sentence_per_line(true);
     wordrep.ExtractStatistics(temp_file_path_);
+    wordrep.LoadWordDictionary();
+    wordrep.LoadContextDictionary();
 
     // Check against the true counts.
     unordered_map<string, unordered_map<string, size_t> >

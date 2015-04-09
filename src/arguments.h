@@ -15,7 +15,7 @@ public:
     // Parse the command line strings into arguments.
     void ParseArguments(int argc, char* argv[]);
 
-    // Returns the path to a text corpus.
+    // Returns the path to a corpus (file or a directory of files).
     string corpus_path() { return corpus_path_; }
 
     // Returns the output directory.
@@ -56,7 +56,7 @@ public:
     size_t num_threads() { return num_threads_; }
 
 private:
-    // Path to a text corpus.
+    // Path to a corpus.
     string corpus_path_;
 
     // Output directory.

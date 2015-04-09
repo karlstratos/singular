@@ -3,6 +3,7 @@
 #include "util.h"
 
 #include <algorithm>
+#include <dirent.h>
 #include <math.h>
 #include <random>
 #include <sys/stat.h>
@@ -49,6 +50,44 @@ string StringManipulator::Lowercase(const string &original_string) {
 bool FileManipulator::Exists(const string &file_path) {
     struct stat buffer;
     return (stat(file_path.c_str(), &buffer) == 0);
+}
+
+string FileManipulator::FileType(const string &file_path) {
+    string file_type;
+    struct stat stat_buffer;
+    if (stat(file_path.c_str(), &stat_buffer) == 0) {
+	if (stat_buffer.st_mode & S_IFREG) {
+	    file_type = "file";
+	} else if (stat_buffer.st_mode & S_IFDIR) {
+	    file_type = "dir";
+	} else {
+	    file_type = "other";
+	}
+    } else {
+	ASSERT(false, "Problem with " << file_path);
+    }
+    return file_type;
+}
+
+void FileManipulator::ListFiles(const string &file_path, vector<string> *list) {
+    (*list).clear();
+    string file_type = FileType(file_path);
+    if (file_type == "dir") {
+	DIR *pDIR = opendir(file_path.c_str());
+	if (pDIR != NULL) {
+	    struct dirent *entry = readdir(pDIR);
+	    while (entry != NULL) {
+		if (strcmp(entry->d_name, ".") != 0 &&
+		    strcmp(entry->d_name, "..") != 0) {
+		    (*list).push_back(file_path + "/" + entry->d_name);
+		}
+		entry = readdir(pDIR);
+	    }
+        }
+	closedir(pDIR);
+    } else {
+	(*list).push_back(file_path);
+    }
 }
 
 void FileManipulator::Write(const Eigen::MatrixXd &m, const string &file_path) {

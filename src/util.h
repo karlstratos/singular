@@ -34,6 +34,14 @@ public:
     // Returns true if the file exists, false otherwise.
     bool Exists(const string &file_path);
 
+    // Returns the type of the given file path: "file", "dir", or "other".
+    string FileType(const string &file_path);
+
+    // List files. If given a single file, the list contains the path to that
+    // file. If given a directory, the list contains the paths to the files
+    // inside that directory (non-recursively).
+    void ListFiles(const string &file_path, vector<string> *list);
+
     // Writes an Eigen matrix to a text file.
     void Write(const Eigen::MatrixXd &m, const string &file_path);
 

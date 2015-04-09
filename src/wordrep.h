@@ -35,7 +35,7 @@ public:
     // Resets the content in the output directory.
     void ResetOutputDirectory();
 
-    // Extracts statistics from a corpus.
+    // Extracts statistics from a corpus (file or a directory of files).
     void ExtractStatistics(const string &corpus_file);
 
     // Induces lexical representations from cached word counts.
@@ -118,6 +118,12 @@ public:
 	return output_directory_ + "/count_context_" + Signature(1);
     }
 
+    // Loads a filtered word dictionary from a cached file.
+    void LoadWordDictionary();
+
+    // Loads a filtered context dictionary from a cached file.
+    void LoadContextDictionary();
+
     // Returns the integer ID corresponding to a word string.
     Word word_str2num(const string &word_string);
 
@@ -131,7 +137,7 @@ public:
     string context_num2str(Context context);
 
 private:
-    // Extracts the count of each word type appearing in the given corpus file.
+    // Extracts the count of each word type appearing in the given corpus.
     void CountWords(const string &corpus_file);
 
     // Adds the word to the word dictionary if not already known.
@@ -165,9 +171,6 @@ private:
 
     // Induces vector representations of word types based on cached count files.
     void InduceWordVectors();
-
-    // Loads a filtered word dictionary from a cached file.
-    void LoadWordDictionary();
 
     // Load a sorted list of word-count pairs from a cached file.
     void LoadSortedWordCounts();
