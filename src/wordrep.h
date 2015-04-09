@@ -280,6 +280,12 @@ private:
     // Special string for representing the out-of-sentence buffer.
     const string kBufferString_ = "<!>";
 
+    // Maximum word length to consider.
+    const size_t kMaxWordLength_ = 100;
+
+    // Maximum sentence length to consider.
+    const size_t kMaxSentenceLength_ = 1000;
+
     // Computed word vectors.
     unordered_map<string, Eigen::VectorXd> wordvectors_;
 

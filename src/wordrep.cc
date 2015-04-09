@@ -143,16 +143,18 @@ void WordRep::CountWords(const string &corpus_file) {
     size_t num_words = 0;
     vector<string> file_list;
     file_manipulator.ListFiles(corpus_file, &file_list);
-    for (const auto &file_path : file_list) {
+    for (const string &file_path : file_list) {
 	ifstream file(file_path, ios::in);
 	ASSERT(file.is_open(), "Cannot open file: " << file_path);
 	while (file.good()) {
 	    getline(file, line);
 	    if (line == "") { continue; }
 	    string_manipulator.Split(line, " ", &tokens);
+	    if (tokens.size() > kMaxSentenceLength_) { continue; }
 	    for (const string &token : tokens) {
-		ASSERT(token != kRareString_, token << "symbol present");
-		ASSERT(token != kBufferString_, token << "symbol present");
+		if (token.size() > kMaxWordLength_) { continue; }
+		ASSERT(token != kRareString_, token << " symbol present");
+		ASSERT(token != kBufferString_, token << " symbol present");
 		AddWordIfUnknown(token);
 		++wordcount[token];
 		++num_words;
@@ -303,8 +305,9 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	    getline(file, line);
 	    if (line == "") { continue; }
 	    string_manipulator.Split(line, " ", &tokens);
+	    if (tokens.size() > kMaxSentenceLength_) { continue; }
 	    for (const string &token : tokens) {
-		// TODO: Switch to checking rare dictionary?
+		if (token.size() > kMaxWordLength_) { continue; }
 		string new_string =
 		    (word_str2num_.find(token) != word_str2num_.end()) ?
 		    token : kRareString_;
