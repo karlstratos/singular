@@ -143,6 +143,9 @@ private:
     // Adds the word to the word dictionary if not already known.
     Word AddWordIfUnknown(const string &word_string);
 
+    // Returns true if the given word string will be skipped.
+    bool SkipThisString(const string &word_string);
+
     // Determines rare word types.
     void DetermineRareWords();
 

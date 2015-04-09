@@ -152,9 +152,7 @@ void WordRep::CountWords(const string &corpus_file) {
 	    string_manipulator.Split(line, " ", &tokens);
 	    if (tokens.size() > kMaxSentenceLength_) { continue; }
 	    for (const string &token : tokens) {
-		if (token.size() > kMaxWordLength_) { continue; }
-		ASSERT(token != kRareString_, token << " symbol present");
-		ASSERT(token != kBufferString_, token << " symbol present");
+		if (SkipThisString(token)) { continue; }
 		AddWordIfUnknown(token);
 		++wordcount[token];
 		++num_words;
@@ -192,6 +190,16 @@ Word WordRep::AddWordIfUnknown(const string &word_string) {
 	word_num2str_[word] = word_string;
     }
     return word_str2num_[word_string];
+}
+
+bool WordRep::SkipThisString(const string &word_string) {
+    if (word_string.size() > kMaxWordLength_ ||  // Too long.
+	word_string == kRareString_ ||  // Special "rare" symbol.
+	word_string == kBufferString_) {  // Special "buffer" symbol.
+	return true;
+    } else {
+	return false;
+    }
 }
 
 void WordRep::DetermineRareWords() {
@@ -307,7 +315,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	    string_manipulator.Split(line, " ", &tokens);
 	    if (tokens.size() > kMaxSentenceLength_) { continue; }
 	    for (const string &token : tokens) {
-		if (token.size() > kMaxWordLength_) { continue; }
+		if (SkipThisString(token)) { continue; }
 		string new_string =
 		    (word_str2num_.find(token) != word_str2num_.end()) ?
 		    token : kRareString_;
