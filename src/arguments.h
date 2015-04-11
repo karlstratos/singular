@@ -55,6 +55,9 @@ public:
     // Returns the number of threads.
     size_t num_threads() { return num_threads_; }
 
+    // Returns the flag for printing messages to stderr.
+    bool verbose() { return verbose_; }
+
 private:
     // Path to a corpus.
     string corpus_path_;
@@ -94,6 +97,9 @@ private:
 
     // Number of threads.
     size_t num_threads_ = 20;
+
+    // Print messages to stderr?
+    bool verbose_ = true;
 };
 
 #endif  // ARGUMENTS_H_

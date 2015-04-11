@@ -94,6 +94,9 @@ public:
     // Sets the number of threads.
     void set_num_threads(size_t num_threads) { num_threads_ = num_threads; }
 
+    // Sets the flag for printing messages to stderr.
+    void set_verbose(bool verbose) { verbose_ = verbose; }
+
     // Returns the singular values of the scaled count matrix.
     Eigen::VectorXd *singular_values() { return &singular_values_; }
 
@@ -337,6 +340,9 @@ private:
 
     // Number of threads.
     size_t num_threads_ = 20;
+
+    // Print messages to stderr?
+    bool verbose_ = true;
 };
 
 #endif  // WORDREP_H

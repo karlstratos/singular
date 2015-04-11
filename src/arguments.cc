@@ -32,6 +32,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    max_num_epochs_ = stol(argv[++i]);
 	} else if (arg == "--threads") {
 	    num_threads_ = stol(argv[++i]);
+	} else if (arg == "--quiet" || arg == "-q") {
+	    verbose_ = false;
 	} else if (arg == "--help" || arg == "-h"){
 	    display_options_and_quit = true;
 	} else {
@@ -81,6 +83,9 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--threads [" << num_threads_ << "]:    \t"
 	     << "number of threads" << endl;
+
+	cout << "--quiet, -q:          \t"
+	     << "do not print messages to stderr" << endl;
 
 	cout << "--help, -h:           \t"
 	     << "show options and quit" << endl;

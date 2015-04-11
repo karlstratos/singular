@@ -143,7 +143,12 @@ void WordRep::CountWords(const string &corpus_file) {
     size_t num_words = 0;
     vector<string> file_list;
     file_manipulator.ListFiles(corpus_file, &file_list);
-    for (const string &file_path : file_list) {
+    for (size_t file_num = 0; file_num < file_list.size(); ++file_num) {
+	string file_path = file_list[file_num];
+	if (verbose_) {
+	    cerr << "Counting words in file " << file_num + 1 << "/"
+		 << file_list.size() << "... " << flush;
+	}
 	ifstream file(file_path, ios::in);
 	ASSERT(file.is_open(), "Cannot open file: " << file_path);
 	while (file.good()) {
@@ -158,6 +163,7 @@ void WordRep::CountWords(const string &corpus_file) {
 		++num_words;
 	    }
 	}
+	if (verbose_) { cerr << wordcount.size() << " word types" << endl; }
     }
     ASSERT(num_words >= window_size_, "Number of words in the corpus smaller "
 	   "than the window size: " << num_words << " < " << window_size_);
@@ -306,7 +312,12 @@ void WordRep::SlideWindow(const string &corpus_file) {
     vector<string> tokens;
     vector<string> file_list;
     file_manipulator.ListFiles(corpus_file, &file_list);
-    for (const auto &file_path : file_list) {
+    for (size_t file_num = 0; file_num < file_list.size(); ++file_num) {
+	string file_path = file_list[file_num];
+	if (verbose_) {
+	    cerr << "Sliding window in file " << file_num + 1 << "/"
+		 << file_list.size() << "... " << flush;
+	}
 	ifstream file(file_path, ios::in);
 	ASSERT(file.is_open(), "Cannot open file: " << file_path);
 	while (file.good()) {
@@ -338,6 +349,14 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	    FinishWindow(word_index, position_markers, &window,
 			 &count_word, &count_context, &count_word_context);
 	}
+
+	if (verbose_) {
+	    size_t num_nonzeros_now = 0;
+	    for (const auto &word_pair : count_word_context) {
+		num_nonzeros_now += word_pair.second.size();
+	    }
+	    cerr << num_nonzeros_now << " nonzeros" << endl;
+	}
     }
 
     double time_sliding = difftime(time(NULL), begin_time_sliding);
@@ -345,6 +364,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	 << endl;
 
     // Write the filtered context dictionary.
+    if (verbose_) { cerr << "Writing counts..." << endl; }
     ofstream context_str2num_file(ContextStr2NumPath(), ios::out);
     for (const auto &context_pair: context_str2num_) {
 	context_str2num_file << context_pair.first << " "
@@ -558,6 +578,7 @@ void WordRep::CalculateSVD() {
     time_t begin_time_decomposition = time(NULL);
 
     // Load a sparse matrix of joint values directly into an SVD solver.
+    if (verbose_) { cerr << "Loading counts..." << endl; }
     SparseSVDSolver svd_solver(CountWordContextPath());
     SMat matrix = svd_solver.sparse_matrix();
 
@@ -584,6 +605,7 @@ void WordRep::CalculateSVD() {
     }
 
     // Perform an SVD on the loaded scaled values.
+    if (verbose_) { cerr << "Calculating SVD..." << endl; }
     svd_solver.SolveSparseSVD(dim_);
     size_t actual_rank = svd_solver.rank();
 
@@ -978,6 +1000,7 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
     }
 
     // Do agglomerative clustering over the sorted word vectors.
+    if (verbose_) { cerr << "Clustering..." << endl; }
     time_t begin_time_greedo = time(NULL);
     log_ << endl << "[Agglomerative clustering]" << endl;
     log_ << "   Number of clusters: " << num_clusters << endl;

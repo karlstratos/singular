@@ -19,6 +19,7 @@ int main (int argc, char* argv[]) {
     wordrep.set_weighting_method(argparser.weighting_method());
     wordrep.set_max_num_epochs(argparser.max_num_epochs());
     wordrep.set_num_threads(argparser.num_threads());
+    wordrep.set_verbose(argparser.verbose());
 
     // If given a corpus, extract statistics from it.
     if (!argparser.corpus_path().empty()) {
