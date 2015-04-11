@@ -9,7 +9,6 @@
 
 #include "cluster.h"
 #include "sparsesvd.h"
-#include "wsqloss.h"
 
 void WordRep::SetOutputDirectory(const string &output_directory) {
     ASSERT(!output_directory.empty(), "Empty output directory.");
@@ -468,7 +467,6 @@ void WordRep::InduceWordVectors() {
     FileManipulator file_manipulator;  // Do not repeat the work.
     if (!file_manipulator.Exists(WordVectorsPath())) {
 	CalculateSVD();
-	if (weighting_method_ != "unif") { CalculateWeightedLeastSquares(); }
 	ASSERT(word_matrix_.rows() == sorted_wordcount_.size(), "Word matrix "
 	       "dimension and vocabulary size mismatch: " << word_matrix_.rows()
 	       << " vs " << sorted_wordcount_.size());
@@ -699,72 +697,6 @@ double WordRep::ScaleJointValue(double joint_value, double value1,
 	ASSERT(false, "Unknown scaling method: " << scaling_method_);
     }
     return scaled_joint_value;
-}
-
-void WordRep::CalculateWeightedLeastSquares() {
-    log_ << endl << "[Following SVD with weighted least squares]" << endl;
-    log_ << "   Weight: " << weighting_method_ << endl;
-
-    // Load scaling values.
-    FileManipulator file_manipulator;
-    unordered_map<size_t, double> values1;
-    unordered_map<size_t, double> values2;
-    file_manipulator.Read(CountWordPath(), &values1);
-    file_manipulator.Read(CountContextPath(), &values2);
-
-    // Get the number of samples (= number of words).
-    StringManipulator string_manipulator;
-    string line;
-    vector<string> tokens;
-    size_t num_samples = 0;
-    ifstream count_word_file(CountWordPath(), ios::in);
-    while (count_word_file.good()) {
-	getline(count_word_file, line);
-	if (line == "") { continue; }
-	string_manipulator.Split(line, " ", &tokens);
-	num_samples += stol(tokens[0]);
-    }
-
-    // Prepare the column-major format.
-    unordered_map<size_t, vector<tuple<size_t, double, double> > > col2row;
-    ifstream count_word_context_file(CountWordContextPath(), ios::in);
-    getline(count_word_context_file, line);
-    string_manipulator.Split(line, " ", &tokens);
-    size_t num_columns = stol(tokens[1]);
-    for (size_t col = 0; col < num_columns; ++col) {
-	getline(count_word_context_file, line);  // Number of nonzero rows.
-	string_manipulator.Split(line, " ", &tokens);
-	size_t num_nonzero_rows = stol(tokens[0]);
-	for (size_t nonzero_row = 0; nonzero_row < num_nonzero_rows;
-	     ++nonzero_row) {
-	    getline(count_word_context_file, line);  // <row> <value>
-	    string_manipulator.Split(line, " ", &tokens);
-	    size_t row = stol(tokens[0]);
-	    size_t cocount = stod(tokens[1]);
-	    double value = ScaleJointValue(cocount, values1[row],
-					   values2[col], num_samples);
-	    double weight;
-	    if (weighting_method_ == "freq") {
-		weight = (cocount > 100) ? 1.0 :
-		    pow(double(cocount) / 100.0, 0.75);
-	    } else {
-		ASSERT(false, "Unknown weighting: " << weighting_method_);
-	    }
-	    col2row[col].emplace_back(row, value, weight);
-	}
-    }
-    values1.clear();
-    values2.clear();
-
-    // Refine the SVD solution to minimize weighted squared loss.
-    WSQLossOptimizer wsqloss_optimizer;
-    time_t begin_time_wsqloss = time(NULL);
-    wsqloss_optimizer.Optimize(col2row, max_num_epochs_, num_threads_,
-			       &word_matrix_, &context_matrix_);
-
-    double time_wsqloss = difftime(time(NULL), begin_time_wsqloss);
-    log_ << "   Time taken: "
-	 << string_manipulator.TimeString(time_wsqloss) << endl;
 }
 
 void WordRep::TestQualityOfWordVectors() {
@@ -1042,7 +974,7 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
 }
 
 string WordRep::Signature(size_t version) {
-    ASSERT(version <= 3, "Unrecognized signature version: " << version);
+    ASSERT(version <= 2, "Unrecognized signature version: " << version);
 
     string signature = "rare" + to_string(rare_cutoff_);
     if (version >= 1) {
@@ -1058,8 +990,6 @@ string WordRep::Signature(size_t version) {
 	signature += "_" + scaling_method_;
 
     }
-    if (version >= 3) {
-	signature += "_" + weighting_method_;
-    }
+
     return signature;
 }

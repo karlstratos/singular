@@ -46,15 +46,6 @@ public:
     // Returns the scaling method.
     string scaling_method() { return scaling_method_; }
 
-    // Returns the weighting method.
-    string weighting_method() { return weighting_method_; }
-
-    // Returns the maximum number of training epochs.
-    size_t max_num_epochs() { return max_num_epochs_; }
-
-    // Returns the number of threads.
-    size_t num_threads() { return num_threads_; }
-
     // Returns the flag for printing messages to stderr.
     bool verbose() { return verbose_; }
 
@@ -88,15 +79,6 @@ private:
 
     // Scaling method.
     string scaling_method_ = "cca";
-
-    // Weighting method.
-    string weighting_method_ = "unif";
-
-    // Maximum number of training epochs.
-    size_t max_num_epochs_ = 100;
-
-    // Number of threads.
-    size_t num_threads_ = 20;
 
     // Print messages to stderr?
     bool verbose_ = true;

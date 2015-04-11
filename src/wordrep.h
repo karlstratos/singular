@@ -76,26 +76,13 @@ public:
 	scaling_method_ = scaling_method;
     }
 
-    // Sets the weighting method.
-    void set_weighting_method(string weighting_method) {
-	weighting_method_ = weighting_method;
-    }
+    // Sets the flag for printing messages to stderr.
+    void set_verbose(bool verbose) { verbose_ = verbose; }
 
     // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
     }
-
-    // Sets the maximum number of training epochs.
-    void set_max_num_epochs(size_t max_num_epochs) {
-	max_num_epochs_ = max_num_epochs;
-    }
-
-    // Sets the number of threads.
-    void set_num_threads(size_t num_threads) { num_threads_ = num_threads; }
-
-    // Sets the flag for printing messages to stderr.
-    void set_verbose(bool verbose) { verbose_ = verbose; }
 
     // Returns the singular values of the scaled count matrix.
     Eigen::VectorXd *singular_values() { return &singular_values_; }
@@ -188,9 +175,6 @@ private:
     double ScaleJointValue(double joint_value, double value1, double value2,
 			   size_t num_samples);
 
-    // Calculate weighted least squares of cached count files.
-    void CalculateWeightedLeastSquares();
-
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
 
@@ -254,12 +238,12 @@ private:
 
     // Returns the path to the word vectors.
     string WordVectorsPath() {
-	return output_directory_ + "/wordvectors_" + Signature(3);
+	return output_directory_ + "/wordvectors_" + Signature(2);
     }
 
     // Returns the path to the agglomeratively clusterered word vectors.
     string AgglomerativePath() {
-	return output_directory_ + "/agglomerative_" + Signature(3);
+	return output_directory_ + "/agglomerative_" + Signature(2);
     }
 
     // Word-count pairs sorted in decreasing frequency.
@@ -331,15 +315,6 @@ private:
 
     // Scaling method.
     string scaling_method_ = "cca";
-
-    // Weighting method.
-    string weighting_method_ = "freq";
-
-    // Maximum number of training epochs.
-    size_t max_num_epochs_ = 100;
-
-    // Number of threads.
-    size_t num_threads_ = 20;
 
     // Print messages to stderr?
     bool verbose_ = true;

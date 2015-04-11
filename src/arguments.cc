@@ -26,12 +26,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    transformation_method_ = argv[++i];
 	} else if (arg == "--scale") {
 	    scaling_method_ = argv[++i];
-	} else if (arg == "--weight") {
-	    weighting_method_ = argv[++i];
-	} else if (arg == "--epochs") {
-	    max_num_epochs_ = stol(argv[++i]);
-	} else if (arg == "--threads") {
-	    num_threads_ = stol(argv[++i]);
 	} else if (arg == "--quiet" || arg == "-q") {
 	    verbose_ = false;
 	} else if (arg == "--help" || arg == "-h"){
@@ -74,15 +68,6 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--scale [" << scaling_method_ << "]:    \t"
 	     << "data scaling: raw, cca, reg, ppmi" << endl;
-
-	cout << "--weight [" << weighting_method_ << "]:    \t"
-	     << "weighting method: unif, freq" << endl;
-
-	cout << "--epochs [" << max_num_epochs_ << "]:    \t"
-	     << "maximum number of training epochs" << endl;
-
-	cout << "--threads [" << num_threads_ << "]:    \t"
-	     << "number of threads" << endl;
 
 	cout << "--quiet, -q:          \t"
 	     << "do not print messages to stderr" << endl;
