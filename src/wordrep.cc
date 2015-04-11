@@ -703,11 +703,15 @@ double WordRep::ScaleJointValue(double joint_value, double value1,
 void WordRep::TestQualityOfWordVectors() {
     string wordsim353_path = "third_party/public_datasets/wordsim353.dev";
     string men_path = "third_party/public_datasets/men.dev";
+    string rw_path = "third_party/public_datasets/rw.dev";
+    string mturk_path = "third_party/public_datasets/mturk.dev";
     string syn_path = "third_party/public_datasets/syntactic_analogies.dev";
     string mixed_path = "third_party/public_datasets/mixed_analogies.dev";
     FileManipulator file_manipulator;
     if (!file_manipulator.Exists(wordsim353_path) ||
 	!file_manipulator.Exists(men_path) ||
+	!file_manipulator.Exists(rw_path) ||
+	!file_manipulator.Exists(mturk_path) ||
 	!file_manipulator.Exists(syn_path) ||
 	!file_manipulator.Exists(mixed_path)) {
 	// Skip evaluation (e.g., in unit tests) if files are not found.
@@ -736,11 +740,29 @@ void WordRep::TestQualityOfWordVectors() {
     double corr_men;
     eval.EvaluateWordSimilarity(wordvectors_, men_path, &num_instances_men,
 				&num_handled_men, &corr_men);
-    log_ << "   MEN: \t" << corr_men << " (" << num_handled_men << "/"
+    log_ << "   MEN:  \t" << corr_men << " (" << num_handled_men << "/"
 	 << num_instances_men << " evaluated)" << endl;
-    log_ << fixed << setprecision(2);
+
+    // Word similarity with rw.dev (rare words).
+    size_t num_instances_rw;
+    size_t num_handled_rw;
+    double corr_rw;
+    eval.EvaluateWordSimilarity(wordvectors_, rw_path, &num_instances_rw,
+				&num_handled_rw, &corr_rw);
+    log_ << "   RW:    \t" << corr_rw << " (" << num_handled_rw << "/"
+	 << num_instances_rw << " evaluated)" << endl;
+
+    // Word similarity with mturk.dev.
+    size_t num_instances_mturk;
+    size_t num_handled_mturk;
+    double corr_mturk;
+    eval.EvaluateWordSimilarity(wordvectors_, mturk_path, &num_instances_mturk,
+				&num_handled_mturk, &corr_mturk);
+    log_ << "   MTURK: \t" << corr_mturk << " (" << num_handled_mturk << "/"
+	 << num_instances_mturk << " evaluated)" << endl;
 
     // Word analogy with syntactic_analogies.dev.
+    log_ << fixed << setprecision(2);
     size_t num_instances_syn;
     size_t num_handled_syn;
     double acc_syn;

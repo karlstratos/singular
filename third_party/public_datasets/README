@@ -15,6 +15,36 @@ men.txt (=> .dev, .test):
 - URL: http://clic.cimec.unitn.it/~elia.bruni/MEN.html
 - Date: January 2015
 
+rw.txt (=> .dev, .test):
+- Description: 2034 rare word pairs and their human similarity scores
+- Example line: "promiscuous unchaste 9.33"
+- URL: http://www-nlp.stanford.edu/~lmthang/morphoNLM/
+- Date: April 2015
+
+mturk.txt (=> .dev, .test):
+- Description: 287 word pairs and their human similarity scores from MTurk
+- Example line: "funeral death 4.714285714"
+- URL: http://tx.technion.ac.il/~kirar/Datasets.html
+- Date: April 2015
+
+mc.test:
+- Description: 30 noun pairs and their human similarity scores
+- Example line: "magician wizard 3.50"
+- URL: http://www.cs.cmu.edu/~mfaruqui/word-sim/EN-MC-30.txt
+- Date: April 2015
+
+rg.test:
+- Description: 65 noun pairs and their human similarity scores
+- Example line: "fruit furnace 0.05"
+- URL: http://www.cs.cmu.edu/~mfaruqui/word-sim/EN-RG-65.txt
+- Date: April 2015
+
+color.test:
+- Description: 52 noun-color pairs
+- Example line: "banana yellow"
+- URL: http://aclweb.org/anthology//P/P12/P12-1015.bib
+- Date: April 2015
+
 syntactic_analogies.txt (=> .dev, .test):
 - Description: 8000 syntactic analogies (preceded by their categories)
 - Example line: "JJR_JJ better good heavier heavy"
