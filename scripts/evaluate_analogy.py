@@ -227,7 +227,7 @@ if __name__ == "__main__":
     argparser.add_argument("embedding_path", type=str, help="path to word "
                            "embeddings file")
     argparser.add_argument("--method", type=str, default="mult",
-                           help="Inference method (default: %(default)d)")
+                           help="Inference method (default: %(default)s)")
     argparser.add_argument("--report", type=str, help="path to detailed report")
     argparser.add_argument("--no_counts", action="store_true", help="embeddings"
                            " don't counts for the first column?")

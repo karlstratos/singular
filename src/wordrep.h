@@ -178,26 +178,8 @@ private:
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
 
-    // Evaluate word vectors on a word similarity dataset.
-    void EvaluateWordSimilarity(const string &file_path,
-				size_t *num_instances, size_t *num_handled,
-				double *correlation);
-
-    // Evaluate word vectors on a word analogy dataset.
-    void EvaluateWordAnalogy(const string &file_path,
-			     size_t *num_instances, size_t *num_handled,
-			     double *accuracy);
-
-    // Returns word v2 (not in {w1, w2, v1}) such that "w1:w2 as in v1:v2".
-    string AnswerAnalogyQuestion(
-	string w1, string w2, string v1,
-	const unordered_map<string, Eigen::VectorXd> &wordvectors_subset);
-
     // Performs greedy agglomerative clustering over word vectors.
     void PerformAgglomerativeClustering(size_t num_clusters);
-
-    // Performs PCA on word vectors to put them in the PCA basis.
-    void RotateWordVectorsToPCACoordinates();
 
     // Returns a string signature of tunable parameters.
     //    version=0: rare_cutoff_
