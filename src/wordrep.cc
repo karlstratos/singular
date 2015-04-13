@@ -860,6 +860,7 @@ string WordRep::Signature(size_t version) {
 	}
 	signature += "_window" + to_string(window_size_);
 	signature += "_" + context_definition_;
+	signature += "_hash" + to_string(num_context_hashed_);
     }
     if (version >= 2) {
 	signature += "_dim" + to_string(dim_);
