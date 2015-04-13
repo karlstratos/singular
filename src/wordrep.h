@@ -79,6 +79,11 @@ public:
     // Sets the flag for printing messages to stderr.
     void set_verbose(bool verbose) { verbose_ = verbose; }
 
+    // Sets the number of context types to hash.
+    void set_num_context_hashed(size_t num_context_hashed) {
+	num_context_hashed_ = num_context_hashed;
+    }
+
     // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
@@ -144,6 +149,7 @@ private:
 
     void FinishWindow(size_t word_index,
 		      const vector<string> &position_markers,
+		      const hash<string> &context_hash,
 		      deque<string> *window,
 		      unordered_map<Word, double> *count_word,
 		      unordered_map<Context, double> *count_context,
@@ -154,13 +160,15 @@ private:
     void ProcessWindow(const deque<string> &window,
 		       size_t word_index,
 		       const vector<string> &position_markers,
+		       const hash<string> &context_hash,
 		       unordered_map<Word, double> *count_word,
 		       unordered_map<Context, double> *count_context,
 		       unordered_map<Context, unordered_map<Word, double> >
 		       *count_word_context);
 
     // Adds the context to the context dictionary if not already known.
-    Context AddContextIfUnknown(const string &context_string);
+    Context AddContextIfUnknown(const string &context_string_given,
+				const hash<string> &context_hash);
 
     // Induces vector representations of word types based on cached count files.
     void InduceWordVectors();
@@ -297,6 +305,9 @@ private:
 
     // Scaling method.
     string scaling_method_ = "cca";
+
+    // Number of context types to hash (0 means no hashing).
+    size_t num_context_hashed_ = 0;
 
     // Print messages to stderr?
     bool verbose_ = true;

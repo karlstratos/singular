@@ -46,6 +46,9 @@ public:
     // Returns the scaling method.
     string scaling_method() { return scaling_method_; }
 
+    // Returns the number of context types to hash.
+    size_t num_context_hashed() { return num_context_hashed_; }
+
     // Returns the flag for printing messages to stderr.
     bool verbose() { return verbose_; }
 
@@ -79,6 +82,9 @@ private:
 
     // Scaling method.
     string scaling_method_ = "cca";
+
+    // Number of context types to hash (0 means no hashing).
+    size_t num_context_hashed_ = 0;
 
     // Print messages to stderr?
     bool verbose_ = true;

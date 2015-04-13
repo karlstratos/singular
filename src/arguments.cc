@@ -26,6 +26,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    transformation_method_ = argv[++i];
 	} else if (arg == "--scale") {
 	    scaling_method_ = argv[++i];
+	} else if (arg == "--hash") {
+	    num_context_hashed_ = stol(argv[++i]);
 	} else if (arg == "--quiet" || arg == "-q") {
 	    verbose_ = false;
 	} else if (arg == "--help" || arg == "-h"){
@@ -68,6 +70,9 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--scale [" << scaling_method_ << "]:    \t"
 	     << "data scaling: raw, cca, reg, ppmi" << endl;
+
+	cout << "--hash [" << num_context_hashed_ << "]:          \t"
+	     << "hash size for context (0 means no hashing)" << endl;
 
 	cout << "--quiet, -q:          \t"
 	     << "do not print messages to stderr" << endl;

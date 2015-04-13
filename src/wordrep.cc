@@ -310,6 +310,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
     StringManipulator string_manipulator;
     string line;
     vector<string> tokens;
+    hash<string> context_hash;
     vector<string> file_list;
     file_manipulator.ListFiles(corpus_file, &file_list);
     for (size_t file_num = 0; file_num < file_list.size(); ++file_num) {
@@ -333,20 +334,21 @@ void WordRep::SlideWindow(const string &corpus_file) {
 		window.push_back(new_string);
 		if (window.size() >= window_size_) {  // Full window.
 		    ProcessWindow(window, word_index, position_markers,
-				  &count_word, &count_context,
+				  context_hash, &count_word, &count_context,
 				  &count_word_context);
 		    window.pop_front();
 		}
 	    }
 
 	    if (sentence_per_line_) {
-		FinishWindow(word_index, position_markers, &window,
-			     &count_word, &count_context, &count_word_context);
+		FinishWindow(word_index, position_markers, context_hash,
+			     &window, &count_word, &count_context,
+			     &count_word_context);
 	    }
 	}
 
 	if (!sentence_per_line_) {
-	    FinishWindow(word_index, position_markers, &window,
+	    FinishWindow(word_index, position_markers, context_hash, &window,
 			 &count_word, &count_context, &count_word_context);
 	}
 
@@ -391,6 +393,7 @@ void WordRep::SlideWindow(const string &corpus_file) {
 
 void WordRep::FinishWindow(size_t word_index,
 			   const vector<string> &position_markers,
+			   const hash<string> &context_hash,
 			   deque<string> *window,
 			   unordered_map<Word, double> *count_word,
 			   unordered_map<Context, double> *count_context,
@@ -403,7 +406,7 @@ void WordRep::FinishWindow(size_t word_index,
     }
     for (size_t buffering = word_index; buffering < original_window_size;
 	 ++buffering) {
-	ProcessWindow(*window, word_index, position_markers,
+	ProcessWindow(*window, word_index, position_markers, context_hash,
 		      count_word, count_context, count_word_context);
 	(*window).pop_front();
 	(*window).push_back(kBufferString_);
@@ -417,6 +420,7 @@ void WordRep::FinishWindow(size_t word_index,
 void WordRep::ProcessWindow(const deque<string> &window,
 			    size_t word_index,
 			    const vector<string> &position_markers,
+			    const hash<string> &context_hash,
 			    unordered_map<Word, double> *count_word,
 			    unordered_map<Context, double> *count_context,
 			    unordered_map<Context, unordered_map<Word, double> >
@@ -429,20 +433,22 @@ void WordRep::ProcessWindow(const deque<string> &window,
 	if (context_index == word_index) { continue; }
 	string context_string = window.at(context_index);
 	if (context_definition_ == "bag") {  // Bag-of-words (BOW).
-	    Context bag_context = AddContextIfUnknown(context_string);
+	    Context bag_context = AddContextIfUnknown(context_string,
+						      context_hash);
 	    (*count_context)[bag_context] += 1;
 	    (*count_word_context)[bag_context][word] += 1;
 	} else if (context_definition_ == "list") {  // List-of-words (LOW)
 	    Context list_context =
 		AddContextIfUnknown(position_markers.at(context_index) +
-				    context_string);
+				    context_string, context_hash);
 	    (*count_context)[list_context] += 1;
 	    (*count_word_context)[list_context][word] += 1;
 	} else if (context_definition_ == "baglist") {  // BOW+LOW
-	    Context bag_context = AddContextIfUnknown(context_string);
+	    Context bag_context = AddContextIfUnknown(context_string,
+						      context_hash);
 	    Context list_context =
 		AddContextIfUnknown(position_markers.at(context_index) +
-				    context_string);
+				    context_string, context_hash);
 	    (*count_context)[bag_context] += 1;
 	    (*count_context)[list_context] += 1;
 	    (*count_word_context)[bag_context][word] += 1;
@@ -454,8 +460,17 @@ void WordRep::ProcessWindow(const deque<string> &window,
     }
 }
 
-Context WordRep::AddContextIfUnknown(const string &context_string) {
-    ASSERT(!context_string.empty(), "Adding an empty string for context!");
+Context WordRep::AddContextIfUnknown(const string &context_string_given,
+				     const hash<string> &context_hash) {
+    ASSERT(!context_string_given.empty(), "Adding an empty context string!");
+
+    string context_string = context_string_given;
+    if (num_context_hashed_ > 0) {  // Random context hashing.
+	size_t hashed_context = context_hash(context_string);
+	hashed_context %= num_context_hashed_;
+	context_string = to_string(hashed_context);
+    }
+
     if (context_str2num_.find(context_string) == context_str2num_.end()) {
 	Context context = context_str2num_.size();
 	context_str2num_[context_string] = context;
