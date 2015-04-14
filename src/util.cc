@@ -90,6 +90,15 @@ void FileManipulator::ListFiles(const string &file_path, vector<string> *list) {
     }
 }
 
+size_t FileManipulator::NumLines(const string &file_path) {
+    size_t num_lines = 0;
+    ifstream file(file_path, ios::in);
+    ASSERT(file.is_open(), "Cannot open file: " << file_path);
+    string line;
+    while (getline(file, line)) { ++num_lines; }
+    return num_lines;
+}
+
 void FileManipulator::Write(const Eigen::MatrixXd &m, const string &file_path) {
     ofstream file(file_path, ios::out);
     ASSERT(file.is_open(), "Cannot open file: " << file_path);

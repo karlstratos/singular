@@ -269,6 +269,9 @@ private:
     // Maximum sentence length to consider.
     const size_t kMaxSentenceLength_ = 1000;
 
+    // Interval to report progress.
+    const double kReportInterval_ = 0.1;
+
     // Computed word vectors.
     unordered_map<string, Eigen::VectorXd> wordvectors_;
 

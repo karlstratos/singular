@@ -42,6 +42,9 @@ public:
     // inside that directory (non-recursively).
     void ListFiles(const string &file_path, vector<string> *list);
 
+    // Returns the number of lines in a file.
+    size_t NumLines(const string &file_path);
+
     // Writes an Eigen matrix to a text file.
     void Write(const Eigen::MatrixXd &m, const string &file_path);
 
