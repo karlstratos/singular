@@ -260,6 +260,9 @@ private:
     // Special string for representing the out-of-sentence buffer.
     const string kBufferString_ = "<!>";
 
+    // Special string for glueing words to n-gram features.
+    const string kNGramGlueString_ = "<+>";
+
     // Maximum word length to consider.
     const size_t kMaxWordLength_ = 100;
 

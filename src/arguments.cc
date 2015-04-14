@@ -59,7 +59,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	     << "size of the sliding window" << endl;
 
 	cout << "--context [" << context_definition_ << "]: \t"
-	     << "context definition: bag, list, baglist"  << endl;
+	     << "context definition: bag, bigram, skipgram, list, baglist"
+	     << endl;
 
 	cout << "--dim [" << dim_ << "]:        \t"
 	     << "dimensionality of word vectors" << endl;

@@ -432,11 +432,43 @@ void WordRep::ProcessWindow(const deque<string> &window,
 	 ++context_index) {
 	if (context_index == word_index) { continue; }
 	string context_string = window.at(context_index);
-	if (context_definition_ == "bag") {  // Bag-of-words (BOW).
+	if (context_definition_ == "bag") {  // Bag-of-words (BOW)
 	    Context bag_context = AddContextIfUnknown(context_string,
 						      context_hash);
 	    (*count_context)[bag_context] += 1;
 	    (*count_word_context)[bag_context][word] += 1;
+	} else if (context_definition_ == "bigram") {  // BOW + bigrams
+	    Context bag_context = AddContextIfUnknown(context_string,
+						      context_hash);
+	    (*count_context)[bag_context] += 1;
+	    (*count_word_context)[bag_context][word] += 1;
+	    if (context_index < window.size() - 1 &&
+		context_index != word_index - 1) {
+		Context bigram_context =
+		    AddContextIfUnknown(context_string + kNGramGlueString_ +
+					window.at(context_index + 1),
+					context_hash);
+		(*count_context)[bigram_context] += 1;
+		(*count_word_context)[bigram_context][word] += 1;
+	    }
+	} else if (context_definition_ == "skipgram") {  // BOW + skipgrams
+	    Context bag_context = AddContextIfUnknown(context_string,
+						      context_hash);
+	    (*count_context)[bag_context] += 1;
+	    (*count_word_context)[bag_context][word] += 1;
+	    for (size_t context_index2 = context_index + 1;
+		 context_index2 < window.size(); ++context_index2) {
+		if (context_index2 == word_index) { continue; }
+		string context_string2 = window.at(context_index2);
+		string ordered_skipgram_string = (context_string <=
+						  context_string2) ?
+		    context_string + kNGramGlueString_ + context_string2 :
+		    context_string2 + kNGramGlueString_ + context_string;
+		Context skipgram_context =
+		    AddContextIfUnknown(ordered_skipgram_string, context_hash);
+		(*count_context)[skipgram_context] += 1;
+		(*count_word_context)[skipgram_context][word] += 1;
+	    }
 	} else if (context_definition_ == "list") {  // List-of-words (LOW)
 	    Context list_context =
 		AddContextIfUnknown(position_markers.at(context_index) +
