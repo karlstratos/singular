@@ -49,6 +49,9 @@ public:
     // Returns the number of context types to hash.
     size_t num_context_hashed() { return num_context_hashed_; }
 
+    // Returns the pseudocount for smoothing.
+    size_t pseudocount() { return pseudocount_; }
+
     // Returns the flag for printing messages to stderr.
     bool verbose() { return verbose_; }
 
@@ -85,6 +88,9 @@ private:
 
     // Number of context types to hash (0 means no hashing).
     size_t num_context_hashed_ = 0;
+
+    // Pseudocount for smoothing.
+    size_t pseudocount_ = 0;
 
     // Print messages to stderr?
     bool verbose_ = true;

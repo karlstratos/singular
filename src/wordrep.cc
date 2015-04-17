@@ -632,7 +632,11 @@ void WordRep::CalculateSVD() {
 	 << " nonzeros)" << endl;
     log_ << "   Rank of SVD: " << dim_ << endl;
     log_ << "   Transformation: " << transformation_method_ << endl;
-    log_ << "   Scaling: " << scaling_method_ << endl;
+    log_ << "   Scaling: " << scaling_method_;
+    if (scaling_method_ == "cca" || scaling_method_ == "reg") {
+	log_ << " (pseudocount " << pseudocount_ << ")";
+    }
+    log_ << endl;
 
     time_t begin_time_decomposition = time(NULL);
 
@@ -742,11 +746,11 @@ double WordRep::ScaleJointValue(double joint_value, double value1,
     if (scaling_method_ == "raw") {  // No scaling.
     } else if (scaling_method_ == "cca") {
 	// Canonical correlation analysis scaling.
-	scaled_joint_value /= sqrt(value1);
-	scaled_joint_value /= sqrt(value2);
+	scaled_joint_value /= sqrt(value1 + pseudocount_);
+	scaled_joint_value /= sqrt(value2 + pseudocount_);
     } else if (scaling_method_ == "reg") {
 	// Ridge regression scaling.
-	scaled_joint_value /= value1;
+	scaled_joint_value /= (value1 + pseudocount_);
     } else if (scaling_method_ == "ppmi") {
 	// Positive pointwise mutual information scaling.
 	scaled_joint_value = log(scaled_joint_value);
@@ -911,7 +915,9 @@ string WordRep::Signature(size_t version) {
 	signature += "_dim" + to_string(dim_);
 	signature += "_" + transformation_method_;
 	signature += "_" + scaling_method_;
-
+	if (scaling_method_ == "cca" || scaling_method_ == "reg") {
+	    signature += "_pseudo" + to_string(pseudocount_);
+	}
     }
 
     return signature;

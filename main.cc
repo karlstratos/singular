@@ -17,6 +17,7 @@ int main (int argc, char* argv[]) {
     wordrep.set_transformation_method(argparser.transformation_method());
     wordrep.set_scaling_method(argparser.scaling_method());
     wordrep.set_num_context_hashed(argparser.num_context_hashed());
+    wordrep.set_pseudocount(argparser.pseudocount());
     wordrep.set_verbose(argparser.verbose());
 
     // If given a corpus, extract statistics from it.

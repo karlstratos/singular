@@ -84,6 +84,9 @@ public:
 	num_context_hashed_ = num_context_hashed;
     }
 
+    // Sets the pseudocount for smoothing.
+    void set_pseudocount(size_t pseudocount) { pseudocount_ = pseudocount; }
+
     // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
@@ -314,6 +317,9 @@ private:
 
     // Number of context types to hash (0 means no hashing).
     size_t num_context_hashed_ = 0;
+
+    // Pseudocount for smoothing.
+    size_t pseudocount_ = 0;
 
     // Print messages to stderr?
     bool verbose_ = true;
