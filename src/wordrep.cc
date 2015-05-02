@@ -635,6 +635,9 @@ void WordRep::CalculateSVD() {
     if (scaling_method_ == "cca" || scaling_method_ == "reg") {
 	log_ << " (pseudocount " << pseudocount_ << ")";
     }
+    if (scaling_method_ == "cca" || scaling_method_ == "ppmi") {
+	log_ << " (context exponent " << context_smoothing_exponent_ << ")";
+    }
     log_ << endl;
 
     time_t begin_time_decomposition = time(NULL);
