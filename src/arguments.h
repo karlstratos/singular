@@ -52,6 +52,9 @@ public:
     // Returns the pseudocount for smoothing.
     size_t pseudocount() { return pseudocount_; }
 
+    // Returns the context smoothing exponent.
+    double context_smoothing_exponent() { return context_smoothing_exponent_; }
+
     // Returns the flag for printing messages to stderr.
     bool verbose() { return verbose_; }
 
@@ -91,6 +94,9 @@ private:
 
     // Pseudocount for smoothing.
     size_t pseudocount_ = 0;
+
+    // Context smoothing exponent.
+    double context_smoothing_exponent_ = 0.75;
 
     // Print messages to stderr?
     bool verbose_ = true;

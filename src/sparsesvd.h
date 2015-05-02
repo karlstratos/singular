@@ -38,10 +38,25 @@ public:
     //          <row_index> <value>
     SMat ReadSparseMatrixFromFile(const string &file_path);
 
-    // Writes a sparse matrix as a file.
+    // Writes a sparse matrix as a file (slow).
     void WriteSparseMatrix(
 	const unordered_map<size_t, unordered_map<size_t, double> >
 	&column_map, const string file_path);
+
+    // Writes a sparse matrix as a file (fast).
+    void WriteSparseMatrix(
+	const unordered_map<size_t, unordered_map<size_t, double> >
+	&column_map, const string file_path, size_t num_rows,
+	size_t num_columns, size_t num_nonzeros);
+
+    // Writes a sparse matrix as a file (fast), and on the fly compute the
+    // row/column sum.
+    void WriteSparseMatrix(
+	const unordered_map<size_t, unordered_map<size_t, double> >
+	&column_map, const string file_path, size_t num_rows,
+	size_t num_columns, size_t num_nonzeros,
+	unordered_map<size_t, double> *row_sum,
+	unordered_map<size_t, double> *column_sum);
 
     // Loads a sparse matrix M for SVD: column_map[j][i] = M_{i,j}.
     void LoadSparseMatrix(

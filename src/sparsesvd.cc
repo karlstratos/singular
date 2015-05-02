@@ -42,8 +42,14 @@ void SparseSVDSolver::WriteSparseMatrix(
 	    ++num_nonzeros;
 	}
     }
+    WriteSparseMatrix(column_map, file_path, num_rows, num_columns,
+		      num_nonzeros);
+}
 
-    // Write in the sparse text format for SVDLIBC.
+void SparseSVDSolver::WriteSparseMatrix(
+    const unordered_map<size_t, unordered_map<size_t, double> >
+    &column_map, const string file_path, size_t num_rows, size_t num_columns,
+    size_t num_nonzeros) {
     ofstream file(file_path, ios::out);
     ASSERT(file.is_open(), "Cannot open file: " << file_path);
     file << num_rows << " " << num_columns << " " << num_nonzeros << endl;
@@ -54,7 +60,35 @@ void SparseSVDSolver::WriteSparseMatrix(
 	}
 	file << column_map.at(col).size() << endl;
 	for (const auto &row_pair: column_map.at(col)) {
-	    file << row_pair.first << " " << row_pair.second << endl;
+	    size_t row = row_pair.first;
+	    double value = row_pair.second;
+	    file << row << " " << value << endl;
+	}
+    }
+}
+
+void SparseSVDSolver::WriteSparseMatrix(
+    const unordered_map<size_t, unordered_map<size_t, double> >
+    &column_map, const string file_path, size_t num_rows, size_t num_columns,
+    size_t num_nonzeros, unordered_map<size_t, double> *row_sum,
+    unordered_map<size_t, double> *column_sum) {
+    row_sum->clear();
+    column_sum->clear();
+    ofstream file(file_path, ios::out);
+    ASSERT(file.is_open(), "Cannot open file: " << file_path);
+    file << num_rows << " " << num_columns << " " << num_nonzeros << endl;
+    for (size_t col = 0; col < num_columns; ++col) {
+	if (column_map.find(col) == column_map.end()) {
+	    file << 0 << endl;
+	    continue;
+	}
+	file << column_map.at(col).size() << endl;
+	for (const auto &row_pair: column_map.at(col)) {
+	    size_t row = row_pair.first;
+	    double value = row_pair.second;
+	    file << row << " " << value << endl;
+	    (*row_sum)[row] += value;
+	    (*column_sum)[col] += value;
 	}
     }
 }

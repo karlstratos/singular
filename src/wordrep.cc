@@ -305,8 +305,6 @@ void WordRep::SlideWindow(const string &corpus_file) {
 
     // count_word_context[j][i] = count of word i and context j coocurring
     unordered_map<Context, unordered_map<Word, double> > count_word_context;
-    unordered_map<Word, double> count_word;  // i-th: count of word i
-    unordered_map<Context, double> count_context;  // j-th: count of context j
 
     // Put start buffering in the window.
     deque<string> window;
@@ -346,15 +344,13 @@ void WordRep::SlideWindow(const string &corpus_file) {
 		window.push_back(new_string);
 		if (window.size() >= window_size_) {  // Full window.
 		    ProcessWindow(window, word_index, position_markers,
-				  context_hash, &count_word, &count_context,
-				  &count_word_context);
+				  context_hash, &count_word_context);
 		    window.pop_front();
 		}
 	    }
 	    if (sentence_per_line_) {
 		FinishWindow(word_index, position_markers, context_hash,
-			     &window, &count_word, &count_context,
-			     &count_word_context);
+			     &window, &count_word_context);
 	    }
 	    if (verbose_ && (line_num / num_lines >= portion_marker)) {
 		portion_marker += kReportInterval_;
@@ -363,15 +359,9 @@ void WordRep::SlideWindow(const string &corpus_file) {
 	}
 	if (!sentence_per_line_) {
 	    FinishWindow(word_index, position_markers, context_hash, &window,
-			 &count_word, &count_context, &count_word_context);
+			 &count_word_context);
 	}
-	if (verbose_) {
-	    size_t num_nonzeros_now = 0;
-	    for (const auto &word_pair : count_word_context) {
-		num_nonzeros_now += word_pair.second.size();
-	    }
-	    cerr << " " << num_nonzeros_now << " nonzeros" << endl;
-	}
+	if (verbose_) { cerr << endl; }
     }
 
     double time_sliding = difftime(time(NULL), begin_time_sliding);
@@ -388,8 +378,18 @@ void WordRep::SlideWindow(const string &corpus_file) {
 
     // Write counts to the output directory.
     SparseSVDSolver sparsesvd_solver;  // Write as a sparse matrix for SVDLIBC.
+    size_t num_nonzeros = 0;
+    for (const auto &context_pair : count_word_context) {
+	num_nonzeros += context_pair.second.size();
+    }
+    unordered_map<Word, double> count_word;  // i-th: count of word i
+    unordered_map<Context, double> count_context;  // j-th: count of context j
     sparsesvd_solver.WriteSparseMatrix(count_word_context,
-				       CountWordContextPath());
+				       CountWordContextPath(),
+				       word_str2num_.size(),
+				       context_str2num_.size(), num_nonzeros,
+				       &count_word, &count_context);
+
     ofstream count_word_file(CountWordPath(), ios::out);
     for (Word word = 0; word < count_word.size(); ++word) {
 	count_word_file << count_word[word] << endl;
@@ -408,8 +408,6 @@ void WordRep::FinishWindow(size_t word_index,
 			   const vector<string> &position_markers,
 			   const hash<string> &context_hash,
 			   deque<string> *window,
-			   unordered_map<Word, double> *count_word,
-			   unordered_map<Context, double> *count_context,
 			   unordered_map<Context, unordered_map<Word, double> >
 			   *count_word_context) {
     size_t original_window_size = window->size();
@@ -420,7 +418,7 @@ void WordRep::FinishWindow(size_t word_index,
     for (size_t buffering = word_index; buffering < original_window_size;
 	 ++buffering) {
 	ProcessWindow(*window, word_index, position_markers, context_hash,
-		      count_word, count_context, count_word_context);
+		      count_word_context);
 	(*window).pop_front();
 	(*window).push_back(kBufferString_);
     }
@@ -434,12 +432,9 @@ void WordRep::ProcessWindow(const deque<string> &window,
 			    size_t word_index,
 			    const vector<string> &position_markers,
 			    const hash<string> &context_hash,
-			    unordered_map<Word, double> *count_word,
-			    unordered_map<Context, double> *count_context,
 			    unordered_map<Context, unordered_map<Word, double> >
 			    *count_word_context) {
     Word word = word_str2num_[window.at(word_index)];
-    (*count_word)[word] += 1;
 
     for (size_t context_index = 0; context_index < window.size();
 	 ++context_index) {
@@ -448,12 +443,10 @@ void WordRep::ProcessWindow(const deque<string> &window,
 	if (context_definition_ == "bag") {  // Bag-of-words (BOW)
 	    Context bag_context = AddContextIfUnknown(context_string,
 						      context_hash);
-	    (*count_context)[bag_context] += 1;
 	    (*count_word_context)[bag_context][word] += 1;
 	} else if (context_definition_ == "bigram") {  // BOW + bigrams
 	    Context bag_context = AddContextIfUnknown(context_string,
 						      context_hash);
-	    (*count_context)[bag_context] += 1;
 	    (*count_word_context)[bag_context][word] += 1;
 	    if (context_index < window.size() - 1 &&
 		context_index != word_index - 1) {
@@ -461,13 +454,11 @@ void WordRep::ProcessWindow(const deque<string> &window,
 		    AddContextIfUnknown(context_string + kNGramGlueString_ +
 					window.at(context_index + 1),
 					context_hash);
-		(*count_context)[bigram_context] += 1;
 		(*count_word_context)[bigram_context][word] += 1;
 	    }
 	} else if (context_definition_ == "skipgram") {  // BOW + skipgrams
 	    Context bag_context = AddContextIfUnknown(context_string,
 						      context_hash);
-	    (*count_context)[bag_context] += 1;
 	    (*count_word_context)[bag_context][word] += 1;
 	    for (size_t context_index2 = context_index + 1;
 		 context_index2 < window.size(); ++context_index2) {
@@ -479,14 +470,12 @@ void WordRep::ProcessWindow(const deque<string> &window,
 		    context_string2 + kNGramGlueString_ + context_string;
 		Context skipgram_context =
 		    AddContextIfUnknown(ordered_skipgram_string, context_hash);
-		(*count_context)[skipgram_context] += 1;
 		(*count_word_context)[skipgram_context][word] += 1;
 	    }
 	} else if (context_definition_ == "list") {  // List-of-words (LOW)
 	    Context list_context =
 		AddContextIfUnknown(position_markers.at(context_index) +
 				    context_string, context_hash);
-	    (*count_context)[list_context] += 1;
 	    (*count_word_context)[list_context][word] += 1;
 	} else if (context_definition_ == "baglist") {  // BOW+LOW
 	    Context bag_context = AddContextIfUnknown(context_string,
@@ -494,8 +483,6 @@ void WordRep::ProcessWindow(const deque<string> &window,
 	    Context list_context =
 		AddContextIfUnknown(position_markers.at(context_index) +
 				    context_string, context_hash);
-	    (*count_context)[bag_context] += 1;
-	    (*count_context)[list_context] += 1;
 	    (*count_word_context)[bag_context][word] += 1;
 	    (*count_word_context)[list_context][word] += 1;
 	} else {
@@ -617,14 +604,26 @@ void WordRep::CalculateSVD() {
     size_t dim2 = stol(tokens[1]);
     size_t num_nonzeros = stol(tokens[2]);
 
-    // Get the number of samples (= number of words).
-    size_t num_samples = 0;
+    // Get the number of samples = sum of word (or context) counts.
+    size_t sum_wordcounts = 0;
     ifstream count_word_file(CountWordPath(), ios::in);
     while (count_word_file.good()) {
 	getline(count_word_file, line);
 	if (line == "") { continue; }
 	string_manipulator.Split(line, " ", &tokens);
-	num_samples += stol(tokens[0]);
+	sum_wordcounts += stol(tokens[0]);
+    }
+    size_t num_samples = sum_wordcounts;
+
+    // Get the smoothed context normalizer: sum_c #(c)^a
+    double sum_smoothed_contextcounts = 0.0;
+    ifstream count_context_file(CountContextPath(), ios::in);
+    while (count_context_file.good()) {
+	getline(count_context_file, line);
+	if (line == "") { continue; }
+	string_manipulator.Split(line, " ", &tokens);
+	sum_smoothed_contextcounts += pow(stol(tokens[0]),
+					  context_smoothing_exponent_);
     }
 
     log_ << endl << "[Decomposing a matrix of scaled counts]" << endl;
@@ -662,7 +661,8 @@ void WordRep::CalculateSVD() {
 	    size_t row = matrix->rowind[current_column_nonzero_index];
 	    matrix->value[current_column_nonzero_index] =
 		ScaleJointValue(matrix->value[current_column_nonzero_index],
-				values1[row], values2[col], num_samples);
+				values1[row], values2[col], num_samples,
+				sum_smoothed_contextcounts);
 	    ++current_column_nonzero_index;
 	}
     }
@@ -718,8 +718,9 @@ void WordRep::CalculateSVD() {
 }
 
 double WordRep::ScaleJointValue(double joint_value, double value1,
-				double value2, size_t num_samples) {
-    value2 = pow(value2, 0.75);  // Context smoothing.
+				double value2, size_t num_samples,
+				double smoothed_sum) {
+    value2 = pow(value2, context_smoothing_exponent_);  // Context smoothing.
 
     // Data transformation.
     if (transformation_method_ == "raw") {  // No transformation.
@@ -748,13 +749,14 @@ double WordRep::ScaleJointValue(double joint_value, double value1,
 	// Canonical correlation analysis scaling.
 	scaled_joint_value /= sqrt(value1 + pseudocount_);
 	scaled_joint_value /= sqrt(value2 + pseudocount_);
+	scaled_joint_value *= sqrt(((double) num_samples) / smoothed_sum);
     } else if (scaling_method_ == "reg") {
 	// Ridge regression scaling.
 	scaled_joint_value /= (value1 + pseudocount_);
     } else if (scaling_method_ == "ppmi") {
 	// Positive pointwise mutual information scaling.
 	scaled_joint_value = log(scaled_joint_value);
-	scaled_joint_value += log(num_samples);
+	scaled_joint_value += log(smoothed_sum);
 	scaled_joint_value -= log(value1);
 	scaled_joint_value -= log(value2);
 	scaled_joint_value = max(scaled_joint_value, 0.0);
@@ -917,6 +919,9 @@ string WordRep::Signature(size_t version) {
 	signature += "_" + scaling_method_;
 	if (scaling_method_ == "cca" || scaling_method_ == "reg") {
 	    signature += "_pseudo" + to_string(pseudocount_);
+	}
+	if (scaling_method_ == "cca" || scaling_method_ == "ppmi") {
+	    signature += "_cexp" + to_string(context_smoothing_exponent_);
 	}
     }
 

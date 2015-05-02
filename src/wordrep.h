@@ -61,11 +61,6 @@ public:
     // Sets the target dimension of word vectors.
     void set_dim(size_t dim) { dim_ = dim; }
 
-    // Sets the flag for smoothing context counts.
-    void set_context_smoothing(bool context_smoothing) {
-	context_smoothing_ = context_smoothing;
-    }
-
     // Sets the transformation method.
     void set_transformation_method(string transformation_method) {
 	transformation_method_ = transformation_method;
@@ -86,6 +81,11 @@ public:
 
     // Sets the pseudocount for smoothing.
     void set_pseudocount(size_t pseudocount) { pseudocount_ = pseudocount; }
+
+    // Sets the context smoothing exponent.
+    void set_context_smoothing_exponent(double context_smoothing_exponent) {
+	context_smoothing_exponent_ = context_smoothing_exponent;
+    }
 
     // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
@@ -154,8 +154,6 @@ private:
 		      const vector<string> &position_markers,
 		      const hash<string> &context_hash,
 		      deque<string> *window,
-		      unordered_map<Word, double> *count_word,
-		      unordered_map<Context, double> *count_context,
 		      unordered_map<Context, unordered_map<Word, double> >
 		      *count_word_context);
 
@@ -164,8 +162,6 @@ private:
 		       size_t word_index,
 		       const vector<string> &position_markers,
 		       const hash<string> &context_hash,
-		       unordered_map<Word, double> *count_word,
-		       unordered_map<Context, double> *count_context,
 		       unordered_map<Context, unordered_map<Word, double> >
 		       *count_word_context);
 
@@ -184,7 +180,7 @@ private:
 
     // Scales a joint value by individual values.
     double ScaleJointValue(double joint_value, double value1, double value2,
-			   size_t num_samples);
+			   size_t num_samples, double smoothed_sum);
 
     // Tests the quality of word vectors on simple tasks.
     void TestQualityOfWordVectors();
@@ -195,7 +191,8 @@ private:
     // Returns a string signature of tunable parameters.
     //    version=0: rare_cutoff_
     //    version=1: 0 + sentence_per_line_, window_size_, context_defintion_
-    //    version=2: 1 + dim_, transformation_method_, scaling_method_
+    //    version=2: 1 + dim_, transformation_method_, scaling_method_,
+    //                   context_smoothing_exponent_
     string Signature(size_t version);
 
     // Returns the path to the corpus information file.
@@ -306,9 +303,6 @@ private:
     // Target dimension of word vectors.
     size_t dim_;
 
-    // Smooth context counts?
-    bool context_smoothing_ = false;
-
     // Data transformation method.
     string transformation_method_ = "raw";
 
@@ -320,6 +314,9 @@ private:
 
     // Pseudocount for smoothing.
     size_t pseudocount_ = 0;
+
+    // Context smoothing exponent.
+    double context_smoothing_exponent_ = 0.75;
 
     // Print messages to stderr?
     bool verbose_ = true;

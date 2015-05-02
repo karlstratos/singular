@@ -30,6 +30,8 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 	    num_context_hashed_ = stol(argv[++i]);
 	} else if (arg == "--pseudocount") {
 	    pseudocount_ = stol(argv[++i]);
+	} else if (arg == "--cexp") {
+	    context_smoothing_exponent_ = stod(argv[++i]);
 	} else if (arg == "--quiet" || arg == "-q") {
 	    verbose_ = false;
 	} else if (arg == "--help" || arg == "-h"){
@@ -79,6 +81,9 @@ void ArgumentProcessor::ParseArguments(int argc, char* argv[]) {
 
 	cout << "--pseudocount [" << pseudocount_ << "]:  \t"
 	     << "pseudocount for smoothing" << endl;
+
+	cout << "--cexp [" << context_smoothing_exponent_ << "]:  \t"
+	     << "context smoothing exponent" << endl;
 
 	cout << "--quiet, -q:          \t"
 	     << "do not print messages to stderr" << endl;

@@ -273,9 +273,9 @@ TEST_F(WordRepSimpleExample, OnlyCheckCountsCutoff1ListSize3) {
     true_count_word_context["w(-1)=" + wordrep.kRareString()]["a"] = 2;
     true_count_word_context["w(1)=" + wordrep.kBufferString()][
 	wordrep.kRareString()] = 1;
-    true_count_word["a"] = 3;
-    true_count_word["b"] = 3;
-    true_count_word[wordrep.kRareString()] = 3;
+    true_count_word["a"] = 6;
+    true_count_word["b"] = 6;
+    true_count_word[wordrep.kRareString()] = 6;
     true_count_context["w(-1)=" + wordrep.kBufferString()] = 1;
     true_count_context["w(1)=b"] = 3;
     true_count_context["w(-1)=a"] = 3;
@@ -351,9 +351,9 @@ TEST_F(WordRepSimpleExample, CheckCountsCutoff1ListSize3SentencePerLine) {
     true_count_word_context["w(-1)=b"][wordrep.kRareString()] = 3;
     true_count_word_context["w(1)=" + wordrep.kBufferString()][
 	wordrep.kRareString()] = 3;
-    true_count_word["a"] = 3;
-    true_count_word["b"] = 3;
-    true_count_word[wordrep.kRareString()] = 3;
+    true_count_word["a"] = 6;
+    true_count_word["b"] = 6;
+    true_count_word[wordrep.kRareString()] = 6;
     true_count_context["w(-1)=" + wordrep.kBufferString()] = 3;
     true_count_context["w(1)=b"] = 3;
     true_count_context["w(-1)=a"] = 3;
