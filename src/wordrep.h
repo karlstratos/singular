@@ -87,6 +87,11 @@ public:
 	context_smoothing_exponent_ = context_smoothing_exponent;
     }
 
+    // Sets the singular value exponent.
+    void set_singular_value_exponent(double singular_value_exponent) {
+	singular_value_exponent_ = singular_value_exponent;
+    }
+
     // Returns the computed word vectors.
     unordered_map<string, Eigen::VectorXd> *wordvectors() {
 	return &wordvectors_;
@@ -192,7 +197,7 @@ private:
     //    version=0: rare_cutoff_
     //    version=1: 0 + sentence_per_line_, window_size_, context_defintion_
     //    version=2: 1 + dim_, transformation_method_, scaling_method_,
-    //                   context_smoothing_exponent_
+    //                   context_smoothing_exponent_, singular_value_exponent_
     string Signature(size_t version);
 
     // Returns the path to the corpus information file.
@@ -317,6 +322,9 @@ private:
 
     // Context smoothing exponent.
     double context_smoothing_exponent_ = 0.75;
+
+    // Singular value exponent.
+    double singular_value_exponent_ = 0.0;
 
     // Print messages to stderr?
     bool verbose_ = true;

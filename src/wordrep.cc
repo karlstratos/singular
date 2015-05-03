@@ -518,6 +518,14 @@ void WordRep::InduceWordVectors() {
 	ASSERT(word_matrix_.rows() == sorted_wordcount_.size(), "Word matrix "
 	       "dimension and vocabulary size mismatch: " << word_matrix_.rows()
 	       << " vs " << sorted_wordcount_.size());
+	ASSERT(singular_values_.size() == dim_, "Problem with singular values");
+
+	// Scale columns of the word matrix by some power of singular values.
+	log_ << "   Singular exponent: " << singular_value_exponent_ << endl;
+	for (size_t col = 0; col < dim_; ++col) {
+	    word_matrix_.col(col) *= pow(singular_values_[col],
+					 singular_value_exponent_);
+	}
 
 	ofstream wordvectors_file(WordVectorsPath(), ios::out);
 	for (size_t i = 0; i < sorted_wordcount_.size(); ++i) {
@@ -690,14 +698,12 @@ void WordRep::CalculateSVD() {
 	}
     }
 
-    // Save a matrix of right singular vectors, scaled by singular values, as
-    // columns.
+    // Save a matrix of right singular vectors as columns;
     context_matrix_.resize(dim2, dim_);
     for (size_t row = 0; row < dim2; ++row) {
 	for (size_t col = 0; col < dim_; ++col) {
 	    context_matrix_(row, col) =
-		svd_solver.right_singular_vectors()->value[col][row] *
-		singular_values_(col);
+		svd_solver.right_singular_vectors()->value[col][row];
 	}
     }
 
@@ -906,6 +912,7 @@ void WordRep::PerformAgglomerativeClustering(size_t num_clusters) {
 
 string WordRep::Signature(size_t version) {
     ASSERT(version <= 2, "Unrecognized signature version: " << version);
+    StringManipulator string_manipulator;
 
     string signature = "rare" + to_string(rare_cutoff_);
     if (version >= 1) {
@@ -924,8 +931,11 @@ string WordRep::Signature(size_t version) {
 	    signature += "_pseudo" + to_string(pseudocount_);
 	}
 	if (scaling_method_ == "cca" || scaling_method_ == "ppmi") {
-	    signature += "_cexp" + to_string(context_smoothing_exponent_);
+	    signature += "_ce" + string_manipulator.DoubleString(
+		context_smoothing_exponent_, 2, true);
 	}
+	signature += "_se"  + string_manipulator.DoubleString(
+	    singular_value_exponent_, 2, true);
     }
 
     return signature;

@@ -47,6 +47,19 @@ string StringManipulator::Lowercase(const string &original_string) {
     return lowercased_string;
 }
 
+string StringManipulator::DoubleString(double value, size_t decimal_place,
+				       bool replace_period) {
+    string value_string = to_string_with_precision(value, decimal_place);
+    if (replace_period) {  // "." -> "P"
+	string temp;
+	for (char c : value_string) {
+	    temp += (c == '.') ? 'P' : c;
+	}
+	value_string = temp;
+    }
+    return value_string;
+}
+
 bool FileManipulator::Exists(const string &file_path) {
     struct stat buffer;
     return (stat(file_path.c_str(), &buffer) == 0);

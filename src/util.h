@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -26,6 +27,10 @@ public:
 
     // Returns the lowercase transformation of the given string.
     string Lowercase(const string &original_string);
+
+    // Returns the string form of a double.
+    string DoubleString(double value, size_t decimal_place,
+			bool replace_period);
 };
 
 // Class for manipulating files.
@@ -104,5 +109,13 @@ struct sort_pairs_second {
         return Predicate()(left.second, right.second);
     }
 };
+
+// Template for string conversion of floating points with precision.
+template <typename T>
+string to_string_with_precision(const T value, const int precision = 2) {
+    ostringstream out;
+    out << setprecision(precision) << value;
+    return out.str();
+}
 
 #endif  // UTIL_H_

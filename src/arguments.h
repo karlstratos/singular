@@ -55,6 +55,9 @@ public:
     // Returns the context smoothing exponent.
     double context_smoothing_exponent() { return context_smoothing_exponent_; }
 
+    // Returns the singular value exponent.
+    double singular_value_exponent() { return singular_value_exponent_; }
+
     // Returns the flag for printing messages to stderr.
     bool verbose() { return verbose_; }
 
@@ -97,6 +100,9 @@ private:
 
     // Context smoothing exponent.
     double context_smoothing_exponent_ = 0.75;
+
+    // Singular value exponent.
+    double singular_value_exponent_ = 0.0;
 
     // Print messages to stderr?
     bool verbose_ = true;
