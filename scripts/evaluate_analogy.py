@@ -199,6 +199,36 @@ def main(args):
             acc_pertype, analogy_type, num_correct_pertype[analogy_type],
             num_answered_pertype[analogy_type]))
 
+    if args.mixed:
+        syntactic_types = {"gram1-adjective-to-adverb", "gram2-opposite",
+                           "gram3-comparative", "gram4-superlative",
+                           "gram5-present-participle",
+                           "gram6-nationality-adjective", "gram7-past-tense",
+                           "gram8-plural", "gram9-plural-verbs"}
+        semantic_types = {"capital-common-countries", "capital-world",
+                          "city-in-state", "currency", "family"}
+        num_answered_syntactic = 0
+        num_correct_syntactic = 0
+        num_answered_semantic = 0
+        num_correct_semantic = 0
+        for analogy_type in num_answered_pertype:
+            if analogy_type in syntactic_types:
+                num_answered_syntactic += num_answered_pertype[analogy_type]
+                num_correct_syntactic += num_correct_pertype[analogy_type]
+            elif analogy_type in semantic_types:
+                num_answered_semantic += num_answered_pertype[analogy_type]
+                num_correct_semantic += num_correct_pertype[analogy_type]
+            else:
+                print("ERROR: \"{0}\" is neither syntactic nor semantic!")
+        acc_syntactic = float(num_correct_syntactic) / \
+          num_answered_syntactic * 100
+        acc_semantic = float(num_correct_semantic) / \
+          num_answered_semantic * 100
+        print("\nSyntactic acc: {0:.2f} ({1}/{2})".format(
+            acc_syntactic, num_correct_syntactic, num_answered_syntactic))
+        print("Semantic acc: {0:.2f} ({1}/{2})".format(
+            acc_semantic, num_correct_semantic, num_answered_semantic))
+
     if args.report:
         with open(args.report, "w") as report_file:
             for analogy_type in correct_answers:
@@ -233,5 +263,7 @@ if __name__ == "__main__":
                            " don't counts for the first column?")
     argparser.add_argument("--ignore_line1", action="store_true", help="ignore "
                            "the first line in the embeddings file?")
+    argparser.add_argument("--mixed", action="store_true", help="syntactic and "
+                           "semantic analogies are mixed, report separately?")
     parsed_args = argparser.parse_args()
     main(parsed_args)
